@@ -18,4 +18,5 @@
 *.iobj
 *.idb
 *.recipe
+*.exe
 *temporary*
