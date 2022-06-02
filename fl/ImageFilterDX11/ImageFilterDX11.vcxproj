@@ -1,0 +1,760 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseMagic|Win32">
+      <Configuration>ReleaseMagic</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseMagic|x64">
+      <Configuration>ReleaseMagic</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{D230A9F3-0E7C-4E0D-902A-145E730F2C3F}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>ImageFilterDX11</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMagic|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMagic|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMagic|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMagic|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMagic|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetName>$(ProjectName)</TargetName>
+    <OutDir>$(SolutionDir)bin</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMagic|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Full</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;IMAGEFILTERDX11_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;WIN32;NDEBUG;_WINDOWS;_USRDLL;DX11IMAGEFILTER_EXPORTS;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(DXSDK_DIR)\Include;./CocosARRender/;./;./CocosARRender/external/;..\3rdparty\FaSDK\include;..\;..\3rdparty\Eigen;..\3rdparty\glm;</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(DXSDK_DIR)\lib\x64;..\3rdparty\opencv3.0\opencv\build\x64\vc12\lib\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;D3DCompiler.lib;dxerr.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DX11IMAGEFILTER_EXPORTS;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>../../common/FaceDetector-SDM/;../3rdparty/D3DX11/Include;./CocosARRender/;./;./CocosARRender/external/;..\3rdparty\cppsdk\include;..\3rdparty\FaSDK\include;..\;..\3rdparty\Eigen;..\3rdparty\glm;./CC3DEngine;..\3rdparty\FacialAnimation\include;..\3rdparty\ffmpeg3\include;..\3rdparty\libyuv\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>../3rdparty/D3DX11/lib/x86;..\3rdparty\opencv3.0\opencv\build\x86\vc12\lib\;..\3rdparty\FacialAnimation\lib;../3rdparty/libyuv/lib/x86/Release/;..\3rdparty\ffmpeg3\bin</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;D3DCompiler.lib;dxerr.lib;dxgi.lib;dxguid.lib;FacialAnalyser.lib;avcodec.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;yuv.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
+      <DelayLoadDLLs>FacialAnalyser.dll</DelayLoadDLLs>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+copy $(SolutionDir)$(Configuration)\$(ProjectName).lib $(SolutionDir)LibImageFilterDX11\lib\$(ProjectName).lib
+copy $(SolutionDir)$(Configuration)\$(ProjectName).dll $(SolutionDir)LibImageFilterDX11\dll\$(ProjectName).dll
+copy $(SolutionDir)$(Configuration)\$(ProjectName).pdb $(SolutionDir)LibImageFilterDX11\pdb\$(ProjectName).pdb
+
+copy $(SolutionDir)$(ProjectName)\common.h  $(SolutionDir)LibImageFilterDX11\include\common.h
+copy $(SolutionDir)$(ProjectName)\DX11ImageFilterDef.h  $(SolutionDir)LibImageFilterDX11\include\DX11ImageFilterDef.h
+copy $(SolutionDir)$(ProjectName)\FaceGiftEffectPlayer.h  $(SolutionDir)LibImageFilterDX11\include\FaceGiftEffectPlayer.h
+copy $(SolutionDir)$(ProjectName)\FacialAnimationInterface.h  $(SolutionDir)LibImageFilterDX11\include\FacialAnimationInterface.h
+copy $(SolutionDir)$(ProjectName)\EffectCInterface.h  $(SolutionDir)LibImageFilterDX11\include\EffectCInterface.h</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMagic|Win32'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DX11IMAGEFILTER_EXPORTS;MAGICSTUDIO_EXPORTS;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>..\3rdparty\cppsdk\include;$(DXSDK_DIR)\include;./CocosARRender/;./;./CocosARRender/external/;..\3rdparty\FaSDK\include;..\;..\3rdparty\Eigen;..\3rdparty\glm;./CC3DEngine;..\3rdparty\libyuv\include;..\3rdparty\ffmpeg3\include;..\3rdparty\FacialAnimation\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(DXSDK_DIR)\lib\x86;..\3rdparty\opencv3.0\opencv\build\x86\vc12\lib\;..\3rdparty\ffmpeg3\bin;../3rdparty/libyuv/lib/x86/Release/;..\3rdparty\FacialAnimation\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;D3DCompiler.lib;dxerr.lib;dxgi.lib;dxguid.lib;avcodec.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;yuv.lib;FacialAnalyser.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Link>
+    <PostBuildEvent>
+      <Command>copy $(SolutionDir)bin\$(ProjectName).lib $(SolutionDir)lib\imagefilter\lib\$(ProjectName).lib
+xcopy /S /Y $(SolutionDir)CCImagefilter\BuiltInResource\Shader  $(SolutionDir)resource\BuiltInResource\Shader
+
+del $(SolutionDir)bin\$(ProjectName).lib</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DX11IMAGEFILTER_EXPORTS;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>../../common/FaceDetector-SDM/;../3rdparty/D3DX11/Include;./CocosARRender/;./;./CocosARRender/external/;..\3rdparty\FaSDK\include\x64;..\;..\3rdparty\Eigen;..\3rdparty\glm;./CC3DEngine;..\3rdparty\FacialAnimation\include;..\3rdparty\ffmpeg3\include;..\3rdparty\libyuv\include;..\3rdparty\cppsdk\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>../3rdparty/D3DX11/lib/x64;..\3rdparty\opencv3.0\opencv\build\x64\vc12\lib\;../3rdparty/ffmpeg3/bin;../3rdparty/libyuv/lib/x86/Release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;D3DCompiler.lib;dxerr.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMagic|x64'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>Disabled</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DX11IMAGEFILTER_EXPORTS;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(DXSDK_DIR)\Include;./CocosARRender/;./;./CocosARRender/external/;..\3rdparty\FaceSDK\include\FaceDetector;..\;..\3rdparty\Eigen;..\3rdparty\glm;./CC3DEngine</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(DXSDK_DIR)\lib\x64;..\3rdparty\opencv3.0\opencv\build\x64\vc12\lib\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;D3DCompiler.lib;dxerr.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Algorithm\Face2DMesh\FaceInterlation.cpp" />
+    <ClCompile Include="Algorithm\Face2DMesh\MTFace2DInterFace.cpp" />
+    <ClCompile Include="Algorithm\Face2DMesh\MultiSimpleFaceBackMesh.cpp" />
+    <ClCompile Include="Algorithm\Face2DMesh\SimpleFaceBackMesh.cpp" />
+    <ClCompile Include="Algorithm\Face2DMesh\SimpleFaceMesh.cpp" />
+    <ClCompile Include="Algorithm\Face2DMesh\SimpleMesh.cpp" />
+    <ClCompile Include="Algorithm\Face3DReconstruct\MultiLinear3DModel.cpp" />
+    <ClCompile Include="Algorithm\Face3DReconstruct\MultiLinearVideoReconstructor.cpp" />
+    <ClCompile Include="Algorithm\Face3DReconstruct\OrthographicEstimateCamera.cpp" />
+    <ClCompile Include="Algorithm\Face3DReconstruct\PerspectiveEstimeCamera.cpp" />
+    <ClCompile Include="Algorithm\FaceMeshManage.cpp" />
+    <ClCompile Include="Algorithm\InterFacePointDeform.cpp" />
+    <ClCompile Include="Algorithm\MaskFillUtil.cpp" />
+    <ClCompile Include="Algorithm\MathUtils.cpp" />
+    <ClCompile Include="Algorithm\Matrices.cpp" />
+    <ClCompile Include="Algorithm\MLS.cpp" />
+    <ClCompile Include="Algorithm\MouthManage.cpp" />
+    <ClCompile Include="Algorithm\SolvePnP\epnp.cpp" />
+    <ClCompile Include="Algorithm\SolvePnP\Rodrigues.cpp" />
+    <ClCompile Include="Algorithm\SolvePnP\SolvePnP.cpp" />
+    <ClCompile Include="Algorithm\StackBlur.cpp" />
+    <ClCompile Include="CC3DEngine\Animate\CC3DAnimate.cpp" />
+    <ClCompile Include="CC3DEngine\Animate\CC3DAnimateManage.cpp" />
+    <ClCompile Include="CC3DEngine\Common\CC3DEnvironmentConfig.cpp" />
+    <ClCompile Include="CC3DEngine\Common\CC3DUtils.cpp" />
+    <ClCompile Include="CC3DEngine\Effect\CC3DShadowMap.cpp" />
+    <ClCompile Include="CC3DEngine\Effect\CC3DShadowMapManger.cpp" />
+    <ClCompile Include="CC3DEngine\FaceExpressDrive\CC3DExpressDrive.cpp" />
+    <ClCompile Include="CC3DEngine\Material\CC3DFurMaterial.cpp" />
+    <ClCompile Include="CC3DEngine\Material\CC3DMaterial.cpp" />
+    <ClCompile Include="CC3DEngine\Material\CC3DPbrMaterial.cpp" />
+    <ClCompile Include="CC3DEngine\Material\CC3DTexture.cpp" />
+    <ClCompile Include="CC3DEngine\Model\CC3DCameraNode.cpp" />
+    <ClCompile Include="CC3DEngine\Model\CC3DMesh.cpp" />
+    <ClCompile Include="CC3DEngine\Model\CC3DModel.cpp" />
+    <ClCompile Include="CC3DEngine\Model\CC3DModelAnimate.cpp" />
+    <ClCompile Include="CC3DEngine\Model\CC3DNode.cpp" />
+    <ClCompile Include="CC3DEngine\Render\CC3DBlurPass.cpp" />
+    <ClCompile Include="CC3DEngine\Render\CC3DMeshBuffer.cpp" />
+    <ClCompile Include="CC3DEngine\Render\CC3DPbrRender.cpp" />
+    <ClCompile Include="CC3DEngine\Render\CC3DPostProcessManager.cpp" />
+    <ClCompile Include="CC3DEngine\Render\CC3DRenderCube.cpp" />
+    <ClCompile Include="CC3DEngine\Render\CC3DShadowRender.cpp" />
+    <ClCompile Include="CC3DEngine\Scene\CC3DCamera.cpp" />
+    <ClCompile Include="CC3DEngine\Scene\CC3DLight.cpp" />
+    <ClCompile Include="CC3DEngine\Scene\CC3DModelControl.cpp" />
+    <ClCompile Include="CC3DEngine\Scene\CC3DProject.cpp" />
+    <ClCompile Include="CC3DEngine\Scene\CC3DSceneManage.cpp" />
+    <ClCompile Include="CC3DEngine\Skeleton\CC3DDynamicBone.cpp" />
+    <ClCompile Include="CC3DEngine\Skeleton\CC3DDynamicBoneCollider.cpp" />
+    <ClCompile Include="CC3DEngine\Skeleton\CC3DDynamicBoneColliderbase.cpp" />
+    <ClCompile Include="CC3DEngine\Skeleton\CC3DDynamicBoneManager.cpp" />
+    <ClCompile Include="CC3DEngine\Skeleton\CC3DSkeleton.cpp" />
+    <ClCompile Include="CC3DEngine\Skeleton\CC3DSkeletonManage.cpp" />
+    <ClCompile Include="CC3DEngine\Skeleton\CC3DTransform.cpp" />
+    <ClCompile Include="CC3DEngine\Skeleton\CC3DTransformNode.cpp" />
+    <ClCompile Include="EffectKernel\FaceEffect\CFaceEffectFlipSplit.cpp" />
+    <ClCompile Include="CocosARRender\2d\CCAction.cpp" />
+    <ClCompile Include="CocosARRender\2d\CCActionInstant.cpp" />
+    <ClCompile Include="CocosARRender\2d\CCActionInterval.cpp" />
+    <ClCompile Include="CocosARRender\2d\CCNode.cpp" />
+    <ClCompile Include="CocosARRender\3d\BaseLight.cpp" />
+    <ClCompile Include="CocosARRender\3d\CCAABB.cpp" />
+    <ClCompile Include="CocosARRender\3d\CCAnimate3D.cpp" />
+    <ClCompile Include="CocosARRender\3d\CCAnimation3D.cpp" />
+    <ClCompile Include="CocosARRender\3d\CCBundle3D.cpp" />
+    <ClCompile Include="CocosARRender\3d\CCBundleReader.cpp" />
+    <ClCompile Include="CocosARRender\3d\CCMesh.cpp" />
+    <ClCompile Include="CocosARRender\3d\CCMeshSkin.cpp" />
+    <ClCompile Include="CocosARRender\3d\CCMeshVertexIndexData.cpp" />
+    <ClCompile Include="CocosARRender\3d\CCSkeleton3D.cpp" />
+    <ClCompile Include="CocosARRender\3d\CCSprite3D.cpp" />
+    <ClCompile Include="CocosARRender\base\CCAutoreleasePool.cpp" />
+    <ClCompile Include="CocosARRender\base\CCData.cpp" />
+    <ClCompile Include="CocosARRender\base\CCRef.cpp" />
+    <ClCompile Include="CocosARRender\base\ccTypes.cpp" />
+    <ClCompile Include="CocosARRender\math\CCAffineTransform.cpp" />
+    <ClCompile Include="CocosARRender\math\CCGeometry.cpp" />
+    <ClCompile Include="CocosARRender\math\CCVertex.cpp" />
+    <ClCompile Include="CocosARRender\math\Mat4.cpp" />
+    <ClCompile Include="CocosARRender\math\MathUtil.cpp" />
+    <ClCompile Include="CocosARRender\math\Quaternion.cpp" />
+    <ClCompile Include="CocosARRender\math\TransformUtils.cpp" />
+    <ClCompile Include="CocosARRender\math\Vec2.cpp" />
+    <ClCompile Include="CocosARRender\math\Vec3.cpp" />
+    <ClCompile Include="CocosARRender\math\Vec4.cpp" />
+    <ClCompile Include="CocosARRender\platform\CCFileUtils.cpp" />
+    <ClCompile Include="CocosARRender\renderer\CCVertexIndexBuffer.cpp" />
+    <ClCompile Include="CocosARRender\renderer\CCVertexIndexData.cpp" />
+    <ClCompile Include="CocosARRender\renderer\CShaderCache.cpp" />
+    <ClCompile Include="CocosARRender\renderer\MeshRenderCmd.cpp" />
+    <ClCompile Include="common.cpp" />
+    <ClCompile Include="DDS\DDSTextureLoader.cpp" />
+    <ClCompile Include="EffectCInterface.cpp" />
+    <ClCompile Include="EffectKernel2\FacialAnimation.cpp" />
+    <ClCompile Include="EffectKernel2\MaskEffect.cpp" />
+    <ClCompile Include="EffectKernel2\Matting.cpp" />
+    <ClCompile Include="EffectKernel2\MVAction.cpp" />
+    <ClCompile Include="EffectKernel2\StickerEffect.cpp" />
+    <ClCompile Include="EffectKernel\BaseRenderParam.cpp" />
+    <ClCompile Include="EffectKernel\CCEffectInterface.cpp" />
+    <ClCompile Include="EffectKernel\CEffectPart.cpp" />
+    <ClCompile Include="EffectKernel\EllipseDeformation.cpp" />
+    <ClCompile Include="EffectKernel\FaceBeauty\CDyeHairEffect.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="EffectKernel\FaceBeauty\CFaceEffect2DBlendBG.cpp" />
+    <ClCompile Include="EffectKernel\FaceBeauty\CFaceLevel.cpp" />
+    <ClCompile Include="EffectKernel\FaceDeformation.cpp" />
+    <ClCompile Include="EffectKernel\FaceEffect\CFaceEffect2D.cpp" />
+    <ClCompile Include="EffectKernel\FaceEffect\CFaceEffect2DWithBG.cpp" />
+    <ClCompile Include="EffectKernel\FaceEffect\CFaceEffect3DModel.cpp" />
+    <ClCompile Include="EffectKernel\FaceEffect\CFaceEffect3DNormal.cpp" />
+    <ClCompile Include="EffectKernel\FaceEffect\CFaceEffect3DRect.cpp" />
+    <ClCompile Include="EffectKernel\FaceEffect\CFaceRemovePouchFalin.cpp" />
+    <ClCompile Include="EffectKernel\FaceEffect\CFaceShadowHighLight.cpp" />
+    <ClCompile Include="EffectKernel\FaceEffect\CFaceSmoothIns.cpp" />
+    <ClCompile Include="EffectKernel\FaceLift\CBodyLift.cpp" />
+    <ClCompile Include="EffectKernel\FaceLift\CBodyLift2.cpp" />
+    <ClCompile Include="EffectKernel\FaceLift\CBodyLiftYY.cpp" />
+    <ClCompile Include="EffectKernel\FaceLift\CFaceBeauty.cpp" />
+    <ClCompile Include="EffectKernel\FaceLift\CFaceMeshChange.cpp" />
+    <ClCompile Include="EffectKernel\FaceLift\CFaceMeshChange2.cpp" />
+    <ClCompile Include="EffectKernel\FaceLift\CFaceSPMLS.cpp" />
+    <ClCompile Include="EffectKernel\FaceMakeUp\CFaceBlendMakeUp.cpp" />
+    <ClCompile Include="EffectKernel\FaceMakeUp\CFaceLipstick.cpp" />
+    <ClCompile Include="EffectKernel\FaceMakeUp\CFaceMakeUp.cpp" />
+    <ClCompile Include="EffectKernel\Filter\CDeNoiseFilterEffect.cpp" />
+    <ClCompile Include="EffectKernel\Filter\CFoodieSharp.cpp" />
+    <ClCompile Include="EffectKernel\Filter\CLUTFIlter.cpp" />
+    <ClCompile Include="EffectKernel\HandEffect\CHandEffectHeart.cpp" />
+    <ClCompile Include="EffectKernel\LensEffect\CGlitch.cpp" />
+    <ClCompile Include="EffectKernel\LensEffect\CLightWave.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="EffectKernel\LensEffect\CRhythm.cpp" />
+    <ClCompile Include="EffectKernel\LensEffect\CSoulBody.cpp" />
+    <ClCompile Include="EffectKernel\PBR\CFaceBodyApartPBRModel.cpp" />
+    <ClCompile Include="EffectKernel\PBR\CFacePBRModel.cpp" />
+    <ClCompile Include="EffectKernel\FileManager.cpp" />
+    <ClCompile Include="EffectKernel\PBR\CRenderPBRModel.cpp" />
+    <ClCompile Include="EffectKernel\ResourceManager.cpp" />
+    <ClCompile Include="EffectKernel\ShaderProgramManager.cpp" />
+    <ClCompile Include="EffectKernel\Sticker\C2DPicTextureBlendEffect.cpp" />
+    <ClCompile Include="EffectKernel\Sticker\C2DPicTextureEffect.cpp" />
+    <ClCompile Include="EffectKernel\Sticker\CBGDraw.cpp" />
+    <ClCompile Include="EffectKernel\Sticker\CBodyBGEffect.cpp" />
+    <ClCompile Include="EffectKernel\Sticker\CCopyTex.cpp" />
+    <ClCompile Include="EffectKernel\Sticker\CFaceEffect2DSticker.cpp" />
+    <ClCompile Include="EffectKernel\Sticker\CFilterWithMask.cpp" />
+    <ClCompile Include="EffectKernel\Video\VideoDecoder.cpp" />
+    <ClCompile Include="FaceGiftEffectPlayer.cpp" />
+    <ClCompile Include="FacialAnimationInterface.cpp" />
+    <ClCompile Include="MaskEffectInterface.cpp" />
+    <ClCompile Include="MVActionInterface.cpp" />
+    <ClCompile Include="MVActionInterface_MaskEffect.cpp" />
+    <ClCompile Include="StickerInterface.cpp" />
+    <ClCompile Include="Toolbox\CC3DMatrix.cpp" />
+    <ClCompile Include="Toolbox\CC3DQuaternion.cpp" />
+    <ClCompile Include="Toolbox\Drawable.cpp" />
+    <ClCompile Include="Toolbox\DXUtils\DX11BlendState.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\DXUtils\DX11ContanstBuffer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\DXUtils\DX11Context.cpp" />
+    <ClCompile Include="Toolbox\DXUtils\DX11Cubemap.cpp" />
+    <ClCompile Include="Toolbox\DXUtils\DX11CubeMapRHI.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\DXUtils\DX11DepthStencilState.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\DXUtils\DX11DoubleBuffer.cpp" />
+    <ClCompile Include="Toolbox\DXUtils\DX11DynamicRHI.cpp" />
+    <ClCompile Include="Toolbox\DXUtils\DX11FBO.cpp" />
+    <ClCompile Include="Toolbox\DXUtils\DX11FBOCache.cpp" />
+    <ClCompile Include="Toolbox\DXUtils\DX11IndexBuffer.cpp" />
+    <ClCompile Include="Toolbox\DXUtils\DX11RasterizerState.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\DXUtils\DX11RenderTarget.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\DXUtils\DX11SampleState.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\DXUtils\DX11Shader.cpp" />
+    <ClCompile Include="Toolbox\DXUtils\DX11Texture.cpp" />
+    <ClCompile Include="Toolbox\DXUtils\DX11Texture2D.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\DXUtils\DX11VertexBuffer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\DXUtils\DXTexturePool.cpp" />
+    <ClCompile Include="Toolbox\EffectModel.cpp" />
+    <ClCompile Include="Toolbox\FacialObject.cpp" />
+    <ClCompile Include="Toolbox\fileSystem.cpp" />
+    <ClCompile Include="Toolbox\FSObject.cpp" />
+    <ClCompile Include="Toolbox\md5.cpp" />
+    <ClCompile Include="Toolbox\RectDraw.cpp" />
+    <ClCompile Include="Toolbox\RenderState\BlendState.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\RenderState\DepthStencilState.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\RenderState\PiplelineState.cpp" />
+    <ClCompile Include="Toolbox\RenderState\RasterizerState.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\RenderState\SamplerState.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\Render\ConstantBuffer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\Render\CubeMapRHI.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\Render\DynamicRHI.cpp" />
+    <ClCompile Include="Toolbox\Render\IndexBuffer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\Render\RenderTargetRHI.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\Render\TextureRHI.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\Render\VertexBuffer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Toolbox\string_util.cpp" />
+    <ClCompile Include="Toolbox\xmlParser.cpp" />
+    <ClCompile Include="Toolbox\zip\unzip.cpp" />
+    <ClCompile Include="Toolbox\zip\zip.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Algorithm\Face2DMesh\FaceInterlation.h" />
+    <ClInclude Include="Algorithm\Face2DMesh\MTFace2DInterFace.h" />
+    <ClInclude Include="Algorithm\Face2DMesh\MultiSimpleFaceBackMesh.h" />
+    <ClInclude Include="Algorithm\Face2DMesh\Point2D.h" />
+    <ClInclude Include="Algorithm\Face2DMesh\SimpleFaceBackMesh.h" />
+    <ClInclude Include="Algorithm\Face2DMesh\SimpleFaceMesh.h" />
+    <ClInclude Include="Algorithm\Face2DMesh\SimpleMesh.h" />
+    <ClInclude Include="Algorithm\Face3DReconstruct\Common3D.hpp" />
+    <ClInclude Include="Algorithm\Face3DReconstruct\MultiLinear3DModel.h" />
+    <ClInclude Include="Algorithm\Face3DReconstruct\MultiLinearVideoReconstructor.h" />
+    <ClInclude Include="Algorithm\Face3DReconstruct\OrthographicEstimateCamera.h" />
+    <ClInclude Include="Algorithm\Face3DReconstruct\PerspectiveEstimeCamera.h" />
+    <ClInclude Include="Algorithm\Face3DReconstruct\SSE2NEON.h" />
+    <ClInclude Include="Algorithm\FaceMeshManage.h" />
+    <ClInclude Include="Algorithm\InterFacePointDeform.h" />
+    <ClInclude Include="Algorithm\MaskFillUtil.h" />
+    <ClInclude Include="Algorithm\MathUtils.h" />
+    <ClInclude Include="Algorithm\Matrices.h" />
+    <ClInclude Include="Algorithm\MLS.h" />
+    <ClInclude Include="Algorithm\MouthManage.h" />
+    <ClInclude Include="Algorithm\SolvePnP\epnp.h" />
+    <ClInclude Include="Algorithm\SolvePnP\Rodrigues.h" />
+    <ClInclude Include="Algorithm\SolvePnP\solvePnP.h" />
+    <ClInclude Include="Algorithm\StackBlur.h" />
+    <ClInclude Include="CC3DEngine\Animate\CC3DAnimate.h" />
+    <ClInclude Include="CC3DEngine\Animate\CC3DAnimateManage.h" />
+    <ClInclude Include="CC3DEngine\Common\CC3DEnvironmentConfig.h" />
+    <ClInclude Include="CC3DEngine\Common\CC3DUtils.h" />
+    <ClInclude Include="CC3DEngine\Effect\CC3DShadowMap.h" />
+    <ClInclude Include="CC3DEngine\Effect\CC3DShadowMapManger.h" />
+    <ClInclude Include="CC3DEngine\FaceExpressDrive\CC3DExpressDrive.h" />
+    <ClInclude Include="CC3DEngine\Material\CC3DFurMaterial.h" />
+    <ClInclude Include="CC3DEngine\Material\CC3DMaterial.h" />
+    <ClInclude Include="CC3DEngine\Material\CC3DPbrMaterial.h" />
+    <ClInclude Include="CC3DEngine\Material\CC3DTexture.h" />
+    <ClInclude Include="CC3DEngine\Model\CC3DCameraNode.h" />
+    <ClInclude Include="CC3DEngine\Model\CC3DMesh.h" />
+    <ClInclude Include="CC3DEngine\Model\CC3DModel.h" />
+    <ClInclude Include="CC3DEngine\Model\CC3DModelAnimate.h" />
+    <ClInclude Include="CC3DEngine\Model\CC3DNode.h" />
+    <ClInclude Include="CC3DEngine\Render\CC3DBlurPass.h" />
+    <ClInclude Include="CC3DEngine\Render\CC3DMeshBuffer.h" />
+    <ClInclude Include="CC3DEngine\Render\CC3DPbrRender.h" />
+    <ClInclude Include="CC3DEngine\Render\CC3DPostProcessManager.h" />
+    <ClInclude Include="CC3DEngine\Render\CC3DRenderCube.h" />
+    <ClInclude Include="CC3DEngine\Render\CC3DShadowRender.h" />
+    <ClInclude Include="CC3DEngine\Scene\CC3DCamera.h" />
+    <ClInclude Include="CC3DEngine\Scene\CC3DLight.h" />
+    <ClInclude Include="CC3DEngine\Scene\CC3DModelControl.h" />
+    <ClInclude Include="CC3DEngine\Scene\CC3DProject.h" />
+    <ClInclude Include="CC3DEngine\Scene\CC3DSceneManage.h" />
+    <ClInclude Include="CC3DEngine\Skeleton\CC3DDynamicBone.h" />
+    <ClInclude Include="CC3DEngine\Skeleton\CC3DDynamicBoneCollider.h" />
+    <ClInclude Include="CC3DEngine\Skeleton\CC3DDynamicBoneColliderbase.h" />
+    <ClInclude Include="CC3DEngine\Skeleton\CC3DDynamicBoneManager.h" />
+    <ClInclude Include="CC3DEngine\Skeleton\CC3DSkeleton.h" />
+    <ClInclude Include="CC3DEngine\Skeleton\CC3DSkeletonManage.h" />
+    <ClInclude Include="CC3DEngine\Skeleton\CC3DTransform.h" />
+    <ClInclude Include="CC3DEngine\Skeleton\CC3DTransformNode.h" />
+    <ClInclude Include="EffectKernel\FaceEffect\CFaceEffectFlipSplit.h" />
+    <ClInclude Include="CocosARRender\2d\CCAction.h" />
+    <ClInclude Include="CocosARRender\2d\CCActionInstant.h" />
+    <ClInclude Include="CocosARRender\2d\CCActionInterval.h" />
+    <ClInclude Include="CocosARRender\2d\CCNode.h" />
+    <ClInclude Include="CocosARRender\3d\BaseLight.h" />
+    <ClInclude Include="CocosARRender\3d\CCAABB.h" />
+    <ClInclude Include="CocosARRender\3d\CCAnimate3D.h" />
+    <ClInclude Include="CocosARRender\3d\CCAnimation3D.h" />
+    <ClInclude Include="CocosARRender\3d\CCAnimationCurve.h" />
+    <ClInclude Include="CocosARRender\3d\CCBundle3D.h" />
+    <ClInclude Include="CocosARRender\3d\CCBundle3DData.h" />
+    <ClInclude Include="CocosARRender\3d\CCBundleReader.h" />
+    <ClInclude Include="CocosARRender\3d\CCMesh.h" />
+    <ClInclude Include="CocosARRender\3d\CCMeshSkin.h" />
+    <ClInclude Include="CocosARRender\3d\CCMeshVertexIndexData.h" />
+    <ClInclude Include="CocosARRender\3d\CCSkeleton3D.h" />
+    <ClInclude Include="CocosARRender\3d\CCSprite3D.h" />
+    <ClInclude Include="CocosARRender\base\CCAutoreleasePool.h" />
+    <ClInclude Include="CocosARRender\base\ccConfig.h" />
+    <ClInclude Include="CocosARRender\base\CCConsole.h" />
+    <ClInclude Include="CocosARRender\base\CCData.h" />
+    <ClInclude Include="CocosARRender\base\ccMacros.h" />
+    <ClInclude Include="CocosARRender\base\CCRef.h" />
+    <ClInclude Include="CocosARRender\base\ccTypes.h" />
+    <ClInclude Include="CocosARRender\base\CCVector.h" />
+    <ClInclude Include="CocosARRender\math\CCAffineTransform.h" />
+    <ClInclude Include="CocosARRender\math\CCGeometry.h" />
+    <ClInclude Include="CocosARRender\math\CCMath.h" />
+    <ClInclude Include="CocosARRender\math\CCMathBase.h" />
+    <ClInclude Include="CocosARRender\math\CCVertex.h" />
+    <ClInclude Include="CocosARRender\math\Mat4.h" />
+    <ClInclude Include="CocosARRender\math\MathUtil.h" />
+    <ClInclude Include="CocosARRender\math\Quaternion.h" />
+    <ClInclude Include="CocosARRender\math\TransformUtils.h" />
+    <ClInclude Include="CocosARRender\math\Vec2.h" />
+    <ClInclude Include="CocosARRender\math\Vec3.h" />
+    <ClInclude Include="CocosARRender\math\Vec4.h" />
+    <ClInclude Include="CocosARRender\platform\CCFileUtils.h" />
+    <ClInclude Include="CocosARRender\platform\CCPlatformConfig.h" />
+    <ClInclude Include="CocosARRender\platform\CCPlatformDefine.h" />
+    <ClInclude Include="CocosARRender\platform\CCPlatformMacros.h" />
+    <ClInclude Include="CocosARRender\renderer\CCVertexIndexBuffer.h" />
+    <ClInclude Include="CocosARRender\renderer\CCVertexIndexData.h" />
+    <ClInclude Include="CocosARRender\renderer\CShaderCache.h" />
+    <ClInclude Include="CocosARRender\renderer\MeshRenderCmd.h" />
+    <ClInclude Include="common.h" />
+    <ClInclude Include="DDS\DDS.h" />
+    <ClInclude Include="DDS\DDSTextureLoader.h" />
+    <ClInclude Include="DX11ImageFilterDef.h" />
+    <ClInclude Include="EffectCInterface.h" />
+    <ClInclude Include="EffectKernel2\FacialAnimation.h" />
+    <ClInclude Include="EffectKernel2\MaskEffect.h" />
+    <ClInclude Include="EffectKernel2\Matting.h" />
+    <ClInclude Include="EffectKernel2\MVAction.h" />
+    <ClInclude Include="EffectKernel2\StickerEffect.h" />
+    <ClInclude Include="EffectKernel\AnimInfo.h" />
+    <ClInclude Include="EffectKernel\BaseRenderParam.h" />
+    <ClInclude Include="EffectKernel\CCEffectInterface.h" />
+    <ClInclude Include="EffectKernel\CEffectPart.h" />
+    <ClInclude Include="EffectKernel\EllipseDeformation.h" />
+    <ClInclude Include="EffectKernel\FaceBeauty\CDyeHairEffect.h" />
+    <ClInclude Include="EffectKernel\FaceBeauty\CFaceEffect2DBlendBG.h" />
+    <ClInclude Include="EffectKernel\FaceBeauty\CFaceLevel.h" />
+    <ClInclude Include="EffectKernel\FaceDeformation.h" />
+    <ClInclude Include="EffectKernel\FaceEffect\CFaceEffect2D.h" />
+    <ClInclude Include="EffectKernel\FaceEffect\CFaceEffect2DWithBG.h" />
+    <ClInclude Include="EffectKernel\FaceEffect\CFaceEffect3DModel.h" />
+    <ClInclude Include="EffectKernel\FaceEffect\CFaceEffect3DNormal.h" />
+    <ClInclude Include="EffectKernel\FaceEffect\CFaceEffect3DRect.h" />
+    <ClInclude Include="EffectKernel\FaceEffect\CFaceRemovePouchFalin.h" />
+    <ClInclude Include="EffectKernel\FaceEffect\CFaceShadowHighLight.h" />
+    <ClInclude Include="EffectKernel\FaceEffect\CFaceSmoothIns.h" />
+    <ClInclude Include="EffectKernel\FaceLift\CBodyLift.h" />
+    <ClInclude Include="EffectKernel\FaceLift\CBodyLift2.h" />
+    <ClInclude Include="EffectKernel\FaceLift\CBodyLiftYY.h" />
+    <ClInclude Include="EffectKernel\FaceLift\CFaceBeauty.h" />
+    <ClInclude Include="EffectKernel\FaceLift\CFaceMeshChange.h" />
+    <ClInclude Include="EffectKernel\FaceLift\CFaceMeshChange2.h" />
+    <ClInclude Include="EffectKernel\FaceLift\CFaceSPMLS.h" />
+    <ClInclude Include="EffectKernel\FaceMakeUp\CFaceBlendMakeUp.h" />
+    <ClInclude Include="EffectKernel\FaceMakeUp\CFaceLipstick.h" />
+    <ClInclude Include="EffectKernel\FaceMakeUp\CFaceMakeUp.h" />
+    <ClInclude Include="EffectKernel\Filter\CDeNoiseFilterEffect.h" />
+    <ClInclude Include="EffectKernel\Filter\CFoodieSharp.h" />
+    <ClInclude Include="EffectKernel\Filter\CLUTFIlter.h" />
+    <ClInclude Include="EffectKernel\HandEffect\CHandEffectHeart.h" />
+    <ClInclude Include="EffectKernel\ImageInfo.h" />
+    <ClInclude Include="EffectKernel\LensEffect\CGlitch.h" />
+    <ClInclude Include="EffectKernel\LensEffect\CLightWave.h" />
+    <ClInclude Include="EffectKernel\LensEffect\CRhythm.h" />
+    <ClInclude Include="EffectKernel\LensEffect\CSoulBody.h" />
+    <ClInclude Include="EffectKernel\PBR\CFaceBodyApartPBRModel.h" />
+    <ClInclude Include="EffectKernel\PBR\CFacePBRModel.h" />
+    <ClInclude Include="EffectKernel\FileManager.h" />
+    <ClInclude Include="EffectKernel\PBR\CRenderPBRModel.h" />
+    <ClInclude Include="EffectKernel\ResourceManager.h" />
+    <ClInclude Include="EffectKernel\ShaderProgramManager.h" />
+    <ClInclude Include="EffectKernel\Sticker\C2DPicTextureBlendEffect.h" />
+    <ClInclude Include="EffectKernel\Sticker\C2DPicTextureEffect.h" />
+    <ClInclude Include="EffectKernel\Sticker\CBGDraw.h" />
+    <ClInclude Include="EffectKernel\Sticker\CBodyBGEffect.h" />
+    <ClInclude Include="EffectKernel\Sticker\CCopyTex.h" />
+    <ClInclude Include="EffectKernel\Sticker\CFaceEffect2DSticker.h" />
+    <ClInclude Include="EffectKernel\Sticker\CFilterWithMask.h" />
+    <ClInclude Include="EffectKernel\VideoInfo.h" />
+    <ClInclude Include="EffectKernel\Video\VideoCaptureMapper.hpp" />
+    <ClInclude Include="EffectKernel\Video\VideoDecoder.h" />
+    <ClInclude Include="FaceGiftEffectPlayer.h" />
+    <ClInclude Include="FacialAnimationInterface.h" />
+    <ClInclude Include="IReferenceCounted.h" />
+    <ClInclude Include="MaskEffectInterface.h" />
+    <ClInclude Include="MVActionInterface.h" />
+    <ClInclude Include="MVActionInterface_MaskEffect.h" />
+    <ClInclude Include="StickerInterface.h" />
+    <ClInclude Include="Toolbox\CC3DMatrix.h" />
+    <ClInclude Include="Toolbox\CC3DQuaternion.h" />
+    <ClInclude Include="Toolbox\Drawable.hpp" />
+    <ClInclude Include="Toolbox\DXUtils\DX11BlendState.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11ContanstBuffer.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11Context.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11CubeMap.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11CubeMapRHI.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11DepthStencilState.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11DoubleBuffer.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11DynamicRHI.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11FBO.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11FBOCache.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11IndexBuffer.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11RasterizerState.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11RenderTarget.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11Resource.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11SampleState.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11Shader.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11Texture.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11Texture2D.h" />
+    <ClInclude Include="Toolbox\DXUtils\DX11VertexBuffer.h" />
+    <ClInclude Include="Toolbox\DXUtils\DXTexturePool.h" />
+    <ClInclude Include="Toolbox\DXUtils\DXUtils.h" />
+    <ClInclude Include="Toolbox\EffectModel.hpp" />
+    <ClInclude Include="Toolbox\FacialObject.h" />
+    <ClInclude Include="Toolbox\fileSystem.h" />
+    <ClInclude Include="Toolbox\FSObject.h" />
+    <ClInclude Include="Toolbox\HeaderModelForCull.h" />
+    <ClInclude Include="Toolbox\Helper.h" />
+    <ClInclude Include="Toolbox\inc.h" />
+    <ClInclude Include="Toolbox\mathlib.h" />
+    <ClInclude Include="Toolbox\md5.h" />
+    <ClInclude Include="Toolbox\RectDraw.h" />
+    <ClInclude Include="Toolbox\RenderState\BlendState.h" />
+    <ClInclude Include="Toolbox\RenderState\DepthStencilState.h" />
+    <ClInclude Include="Toolbox\RenderState\PiplelineState.h" />
+    <ClInclude Include="Toolbox\RenderState\RasterizerState.h" />
+    <ClInclude Include="Toolbox\RenderState\SamplerState.h" />
+    <ClInclude Include="Toolbox\Render\CC3DShaderDef.h" />
+    <ClInclude Include="Toolbox\Render\ConstantBuffer.h" />
+    <ClInclude Include="Toolbox\Render\CubeMapRHI.h" />
+    <ClInclude Include="Toolbox\Render\DynamicRHI.h" />
+    <ClInclude Include="Toolbox\Render\IndexBuffer.h" />
+    <ClInclude Include="Toolbox\Render\RenderTargetRHI.h" />
+    <ClInclude Include="Toolbox\Render\TextureRHI.h" />
+    <ClInclude Include="Toolbox\Render\VertexBuffer.h" />
+    <ClInclude Include="Toolbox\stb_image.h" />
+    <ClInclude Include="Toolbox\stb_image_resize.h" />
+    <ClInclude Include="Toolbox\stb_image_write.h" />
+    <ClInclude Include="Toolbox\string_util.h" />
+    <ClInclude Include="Toolbox\xmlParser.h" />
+    <ClInclude Include="Toolbox\zip\unzip.h" />
+    <ClInclude Include="Toolbox\zip\zip.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CocosARRender\3d\CCAnimationCurve.inl" />
+    <None Include="CocosARRender\math\Mat4.inl" />
+    <None Include="CocosARRender\math\MathUtil.inl" />
+    <None Include="CocosARRender\math\MathUtilNeon.inl" />
+    <None Include="CocosARRender\math\MathUtilNeon64.inl" />
+    <None Include="CocosARRender\math\MathUtilSSE.inl" />
+    <None Include="CocosARRender\math\Quaternion.inl" />
+    <None Include="CocosARRender\math\Vec2.inl" />
+    <None Include="CocosARRender\math\Vec3.inl" />
+    <None Include="CocosARRender\math\Vec4.inl" />
+    <None Include="cpp.hint" />
+    <None Include="Toolbox\CC3DMatrix.inl" />
+    <None Include="Toolbox\CC3DQuaternion.inl" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

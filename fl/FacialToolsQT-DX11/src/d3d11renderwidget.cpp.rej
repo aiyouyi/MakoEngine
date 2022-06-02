@@ -1,0 +1,64 @@
+diff a/FacialToolsQT-DX11/src/d3d11renderwidget.cpp b/FacialToolsQT-DX11/src/d3d11renderwidget.cpp	(rejected hunks)
+@@ -577,6 +577,62 @@
+ 			//д��landmark�㵽��������������ʾ
+ 			if (m_show_keypoints) {
+ 				for (int i = 0; i < faceRes.numFace; ++i) {
++
++// 					float fAngle = atan(0.5) * 2;
++// 					if (height > width)
++// 					{
++// 						fAngle = atan(0.5*height / width) * 2;
++// 					}
++// 					XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, width*1.0f / height, 1, 2000);
++// 					matProjDX = XMMatrixTranspose(matProjDX);
++// 
++// 					int nPoint = 15;
++// 					vector<float>Point2D, Point3D;
++// 					vector<float>weight;
++// 					for (int j = 0 ;j < nPoint; j++)
++// 					{
++// 						ccFDPoint pt = faceRes.arrFace[i].arrShapeDense[PosEstimator130FaceIndexs[j]];
++// 						Point2D.push_back(pt.x);
++// 						Point2D.push_back(height - pt.y);
++// 
++// 						Point3D.push_back(g_headerModelForCullVertices[PosEstimatorIndex3D[j] * 3]);
++// 						Point3D.push_back(g_headerModelForCullVertices[PosEstimatorIndex3D[j] * 3 + 1]);
++// 						Point3D.push_back(g_headerModelForCullVertices[PosEstimatorIndex3D[j] * 3 + 2]);
++// 						weight.push_back(1.0f);
++// 					}
++// 
++// 
++// 					g_PerspectiveEstime.EstimateProMat(Point3D.data(), Point2D.data(), 15, width, height, m, weight.data(), c, c[0] > 100.f);
++// 					Mat4 matProj(m);
++// 					matProj.transpose();
++// 					
++// 
++// 					//matRotateXYZ.transpose();
++// 
++// 					for (int j=0;j<nPoint;j++)
++// 					{
++// 						Vec4 myPoint(Point3D[j * 3], Point3D[j * 3 + 1], Point3D[j * 3 + 2], 1.0f);
++// 						Vec4 proPoint = matProj * myPoint;
++// 						proPoint = proPoint / proPoint.w;
++// 
++// 						int x = (proPoint.x + 1.0)/2*width;
++// 						int y = ((proPoint.y + 1.0) / 2) * height;
++// 						y = height - y;
++// 						unsigned char *pTemp = pImageSource + m_nWidth * 4 * y + x * 4;
++// 						for (int dx = -2; dx <= 2; ++dx) {
++// 							for (int dy = -2; dy <= 2; ++dy) {
++// 								unsigned char *pWrite = pTemp + dy * m_nWidth * 4 + dx * 4;
++// 								if (y + dy > 2 && y + dy < m_nHeight - 1 && x + dx > 2 && x + dx < m_nWidth - 2) {
++// 									pWrite[0] = 255;
++// 									pWrite[1] = 0;
++// 									pWrite[2] = 0;
++// 									pWrite[3] = 255;
++// 								}
++// 							}
++// 						}
++// 					}
++
++
+ 					for (int j = 0; j < 114; ++j) {
+ 						if (j==60||j==59||j==69||j==70)
+ 						{

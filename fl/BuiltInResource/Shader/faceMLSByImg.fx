@@ -1,0 +1,90 @@
+//--------------------------------------------------------------------------------------  
+//   
+//  
+// Copyright (c) Microsoft Corporation. All rights reserved.  
+//--------------------------------------------------------------------------------------  
+  
+//--------------------------------------------------------------------------------------  
+// Constant Buffer Variables  
+//--------------------------------------------------------------------------------------  
+cbuffer ConstantBuffer : register( b0 )  
+{  
+    float4 transformMatrix;  
+    float4 textureSize;
+}  
+Texture2D txDiffuse : register( t0 );
+Texture2D txOffest : register( t1 );
+SamplerState samLinear : register( s0 );
+  
+//--------------------------------------------------------------------------------------  
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float2 TexOffest : TEXCOORD0;
+};
+struct VS_OUTPUT  
+{  
+    float4 Pos : SV_POSITION;
+    float2 Tex : TEXCOORD0;
+    float2 TexOffest : TEXCOORD1;
+    float2 FaceScale : TEXCOORD2;
+};  
+  
+//--------------------------------------------------------------------------------------  
+// Vertex Shader  
+//--------------------------------------------------------------------------------------  
+VS_OUTPUT VS( VS_INPUT input)  
+{  
+    VS_OUTPUT output = (VS_OUTPUT)0;
+    output.Pos = float4(input.Pos.xy*2.0-1.0,0.5,1.0);
+    output.Pos.y = -output.Pos.y;
+    output.Tex = input.Pos.xy;
+    output.TexOffest = input.TexOffest;
+    output.FaceScale = input.Pos.zw;
+    return output;  
+}  
+  
+  
+//--------------------------------------------------------------------------------------  
+// Pixel Shader  
+//--------------------------------------------------------------------------------------  
+float4 GetColor(float2 Tex)
+{
+    float2 srcTex = Tex*textureSize.xy;
+    int x = srcTex.x;
+    int y = srcTex.y;
+
+    float u = srcTex.x-x;
+    float v = srcTex.y-y;
+
+    float2 tex1 = float2(x*textureSize.z,y*textureSize.w);
+    float2 tex2 = float2((x+1)*textureSize.z,y*textureSize.w);
+    float2 tex3 = float2(x*textureSize.z,(y+1)*textureSize.w);
+    float2 tex4 = float2((x+1)*textureSize.z,(y+1)*textureSize.w);
+
+    float4 color1 = (1-u)*(1-v)*txDiffuse.Sample(samLinear,tex1);
+
+    float4 color2 = u*(1-v)*txDiffuse.Sample(samLinear,tex2);
+    float4 color3 = (1-u)*v*txDiffuse.Sample(samLinear,tex3);
+    float4 color4 = u*v*txDiffuse.Sample(samLinear,tex4);
+
+    return color1+color2+color3+color4;
+}
+
+
+float4 PS( VS_OUTPUT input ) : SV_Target  
+{  
+    float4 maskColor = txOffest.Sample(samLinear, input.TexOffest);
+    float2 xy = maskColor.rg;//float2(x,y);
+    float2 newCoords  = (xy - 0.498) * 0.25;
+    newCoords *= input.FaceScale;
+    newCoords = float2(dot(newCoords,transformMatrix.rg),dot(newCoords,transformMatrix.ba));
+
+    float4 color = txDiffuse.Sample(samLinear,input.Tex + newCoords);
+    return color;//float4(input.Tex + newCoords,0,1);
+    //return GetColor(input.Tex + newCoords);
+
+   // float4 color = txDiffuse.Sample(samLinear,input.Tex + newCoords);
+   // return color;//float4(input.Tex + newCoords,0,1);
+
+}  

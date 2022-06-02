@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.902
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImageFilterDX11", "ImageFilterDX11\ImageFilterDX11.vcxproj", "{D230A9F3-0E7C-4E0D-902A-145E730F2C3F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ccFacialToolsQt-DX11", "FacialToolsQT-DX11\Qt-DX.vcxproj", "{B12702AD-ABFB-343A-A199-8E24837244A3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D230A9F3-0E7C-4E0D-902A-145E730F2C3F} = {D230A9F3-0E7C-4E0D-902A-145E730F2C3F}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D230A9F3-0E7C-4E0D-902A-145E730F2C3F}.Debug|x64.ActiveCfg = Debug|x64
+		{D230A9F3-0E7C-4E0D-902A-145E730F2C3F}.Debug|x64.Build.0 = Debug|x64
+		{D230A9F3-0E7C-4E0D-902A-145E730F2C3F}.Debug|x86.ActiveCfg = Debug|Win32
+		{D230A9F3-0E7C-4E0D-902A-145E730F2C3F}.Debug|x86.Build.0 = Debug|Win32
+		{D230A9F3-0E7C-4E0D-902A-145E730F2C3F}.Release|x64.ActiveCfg = Release|x64
+		{D230A9F3-0E7C-4E0D-902A-145E730F2C3F}.Release|x64.Build.0 = Release|x64
+		{D230A9F3-0E7C-4E0D-902A-145E730F2C3F}.Release|x86.ActiveCfg = Release|Win32
+		{D230A9F3-0E7C-4E0D-902A-145E730F2C3F}.Release|x86.Build.0 = Release|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Debug|x64.ActiveCfg = Debug|x64
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Debug|x64.Build.0 = Debug|x64
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Debug|x86.ActiveCfg = Debug|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Debug|x86.Build.0 = Debug|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|x64.ActiveCfg = Release|x64
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|x64.Build.0 = Release|x64
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|x86.ActiveCfg = Release|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {81D4EEBC-6232-4D99-8AB9-F44E814D218C}
+	EndGlobalSection
+EndGlobal

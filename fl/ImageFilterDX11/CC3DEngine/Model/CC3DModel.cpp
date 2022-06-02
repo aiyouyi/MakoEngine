@@ -1,0 +1,287 @@
+﻿
+#include "CC3DModel.h"
+#include "Material/CC3DPbrMaterial.h"
+#include "Material/CC3DFurMaterial.h"
+#include "CC3DEngine/Common/CC3DEnvironmentConfig.h"
+#include "Toolbox/Render/TextureRHI.h"
+// #include <opencv2/core/core.hpp>
+// #include <opencv2/highgui/highgui.hpp>
+// #include <opencv2/imgproc/imgproc.hpp>
+
+
+CC3DModel::CC3DModel()
+{
+	m_ModelNode = NULL;
+}
+
+CC3DModel::~CC3DModel()
+{
+	ReleaseModel();
+}
+
+void CC3DModel::LoadModelInfo()
+{
+	ReleaseModel();
+	LoadNode();
+	LoadTexture();
+	LoadMaterial();
+	LoadMesh();
+	
+}
+
+void CC3DModel::ReleaseModel()
+{
+	for (int i = 0; i < m_ModelMesh.size(); i++)
+	{
+		SAFE_DELETE(m_ModelMesh[i]);
+	}
+	for (int i = 0; i < m_ModelMaterial.size(); i++)
+	{
+		SAFE_DELETE(m_ModelMaterial[i]);
+	}
+	//for (int i = 0; i < m_ModelTexture.size(); i++)
+	//{
+	//	SAFE_DELETE(m_ModelTexture[i]);
+	//}
+	m_ModelMesh.clear();
+	m_ModelMaterial.clear();
+	m_ModelTexture.clear();
+	SAFE_DELETE(m_ModelNode);
+}
+
+void CC3DModel::UpdateNode()
+{
+	for (int i = 0; i < m_ModelMesh.size(); i++)
+	{
+		m_ModelNode->UpdateNodeParent(m_ModelNode->m_Node[m_ModelMesh[i]->m_nNodeID]);
+		m_ModelMesh[i]->m_MeshMat = m_ModelNode->m_Node[m_ModelMesh[i]->m_nNodeID]->FinalMeshMat;
+	}
+}
+
+void CC3DModel::TransformBoundingBox(glm::mat4 & TransformMat)
+{
+	bool isInit = false;
+	for (int i = 0; i < m_ModelMesh.size(); i++)
+	{
+		if (m_hasSkin && m_ModelMesh[i]->m_mesh->pBoneWeights == NULL)
+		{
+			continue;
+		}
+
+		glm::vec4 tmp = glm::vec4(m_ModelMesh[i]->m_meshBox.minPoint.x, m_ModelMesh[i]->m_meshBox.minPoint.y, m_ModelMesh[i]->m_meshBox.minPoint.z, 1.0);
+
+		tmp = TransformMat * tmp;
+		tmp = tmp / tmp.w;
+		if (!isInit)
+		{
+			m_ModelBox.minPoint.x = tmp.x;
+			m_ModelBox.minPoint.y = tmp.y;
+			m_ModelBox.minPoint.z = tmp.z;
+			m_ModelBox.maxPoint.x = tmp.x;
+			m_ModelBox.maxPoint.y = tmp.y;
+			m_ModelBox.maxPoint.z = tmp.z;
+			isInit = true;
+			continue;
+		}
+
+
+		m_ModelBox.minPoint.x = (std::min)(m_ModelBox.minPoint.x, tmp.x);
+		m_ModelBox.minPoint.y = (std::min)(m_ModelBox.minPoint.y, tmp.y);
+		m_ModelBox.minPoint.z = (std::min)(m_ModelBox.minPoint.z, tmp.z);
+
+		m_ModelBox.maxPoint.x = (std::max)(m_ModelBox.maxPoint.x, tmp.x);
+		m_ModelBox.maxPoint.y = (std::max)(m_ModelBox.maxPoint.y, tmp.y);
+		m_ModelBox.maxPoint.z = (std::max)(m_ModelBox.maxPoint.z, tmp.z);
+	}
+	m_ModelBox.centerPoint = m_ModelBox.minPoint*0.5f + m_ModelBox.maxPoint*0.5f;
+
+}
+
+void CC3DModel::LoadTexture()
+{
+	for (int i=0;i<m_Model->images.size();i++)
+	{
+		auto& ModelImage = m_Model->images[i];
+
+		uint8* pData = (uint8*)ModelImage.image.data();
+		std::shared_ptr<CC3DTextureRHI> TextureRHI = GetDynamicRHI()->CreateTexture(CC3DDynamicRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, ModelImage.width, ModelImage.height, pData, ModelImage.width * 4);
+
+		m_ModelTexture.push_back(TextureRHI);
+	}
+	m_Model->images.clear();
+}
+
+void CC3DModel::LoadMaterial()
+{
+	for (int i=0;i<m_Model->materials.size();i++)
+	{
+
+		if (m_Model->materials[i].name == CC3DEnvironmentConfig::getInstance()->fur_material_name)
+		{
+			CC3DMaterial *pMaterial = new CC3DFurMaterial();
+			pMaterial->initModel(m_Model);
+			pMaterial->InitMaterial(i, m_ModelTexture);
+			pMaterial->alphaMode = "BLEND";
+			pMaterial->InitShaderProgram(CC3DEnvironmentConfig::getInstance()->resourth_path);
+			m_ModelMaterial.push_back(pMaterial);
+		}
+		else
+		{
+			auto& MaterialName = m_Model->materials[i].name;
+			CC3DPBRMaterial*pMaterial = new CC3DPBRMaterial();
+			pMaterial->initModel(m_Model);
+			pMaterial->InitMaterial(i, m_ModelTexture);
+			pMaterial->InitShaderProgram(CC3DEnvironmentConfig::getInstance()->resourth_path);
+
+			if (MaterialName.find("FN") != std::string::npos)
+			{
+				pMaterial->SetFlattenNormal(true);
+			}
+
+			if (MaterialName.find("Kajiya") != std::string::npos)
+			{
+				pMaterial->SetEnableKajiya(true);
+			}
+
+			m_ModelMaterial.push_back(pMaterial);
+		}
+
+	}
+	if (m_ModelMaterial.size()==0)
+	{
+		CC3DMaterial *pMaterial = new CC3DPBRMaterial();
+		pMaterial->initModel(m_Model);
+		pMaterial->CreateDefault();
+		pMaterial->InitShaderProgram("");
+		m_ModelMaterial.push_back(pMaterial);
+	}
+}
+
+void CC3DModel::LoadMesh()
+{
+	for (int i = 0; i < m_Model->meshes.size(); i++)
+	{
+		auto &ModelMesh = m_Model->meshes[i];
+		for (int j=0;j<ModelMesh.primitives.size();j++)
+		{
+			CC3DMesh *pMesh = new CC3DMesh();
+			pMesh->initModel(m_Model);
+			pMesh->InitMesh(i,j, m_ModelMaterial, m_ModelNode);
+
+			if (pMesh->m_mesh->pBoneWeights != NULL)
+			{
+				m_hasSkin = true;
+			}
+			m_ModelMesh.push_back(pMesh);
+		}
+	}
+	/*std::vector <std::string> name;
+	for (int i = 0; i < m_ModelMesh.size(); i++)
+	{
+
+		for (int j = 0; j < m_ModelMesh[i]->m_pBlendShapeName.size(); j++)
+		{
+			std::vector <std::string> BsName = m_ModelMesh[i]->m_pBlendShapeName;
+			std::string subName = BsName[j].substr(BsName[j].find('.')+1);
+			name.push_back(subName);
+		}
+	}
+	sort(name.begin(), name.end());
+	name.erase(unique(name.begin(), name.end()), name.end());
+	for (int i = 0; i < name.size(); i++)
+	{
+		std::cout << "\""<< name[i] << "\"" << endl;
+	}*/
+
+	bool isInit = false;
+	for (int i = 0; i < m_ModelMesh.size(); i++)
+	{
+// 		if (m_hasSkin && m_ModelMesh[i]->m_mesh->pBoneWeights == NULL)
+// 		{
+// 			continue;
+// 		}
+
+		glm::vec4 tmp = glm::vec4(m_ModelMesh[i]->m_meshBox.minPoint.x, m_ModelMesh[i]->m_meshBox.minPoint.y, m_ModelMesh[i]->m_meshBox.minPoint.z, 1.0);
+		glm::vec4 tmp2 = glm::vec4(m_ModelMesh[i]->m_meshBox.maxPoint.x, m_ModelMesh[i]->m_meshBox.maxPoint.y, m_ModelMesh[i]->m_meshBox.maxPoint.z, 1.0);
+
+// 		if (m_ModelMesh[i]->m_nSkinID<0)
+// 		{
+			tmp = m_ModelMesh[i]->m_MeshMat * tmp;
+			tmp = tmp / tmp.w;
+
+			tmp2 = m_ModelMesh[i]->m_MeshMat * tmp2;
+			tmp2 = tmp2 / tmp2.w;
+//		}
+		if (!isInit)
+		{
+			m_ModelBox.minPoint.x = tmp.x;
+			m_ModelBox.minPoint.y = tmp.y;
+			m_ModelBox.minPoint.z = tmp.z;
+			m_ModelBox.maxPoint.x = tmp.x;
+			m_ModelBox.maxPoint.y = tmp.y;
+			m_ModelBox.maxPoint.z = tmp.z;
+			isInit = true;
+		}
+
+
+		m_ModelBox.minPoint.x = (std::min)(m_ModelBox.minPoint.x, tmp.x);
+		m_ModelBox.minPoint.y = (std::min)(m_ModelBox.minPoint.y, tmp.y);
+		m_ModelBox.minPoint.z = (std::min)(m_ModelBox.minPoint.z, tmp.z);
+
+		m_ModelBox.maxPoint.x = (std::max)(m_ModelBox.maxPoint.x, tmp.x);
+		m_ModelBox.maxPoint.y = (std::max)(m_ModelBox.maxPoint.y, tmp.y);
+		m_ModelBox.maxPoint.z = (std::max)(m_ModelBox.maxPoint.z, tmp.z);
+
+		m_ModelBox.minPoint.x = (std::min)(m_ModelBox.minPoint.x, tmp2.x);
+		m_ModelBox.minPoint.y = (std::min)(m_ModelBox.minPoint.y, tmp2.y);
+		m_ModelBox.minPoint.z = (std::min)(m_ModelBox.minPoint.z, tmp2.z);
+
+		m_ModelBox.maxPoint.x = (std::max)(m_ModelBox.maxPoint.x, tmp2.x);
+		m_ModelBox.maxPoint.y = (std::max)(m_ModelBox.maxPoint.y, tmp2.y);
+		m_ModelBox.maxPoint.z = (std::max)(m_ModelBox.maxPoint.z, tmp2.z);
+
+	}
+// 	float flength = (m_ModelBox.maxPoint - m_ModelBox.minPoint).length();
+// 	m_ModelBox.centerPoint = m_ModelBox.minPoint*0.5f + m_ModelBox.maxPoint*0.5f;
+// 	if (flength < 2.f)
+// 	{
+// 		float Scale = 2.f / flength;
+// 		glm::mat4 ScaleMat = glm::scale(glm::mat4(), glm::vec3(Scale, Scale, Scale));
+// 		glm::mat4 Translate = glm::translate(glm::mat4(), glm::vec3(-m_ModelBox.centerPoint.x, -m_ModelBox.centerPoint.y, -m_ModelBox.centerPoint.z));
+// 		for (int i = 0; i < m_ModelMesh.size(); i++)
+// 		{
+// 
+// 			m_ModelMesh[i]->m_MeshMat = ScaleMat * Translate*m_ModelMesh[i]->m_MeshMat;
+// 		}
+// 		m_ModelBox.maxPoint = (m_ModelBox.maxPoint- m_ModelBox.centerPoint)*Scale;
+// 		m_ModelBox.minPoint = (m_ModelBox.minPoint - m_ModelBox.centerPoint)*Scale;
+// 	}
+	m_ModelBox.centerPoint = m_ModelBox.minPoint*0.5f + m_ModelBox.maxPoint*0.5f;
+
+//	m_hasSkin = false;
+}
+
+void CC3DModel::LoadNode()
+{
+	if (m_Model->nodes.size() > 0)
+	{
+		CC3DNode *pNode = new CC3DNode();
+		pNode->initModel(m_Model);
+
+		pNode->InitNode();
+		
+		auto &Scenes = m_Model->scenes;
+		if (Scenes.size() > 0)
+		{
+			auto &NodeIds = Scenes[0].nodes;
+			for (int k = 0; k < NodeIds.size(); k++)
+			{
+				pNode->InitGroupNode(NodeIds[k]);
+			}
+		}
+		m_ModelNode = pNode;
+
+	}
+	m_CameraNode.initModel(m_Model);
+	m_CameraNode.LoadModelInfo(m_ModelNode);
+}
