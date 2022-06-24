@@ -45,6 +45,15 @@
     <ClCompile Include="FDX12Command.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="GLBMeshData.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPrimitive.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="FGame.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MWindow.h">
@@ -72,6 +81,27 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="FDX12Command.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="common\tiny_gltf.h">
+      <Filter>头文件\common</Filter>
+    </ClInclude>
+    <ClInclude Include="GLBMeshData.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="common\json.hpp">
+      <Filter>头文件\common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\stb_image.h">
+      <Filter>头文件\common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\stb_image_write.h">
+      <Filter>头文件\common</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderPrimitive.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FGame.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

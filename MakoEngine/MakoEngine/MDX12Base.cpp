@@ -218,3 +218,29 @@ void MDX12Base::FlushCmdQueue(winrt::com_ptr<ID3D12Fence> Fence, winrt::com_ptr<
 		CloseHandle(EventHandle);
 	}
 }
+
+winrt::com_ptr<ID3D12Resource> MDX12Base::CreateDefaultBuffer(ID3D12Device* Device, ID3D12GraphicsCommandList* CmdList, const void* InitData, UINT64 ByteSize, winrt::com_ptr<ID3D12Resource>& UploadBuffer)
+{
+	// 本函数执行完并不立即拷贝数据到DefaultBuffer
+	// 直到CmdList 真正执行后，才会完成数据拷贝到DefaultBuffer
+
+	winrt::com_ptr<ID3D12Resource> DefaultBuffer = nullptr;
+	CD3DX12_HEAP_PROPERTIES HeapDefault = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	auto BufferSize= CD3DX12_RESOURCE_DESC::Buffer(ByteSize);
+	Device->CreateCommittedResource(&HeapDefault, D3D12_HEAP_FLAG_NONE, &BufferSize, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(DefaultBuffer.put()));
+	CD3DX12_HEAP_PROPERTIES HeapUpload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	Device->CreateCommittedResource(&HeapUpload, D3D12_HEAP_FLAG_NONE, &BufferSize, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(UploadBuffer.put()));
+
+	D3D12_SUBRESOURCE_DATA SubResourceData = {};
+	SubResourceData.pData = InitData;
+	SubResourceData.RowPitch = ByteSize;
+	SubResourceData.SlicePitch = SubResourceData.RowPitch;
+
+	auto DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(DefaultBuffer.get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+	CmdList->ResourceBarrier(1, &DefaultBarrier);
+	UpdateSubresources<1>(CmdList, DefaultBuffer.get(), UploadBuffer.get(), 0, 0, 1, &SubResourceData);
+	auto UploadBarrier = CD3DX12_RESOURCE_BARRIER::Transition(DefaultBuffer.get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
+	CmdList->ResourceBarrier(1, &UploadBarrier);
+
+	return DefaultBuffer;
+}

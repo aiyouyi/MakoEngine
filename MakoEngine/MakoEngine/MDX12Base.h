@@ -25,6 +25,8 @@ public:
 	void CreateDSV(winrt::com_ptr<ID3D12Device> D3dDevice, D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MsaaQualityLevel, winrt::com_ptr<ID3D12DescriptorHeap> DsvHeap);
 	void FlushCmdQueue(winrt::com_ptr<ID3D12Fence> Fence, winrt::com_ptr<ID3D12CommandQueue> CmdQueue);
 
+	static winrt::com_ptr<ID3D12Resource> CreateDefaultBuffer(ID3D12Device* Device, ID3D12GraphicsCommandList* CmdList, const void* InitData, UINT64 ByteSize, winrt::com_ptr<ID3D12Resource>& UploadBuffer);
+
 	winrt::com_ptr<IDXGIFactory4>				DXGIFactory = nullptr;
 	winrt::com_ptr<IDXGIAdapter1>				DXGIAdapter = nullptr;
 	winrt::com_ptr<ID3D12Device>				D3D12Device = nullptr;
