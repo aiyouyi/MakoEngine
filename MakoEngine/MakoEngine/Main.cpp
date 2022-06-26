@@ -25,6 +25,10 @@ int Func0()
 			::TranslateMessage(&msg);
 			::DispatchMessage(&msg);
 		}
+		else
+		{
+			Game.Tick();
+		}
 		Sleep(1);
 		
 	} while (MWindow::WindowsNum>0);

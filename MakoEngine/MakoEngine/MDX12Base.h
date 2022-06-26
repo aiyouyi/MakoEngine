@@ -8,8 +8,8 @@ class MDX12Base
 {
 public:
 	virtual bool InitEnviroment();
-	virtual void Tick();
-	virtual void Exit();
+	virtual void Tick() {};
+	virtual void Exit() {};
 
 	winrt::com_ptr<IDXGIFactory4> CreateDXGIFactory();
 	winrt::com_ptr<IDXGIAdapter1> ChooseAdapter(winrt::com_ptr<IDXGIFactory4>& Factory);
@@ -44,5 +44,11 @@ public:
 	UINT Cbv_Srv_UavDescriptorSize =	0;
 	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MsaaQualityLevels;
 	HWND WindowHwnd = 0;
+
+	static winrt::com_ptr<ID3DBlob> CompileShader(
+		const std::wstring& filename,
+		const D3D_SHADER_MACRO* defines,
+		const std::string& entrypoint,
+		const std::string& target);
 };
 

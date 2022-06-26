@@ -1,5 +1,6 @@
 #include "MDX12Base.h"
 #include< iostream >
+#include <D3Dcompiler.h>
 
 bool MDX12Base::InitEnviroment()
 {
@@ -37,6 +38,7 @@ winrt::com_ptr<IDXGIAdapter1> MDX12Base::ChooseAdapter(winrt::com_ptr<IDXGIFacto
 		Adapter->GetDesc1(&Desc);
 		if (Desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
 		{
+			Adapter = nullptr;
 			continue;
 		}
 		if (SUCCEEDED(D3D12CreateDevice(Adapter.get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)))
@@ -49,11 +51,13 @@ winrt::com_ptr<IDXGIAdapter1> MDX12Base::ChooseAdapter(winrt::com_ptr<IDXGIFacto
 				MaxGPUMemory = Desc.DedicatedVideoMemory;
 			}
 		}
+		Adapter = nullptr;
 	}
 	if (BestAdapterIndex < 0)
 	{
 		return nullptr;
 	}
+	Adapter = nullptr;
 	Factory->EnumAdapters1(BestAdapterIndex, Adapter.put());
 	return DXGIAdapter;
 }
@@ -243,4 +247,23 @@ winrt::com_ptr<ID3D12Resource> MDX12Base::CreateDefaultBuffer(ID3D12Device* Devi
 	CmdList->ResourceBarrier(1, &UploadBarrier);
 
 	return DefaultBuffer;
+}
+
+winrt::com_ptr<ID3DBlob> MDX12Base::CompileShader(const std::wstring& filename, const D3D_SHADER_MACRO* defines, const std::string& entrypoint, const std::string& target)
+{
+	UINT compileFlags = 0;
+#if defined(DEBUG) || defined(_DEBUG)  
+	compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+	HRESULT hr = S_OK;
+
+	winrt::com_ptr<ID3DBlob> byteCode = nullptr;
+	winrt::com_ptr<ID3DBlob> errors = nullptr;
+	hr = D3DCompileFromFile(filename.c_str(), defines, D3D_COMPILE_STANDARD_FILE_INCLUDE,
+		entrypoint.c_str(), target.c_str(), compileFlags, 0, byteCode.put(), errors.put());
+
+	if (errors != nullptr)
+		OutputDebugStringA((char*)errors->GetBufferPointer());
+	return byteCode;
 }
