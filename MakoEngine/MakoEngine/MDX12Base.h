@@ -39,6 +39,8 @@ public:
 	winrt::com_ptr<ID3D12DescriptorHeap>		D3D12DescriptorHeapDSV = nullptr;
 	winrt::com_ptr<ID3D12Resource>				D3D12ResourceDepthStencilBuffer = nullptr;
 
+	winrt::com_ptr<ID3D12Resource>				mSwapChainBuffer[2];
+
 	UINT RtvDescriptorSize =			0;
 	UINT DsvDescriptorSize =			0;
 	UINT Cbv_Srv_UavDescriptorSize =	0;

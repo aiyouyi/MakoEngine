@@ -12,10 +12,12 @@ bool MDX12Base::InitEnviroment()
 	CreateCommandObject(D3D12Device);
 	GetDescriptorSize(D3D12Device);
 	SetMSAA(D3D12Device);
-	CreateSwapChain(D3D12CommandQueue, DXGIFactory, WindowHwnd);
+	
 	CreateDescriptorHeap(D3D12Device);
+	CreateSwapChain(D3D12CommandQueue, DXGIFactory, WindowHwnd);
 	CreateRTV(D3D12Device, D3D12DescriptorHeapRTV, DXGISwapChain, RtvDescriptorSize);
 	CreateDSV(D3D12Device, MsaaQualityLevels, D3D12DescriptorHeapDSV);
+	
 	return false;
 }
 
@@ -129,6 +131,15 @@ void MDX12Base::CreateSwapChain(winrt::com_ptr<ID3D12CommandQueue> CmdQueue, win
 	SwapChainDesc.BufferCount = 2;	//后台缓冲区数量（双缓冲）
 	SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;	//自适应窗口模式（自动选择最适于当前窗口尺寸的显示模式）
 	DxgiFactory->CreateSwapChain(CmdQueue.get(), &SwapChainDesc, SwapChain.put());
+
+	/*CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(D3D12DescriptorHeapRTV->GetCPUDescriptorHandleForHeapStart());
+	for (UINT i = 0; i < 2; i++)
+	{
+		mSwapChainBuffer[i] = nullptr;
+		(SwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
+		D3D12Device->CreateRenderTargetView(mSwapChainBuffer[i].get(), nullptr, rtvHeapHandle);
+		rtvHeapHandle.Offset(1, RtvDescriptorSize);
+	}*/
 }
 
 void MDX12Base::CreateDescriptorHeap(winrt::com_ptr<ID3D12Device> D3dDevice)
