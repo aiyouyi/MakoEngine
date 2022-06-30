@@ -33,7 +33,9 @@ void FGame::Init()
 	(DX12Base->D3D12Device->CreateDescriptorHeap(&cbvHeapDesc,
 		IID_PPV_ARGS(&mCbvHeap)));
 
-	RootSignature = new FRootSignature(6, 1);
+	RootSignature = new FRootSignature(1, 0);
+	(*RootSignature)[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_CBV,0,1);
+	RootSignature->Finalize(DX12Base->D3D12Device,L"FG", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	BuildPSO();
 	BuildBox();
 }

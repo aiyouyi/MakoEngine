@@ -2,6 +2,8 @@
 #include< iostream >
 #include <D3Dcompiler.h>
 
+HRESULT debughr01;
+
 bool MDX12Base::InitEnviroment()
 {
 	CreateDXGIFactory();
@@ -67,7 +69,7 @@ winrt::com_ptr<IDXGIAdapter1> MDX12Base::ChooseAdapter(winrt::com_ptr<IDXGIFacto
 winrt::com_ptr<ID3D12Device> MDX12Base::CreateDevice(winrt::com_ptr<IDXGIAdapter1> Adapter)
 {
 	winrt::com_ptr<ID3D12Device>& Device= D3D12Device;
-	D3D12CreateDevice(Adapter.get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&Device));
+	debughr01=D3D12CreateDevice(Adapter.get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&Device));
 	Device->SetName(L"D3D12 Device");
 	return Device;
 }
@@ -132,14 +134,14 @@ void MDX12Base::CreateSwapChain(winrt::com_ptr<ID3D12CommandQueue> CmdQueue, win
 	SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;	//自适应窗口模式（自动选择最适于当前窗口尺寸的显示模式）
 	DxgiFactory->CreateSwapChain(CmdQueue.get(), &SwapChainDesc, SwapChain.put());
 
-	/*CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(D3D12DescriptorHeapRTV->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(D3D12DescriptorHeapRTV->GetCPUDescriptorHandleForHeapStart());
 	for (UINT i = 0; i < 2; i++)
 	{
 		mSwapChainBuffer[i] = nullptr;
 		(SwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
 		D3D12Device->CreateRenderTargetView(mSwapChainBuffer[i].get(), nullptr, rtvHeapHandle);
 		rtvHeapHandle.Offset(1, RtvDescriptorSize);
-	}*/
+	}
 }
 
 void MDX12Base::CreateDescriptorHeap(winrt::com_ptr<ID3D12Device> D3dDevice)
@@ -178,22 +180,21 @@ void MDX12Base::CreateDSV(winrt::com_ptr<ID3D12Device> D3dDevice, D3D12_FEATURE_
 {
 	//在CPU中创建好深度模板数据资源
 	D3D12_RESOURCE_DESC DsvResourceDesc;
-	DsvResourceDesc.Alignment = 0;	//指定对齐
-	DsvResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;	//指定资源维度（类型）为TEXTURE2D
-	DsvResourceDesc.DepthOrArraySize = 1;	//纹理深度为1
-	DsvResourceDesc.Width = 1280;	//资源宽
-	DsvResourceDesc.Height = 720;	//资源高
-	DsvResourceDesc.MipLevels = 1;	//MIPMAP层级数量
-	DsvResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;	//指定纹理布局（这里不指定）
-	DsvResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;	//深度模板资源的Flag
-	DsvResourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;	//24位深度，8位模板,还有个无类型的格式DXGI_FORMAT_R24G8_TYPELESS也可以使用
-	DsvResourceDesc.SampleDesc.Count = 4;	//多重采样数量
-	DsvResourceDesc.SampleDesc.Quality = MsaaQualityLevel.NumQualityLevels - 1;	//多重采样质量
-	CD3DX12_CLEAR_VALUE OptClear;	//清除资源的优化值，提高清除操作的执行速度（CreateCommittedResource函数中传入）
-	OptClear.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;//24位深度，8位模板,还有个无类型的格式DXGI_FORMAT_R24G8_TYPELESS也可以使用
-	OptClear.DepthStencil.Depth = 1;	//初始深度值为1
-	OptClear.DepthStencil.Stencil = 0;	//初始模板值为0
-										//创建一个资源和一个堆，并将资源提交至堆中（将深度模板数据提交至GPU显存中）
+	DsvResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	DsvResourceDesc.Alignment = 0;
+	DsvResourceDesc.Width = 1280;
+	DsvResourceDesc.Height = 720;
+	DsvResourceDesc.DepthOrArraySize = 1;
+	DsvResourceDesc.MipLevels = 1;
+	DsvResourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	DsvResourceDesc.SampleDesc.Count =  1;
+	DsvResourceDesc.SampleDesc.Quality = 0;
+	DsvResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	DsvResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	CD3DX12_CLEAR_VALUE OptClear;
+	OptClear.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	OptClear.DepthStencil.Depth = 1;	
+	OptClear.DepthStencil.Stencil = 0;	
 	winrt::com_ptr<ID3D12Resource> DepthStencilBuffer;
 	D3D12_HEAP_PROPERTIES HeapProps;
 	HeapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -201,21 +202,14 @@ void MDX12Base::CreateDSV(winrt::com_ptr<ID3D12Device> D3dDevice, D3D12_FEATURE_
 	HeapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 	HeapProps.CreationNodeMask = 1;
 	HeapProps.VisibleNodeMask = 1;
-	D3dDevice->CreateCommittedResource(&HeapProps,	//堆类型为默认堆（不能写入）
+	debughr01 =D3dDevice->CreateCommittedResource(&HeapProps,	//堆类型为默认堆（不能写入）
 		D3D12_HEAP_FLAG_NONE,	//Flag
 		&DsvResourceDesc,	//上面定义的DSV资源指针
 		D3D12_RESOURCE_STATE_COMMON,	//资源的状态为初始状态
 		&OptClear,	//上面定义的优化值指针
-		IID_PPV_ARGS(&DepthStencilBuffer));	//返回深度模板资源
-											//创建DSV(必须填充DSV属性结构体，和创建RTV不同，RTV是通过句柄)
-											//D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
-											//dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-											//dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-											//dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-											//dsvDesc.Texture2D.MipSlice = 0;
+		IID_PPV_ARGS(DepthStencilBuffer.put()));	//返回深度模板资源
 	D3dDevice->CreateDepthStencilView(DepthStencilBuffer.get(),
-		nullptr,	//D3D12_DEPTH_STENCIL_VIEW_DESC类型指针，可填&dsvDesc（见上注释代码），
-					//由于在创建深度模板资源时已经定义深度模板数据属性，所以这里可以指定为空指针
+		nullptr,
 		DsvHeap->GetCPUDescriptorHandleForHeapStart());	//DSV句柄
 }
 
@@ -264,7 +258,7 @@ winrt::com_ptr<ID3DBlob> MDX12Base::CompileShader(const std::wstring& filename, 
 {
 	UINT compileFlags = 0;
 #if defined(DEBUG) || defined(_DEBUG)  
-	compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+	//compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
 	HRESULT hr = S_OK;

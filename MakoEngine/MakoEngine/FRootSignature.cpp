@@ -1,5 +1,6 @@
 #include "FRootSignature.h"
 
+HRESULT debughr02 ;
 
 FRootSignature::FRootSignature(UINT NumRootParams, UINT NumStaticSamplers)
 {
@@ -98,7 +99,7 @@ void FRootSignature::Finalize(winrt::com_ptr<ID3D12Device> D3DDevice, const std:
 
 	D3D12SerializeRootSignature(&RootDesc, D3D_ROOT_SIGNATURE_VERSION_1, pOutBlob.put(), pErrorBlob.put());
 
-	D3DDevice->CreateRootSignature(1, pOutBlob->GetBufferPointer(), pOutBlob->GetBufferSize(), IID_PPV_ARGS(&D3DRootSignature));
+	debughr02=D3DDevice->CreateRootSignature(1, pOutBlob->GetBufferPointer(), pOutBlob->GetBufferSize(), IID_PPV_ARGS(&D3DRootSignature));
 
 	D3DRootSignature->SetName(Name.c_str());
 }
