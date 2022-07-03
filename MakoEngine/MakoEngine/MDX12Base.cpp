@@ -10,16 +10,14 @@ bool MDX12Base::InitEnviroment()
 	ChooseAdapter(DXGIFactory);
 	CreateDevice(DXGIAdapter);
 	CreateFence(D3D12Device);
-
 	CreateCommandObject(D3D12Device);
 	GetDescriptorSize(D3D12Device);
-	SetMSAA(D3D12Device);
-	
+	SetMSAA(D3D12Device);	
 	CreateDescriptorHeap(D3D12Device);
 	CreateSwapChain(D3D12CommandQueue, DXGIFactory, WindowHwnd);
 	CreateRTV(D3D12Device, D3D12DescriptorHeapRTV, DXGISwapChain, RtvDescriptorSize);
-	CreateDSV(D3D12Device, MsaaQualityLevels, D3D12DescriptorHeapDSV);
-	
+	CreateDSV(D3D12Device, MsaaQualityLevels, D3D12DescriptorHeapDSV);	
+	D3D12GraphicsCommandList->ClearDepthStencilView(D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	return false;
 }
 
@@ -63,14 +61,16 @@ winrt::com_ptr<IDXGIAdapter1> MDX12Base::ChooseAdapter(winrt::com_ptr<IDXGIFacto
 	}
 	Adapter = nullptr;
 	Factory->EnumAdapters1(BestAdapterIndex, Adapter.put());
+	DXGI_ADAPTER_DESC1 Desc2;
+	Adapter->GetDesc1(&Desc2);
 	return DXGIAdapter;
 }
 
-winrt::com_ptr<ID3D12Device> MDX12Base::CreateDevice(winrt::com_ptr<IDXGIAdapter1> Adapter)
+winrt::com_ptr<ID3D12Device> MDX12Base::CreateDevice(winrt::com_ptr<IDXGIAdapter1>& Adapter)
 {
 	winrt::com_ptr<ID3D12Device>& Device= D3D12Device;
 	debughr01=D3D12CreateDevice(Adapter.get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&Device));
-	Device->SetName(L"D3D12 Device");
+	debughr01=Device->SetName(L"D3D12 Device");
 	return Device;
 }
 
@@ -161,7 +161,7 @@ void MDX12Base::CreateDescriptorHeap(winrt::com_ptr<ID3D12Device> D3dDevice)
 	DsvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	DsvDescriptorHeapDesc.NodeMask = 0;
 	winrt::com_ptr<ID3D12DescriptorHeap> &DsvHeap= D3D12DescriptorHeapDSV;
-	D3dDevice->CreateDescriptorHeap(&DsvDescriptorHeapDesc, IID_PPV_ARGS(&DsvHeap));
+	D3dDevice->CreateDescriptorHeap(&DsvDescriptorHeapDesc, IID_PPV_ARGS(D3D12DescriptorHeapDSV.put()));
 }
 
 void MDX12Base::CreateRTV(winrt::com_ptr<ID3D12Device> D3dDevice, winrt::com_ptr<ID3D12DescriptorHeap> RtvHeap, winrt::com_ptr<IDXGISwapChain> SwapChain, UINT RtvSize)
@@ -176,7 +176,7 @@ void MDX12Base::CreateRTV(winrt::com_ptr<ID3D12Device> D3dDevice, winrt::com_ptr
 	}
 }
 
-void MDX12Base::CreateDSV(winrt::com_ptr<ID3D12Device> D3dDevice, D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MsaaQualityLevel, winrt::com_ptr<ID3D12DescriptorHeap> DsvHeap)
+void MDX12Base::CreateDSV(winrt::com_ptr<ID3D12Device>& D3dDevice, D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MsaaQualityLevel, winrt::com_ptr<ID3D12DescriptorHeap> DsvHeap)
 {
 	//在CPU中创建好深度模板数据资源
 	D3D12_RESOURCE_DESC DsvResourceDesc;
@@ -208,9 +208,24 @@ void MDX12Base::CreateDSV(winrt::com_ptr<ID3D12Device> D3dDevice, D3D12_FEATURE_
 		D3D12_RESOURCE_STATE_COMMON,	//资源的状态为初始状态
 		&OptClear,	//上面定义的优化值指针
 		IID_PPV_ARGS(DepthStencilBuffer.put()));	//返回深度模板资源
-	D3dDevice->CreateDepthStencilView(DepthStencilBuffer.get(),
-		nullptr,
-		DsvHeap->GetCPUDescriptorHandleForHeapStart());	//DSV句柄
+
+	winrt::com_ptr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
+	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
+	cbvHeapDesc.NumDescriptors = 1;
+	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	cbvHeapDesc.NodeMask = 0;
+	debughr01 = (D3D12Device->CreateDescriptorHeap(&cbvHeapDesc,
+		IID_PPV_ARGS(&mCbvHeap)));
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	dsvDesc.Texture2D.MipSlice = 0;
+	D3dDevice->CreateDepthStencilView(DepthStencilBuffer.get(), &dsvDesc, DsvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	D3D12GraphicsCommandList->ClearDepthStencilView(D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 }
 
 void MDX12Base::FlushCmdQueue(winrt::com_ptr<ID3D12Fence> Fence, winrt::com_ptr<ID3D12CommandQueue> CmdQueue)
@@ -271,4 +286,17 @@ winrt::com_ptr<ID3DBlob> MDX12Base::CompileShader(const std::wstring& filename, 
 	if (errors != nullptr)
 		OutputDebugStringA((char*)errors->GetBufferPointer());
 	return byteCode;
+}
+
+HRESULT MDX12Base::Test()
+{
+	winrt::com_ptr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
+	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
+	cbvHeapDesc.NumDescriptors = 1;
+	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	cbvHeapDesc.NodeMask = 0;
+	debughr01 = (D3D12Device->CreateDescriptorHeap(&cbvHeapDesc,
+		IID_PPV_ARGS(&mCbvHeap)));
+	return debughr01;
 }

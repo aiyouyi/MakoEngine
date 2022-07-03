@@ -13,7 +13,7 @@ public:
 
 	winrt::com_ptr<IDXGIFactory4> CreateDXGIFactory();
 	winrt::com_ptr<IDXGIAdapter1> ChooseAdapter(winrt::com_ptr<IDXGIFactory4>& Factory);
-	winrt::com_ptr<ID3D12Device> CreateDevice(winrt::com_ptr<IDXGIAdapter1> Adapter);
+	winrt::com_ptr<ID3D12Device> CreateDevice(winrt::com_ptr<IDXGIAdapter1>& Adapter);
 	winrt::com_ptr<ID3D12Fence> CreateFence(winrt::com_ptr<ID3D12Device> D3dDevice);
 
 	void CreateCommandObject(winrt::com_ptr<ID3D12Device> D3dDevice);
@@ -22,7 +22,7 @@ public:
 	void CreateSwapChain(winrt::com_ptr<ID3D12CommandQueue> CmdQueue, winrt::com_ptr<IDXGIFactory4> DxgiFactory, HWND Hwnd);
 	void CreateDescriptorHeap(winrt::com_ptr<ID3D12Device> D3dDevice);
 	void CreateRTV(winrt::com_ptr<ID3D12Device> D3dDevice, winrt::com_ptr<ID3D12DescriptorHeap> RtvHeap, winrt::com_ptr<IDXGISwapChain> SwapChain, UINT RtvSize);
-	void CreateDSV(winrt::com_ptr<ID3D12Device> D3dDevice, D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MsaaQualityLevel, winrt::com_ptr<ID3D12DescriptorHeap> DsvHeap);
+	void CreateDSV(winrt::com_ptr<ID3D12Device>& D3dDevice, D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MsaaQualityLevel, winrt::com_ptr<ID3D12DescriptorHeap> DsvHeap);
 	void FlushCmdQueue(winrt::com_ptr<ID3D12Fence> Fence, winrt::com_ptr<ID3D12CommandQueue> CmdQueue);
 
 	static winrt::com_ptr<ID3D12Resource> CreateDefaultBuffer(ID3D12Device* Device, ID3D12GraphicsCommandList* CmdList, const void* InitData, UINT64 ByteSize, winrt::com_ptr<ID3D12Resource>& UploadBuffer);
@@ -52,5 +52,8 @@ public:
 		const D3D_SHADER_MACRO* defines,
 		const std::string& entrypoint,
 		const std::string& target);
+
+
+	HRESULT Test();
 };
 

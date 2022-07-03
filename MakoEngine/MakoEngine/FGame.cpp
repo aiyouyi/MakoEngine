@@ -6,8 +6,8 @@
 
 using namespace DirectX;
 
-const std::wstring BasePath = L"G:\\makoengine\\MakoEngine\\";
-//const std::wstring BasePath = L"C:\\Mako\\learncode\\makoengine\\MakoEngine";
+//const std::wstring BasePath = L"G:\\makoengine\\MakoEngine\\";
+const std::wstring BasePath = L"C:\\Mako\\learncode\\makoengine\\MakoEngine\\";
 
 HRESULT debughr;
 
@@ -18,12 +18,19 @@ FGame::FGame(MWindow* pMWindow)
 	DX12Base->WindowHwnd = pMWindow->WindowHwnd;
 	DX12Base->InitEnviroment();
 	Init();
+	
 }
 
 void FGame::Init()
 {
 	GLBScene = GLBMeshPool::GetInstance()->GetGLBMesh(BasePath+L"Resource\\DamagedHelmet.glb");
 	BuildShadersAndInputLayout();
+	RootSignature = new FRootSignature(1, 0);
+	(*RootSignature)[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_CBV,0,1);
+	RootSignature->Finalize(DX12Base->D3D12Device,L"FG", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	BuildPSO();
+	BuildBox();
+	DX12Base->Test();
 
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
 	cbvHeapDesc.NumDescriptors = 1;
@@ -32,20 +39,16 @@ void FGame::Init()
 	cbvHeapDesc.NodeMask = 0;
 	(DX12Base->D3D12Device->CreateDescriptorHeap(&cbvHeapDesc,
 		IID_PPV_ARGS(&mCbvHeap)));
-
-	RootSignature = new FRootSignature(1, 0);
-	(*RootSignature)[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_CBV,0,1);
-	RootSignature->Finalize(DX12Base->D3D12Device,L"FG", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-	BuildPSO();
-	BuildBox();
 }
 
 void FGame::Tick()
 {
 	auto mCommandList = DX12Base->D3D12GraphicsCommandList;
-	DX12Base->D3D12CommandAllocator->Reset();
+	debughr=DX12Base->D3D12CommandAllocator->Reset();
+	debughr=mCommandList->Reset(DX12Base->D3D12CommandAllocator.get(), PSO.get());
 
-	mCommandList->Reset(DX12Base->D3D12CommandAllocator.get(), PSO.get());
+	DX12Base->Test();
+	DX12Base->D3D12GraphicsCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	D3D12_VIEWPORT mScreenViewport;
 	mScreenViewport.TopLeftX = 0;
@@ -60,20 +63,24 @@ void FGame::Tick()
 	mScissorRect = { 0, 0, 1280, 720 };
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
+	DX12Base->D3D12GraphicsCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	// Indicate a state transition on the resource usage.
 	static int index = 0;
 	
 	auto SCB = CD3DX12_RESOURCE_BARRIER::Transition(DX12Base->mSwapChainBuffer[index].get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	mCommandList->ResourceBarrier(1, &SCB);
 
+	DX12Base->D3D12GraphicsCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	// Clear the back buffer and depth buffer.
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView(
 		DX12Base->D3D12DescriptorHeapRTV->GetCPUDescriptorHandleForHeapStart(),
 		index,
 		DX12Base->RtvDescriptorSize);
+	DX12Base->Test();
 	mCommandList->ClearRenderTargetView(CurrentBackBufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
+	DX12Base->Test();
 	mCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
+	DX12Base->Test();
 	// Specify the buffers we are going to render to.
 	auto DSYStart = DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart();
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView, true, &DSYStart);
@@ -158,7 +165,9 @@ void FGame::BuildPSO()
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
 	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	debughr=DX12Base->D3D12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&PSO));
+	debughr=DX12Base->D3D12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(PSO.put()));
+
+	DX12Base->D3D12GraphicsCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 }
 
 void FGame::BuildShadersAndInputLayout()
