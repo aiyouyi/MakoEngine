@@ -2,7 +2,7 @@
 #include"GLBMeshData.h"
 #include"FGame.h"
 
-#define STest 0 
+#define STest 1 
 #if STest
 #define Func0 main2
 #define Func1 main
@@ -10,6 +10,8 @@
 #define Func0 main
 #define Func1 main2
 #endif // DEBUG
+
+#pragma comment( linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"" )
 
 int Func0()
 {
@@ -28,8 +30,9 @@ int Func0()
 		else
 		{
 			Game.Tick();
+			Sleep(100);
 		}
-		Sleep(1);
+		
 		
 	} while (MWindow::WindowsNum>0);
 	return 0;
@@ -38,7 +41,6 @@ int Func0()
 
 int Func1()
 {
-	//GLBMeshPool::GetInstance()->GetGLBMesh(L"G:\\CCFilterTmp\\FacialToolsQT-DX11\\resource\\jiumi01_AR\\gxll_anima.glb");
-	GLBMeshPool::GetInstance()->GetGLBMesh(L"G:\\makoengine\\MakoEngine\\Resource\\DamagedHelmet.glb");
+	TestTemp();
 	return 0;
 }

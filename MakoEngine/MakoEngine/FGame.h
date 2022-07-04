@@ -6,6 +6,9 @@
 #include <DirectXCollision.h>
 #include "UploadBuffer.h"
 
+
+void TestTemp();
+
 using namespace DirectX;
 
 struct Vertex
@@ -118,6 +121,8 @@ public:
 	std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
 
 	static XMFLOAT4X4 Identity4x4();
+
+	void Flush();
 
 };
 

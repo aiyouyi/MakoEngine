@@ -6,8 +6,8 @@
 
 using namespace DirectX;
 
-//const std::wstring BasePath = L"G:\\makoengine\\MakoEngine\\";
-const std::wstring BasePath = L"C:\\Mako\\learncode\\makoengine\\MakoEngine\\";
+const std::wstring BasePath = L"G:\\makoengine\\MakoEngine\\";
+//const std::wstring BasePath = L"C:\\Mako\\learncode\\makoengine\\MakoEngine\\";
 
 HRESULT debughr;
 
@@ -30,7 +30,7 @@ void FGame::Init()
 	RootSignature->Finalize(DX12Base->D3D12Device,L"FG", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	BuildPSO();
 	BuildBox();
-	DX12Base->Test();
+	//DX12Base->Test();
 
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
 	cbvHeapDesc.NumDescriptors = 1;
@@ -39,17 +39,19 @@ void FGame::Init()
 	cbvHeapDesc.NodeMask = 0;
 	(DX12Base->D3D12Device->CreateDescriptorHeap(&cbvHeapDesc,
 		IID_PPV_ARGS(&mCbvHeap)));
+
+	auto& mCommandList = DX12Base->D3D12GraphicsCommandList;
+	(mCommandList->Close());
+	ID3D12CommandList* cmdsLists[] = { mCommandList.get() };
+	DX12Base->D3D12CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+	Flush();
 }
 
 void FGame::Tick()
 {
-	auto mCommandList = DX12Base->D3D12GraphicsCommandList;
-	debughr=DX12Base->D3D12CommandAllocator->Reset();
-	debughr=mCommandList->Reset(DX12Base->D3D12CommandAllocator.get(), PSO.get());
-
-	DX12Base->Test();
-	DX12Base->D3D12GraphicsCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
+	auto& mCommandList = DX12Base->D3D12GraphicsCommandList;
+	//debughr=DX12Base->D3D12CommandAllocator->Reset();
+	//debughr=mCommandList->Reset(DX12Base->D3D12CommandAllocator.get(), PSO.get());
 	D3D12_VIEWPORT mScreenViewport;
 	mScreenViewport.TopLeftX = 0;
 	mScreenViewport.TopLeftY = 0;
@@ -63,7 +65,7 @@ void FGame::Tick()
 	mScissorRect = { 0, 0, 1280, 720 };
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
-	DX12Base->D3D12GraphicsCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	//DX12Base->D3D12GraphicsCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	// Indicate a state transition on the resource usage.
 	static int index = 0;
 	
@@ -76,16 +78,18 @@ void FGame::Tick()
 		DX12Base->D3D12DescriptorHeapRTV->GetCPUDescriptorHandleForHeapStart(),
 		index,
 		DX12Base->RtvDescriptorSize);
-	DX12Base->Test();
-	mCommandList->ClearRenderTargetView(CurrentBackBufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
-	DX12Base->Test();
-	mCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	DX12Base->Test();
+	//DX12Base->Test();
+	static XMVECTORF32 color = DirectX::Colors::LightSteelBlue;
+	
+	//mCommandList->ClearRenderTargetView(CurrentBackBufferView, color, 0, nullptr);
+	//DX12Base->Test();
+	//mCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	//DX12Base->Test();
 	// Specify the buffers we are going to render to.
 	auto DSYStart = DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart();
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView, true, &DSYStart);
-
-	ID3D12DescriptorHeap* descriptorHeaps[] = { mCbvHeap.get() };
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
+	/*ID3D12DescriptorHeap* descriptorHeaps[] = { mCbvHeap.get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	mCommandList->SetGraphicsRootSignature(RootSignature->GetSignature());
@@ -99,7 +103,7 @@ void FGame::Tick()
 
 	mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
-	mCommandList->DrawIndexedInstanced(mBoxGeo->DrawArgs["box"].IndexCount, 1, 0, 0, 0);
+	mCommandList->DrawIndexedInstanced(mBoxGeo->DrawArgs["box"].IndexCount, 1, 0, 0, 0);*/
 
 	// Indicate a state transition on the resource usage.
 	auto SCB2 = CD3DX12_RESOURCE_BARRIER::Transition(DX12Base->mSwapChainBuffer[index].get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -114,29 +118,13 @@ void FGame::Tick()
 
 	// swap the back and front buffers
 	(DX12Base->DXGISwapChain->Present(0, 0));
-	index = (index + 1) % 2;
+	//index = (index + 1) % 2;
 	// Wait until frame commands are complete.  This waiting is inefficient and is
 	// done for simplicity.  Later we will show how to organize our rendering code
 	// so we do not have to wait per frame.
-	mCurrentFence++;
-
-	// Add an instruction to the command queue to set a new fence point.  Because we 
-	// are on the GPU timeline, the new fence point won't be set until the GPU finishes
-	// processing all the commands prior to this Signal().
-	(DX12Base->D3D12CommandQueue->Signal(DX12Base->D3D12Fence.get(), mCurrentFence));
-
-	// Wait until the GPU has completed commands up to this fence point.
-	if (DX12Base->D3D12Fence->GetCompletedValue() < mCurrentFence)
-	{
-		HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
-
-		// Fire event when GPU hits current fence.  
-		(DX12Base->D3D12Fence->SetEventOnCompletion(mCurrentFence, eventHandle));
-
-		// Wait until the GPU hits current fence event is fired.
-		WaitForSingleObject(eventHandle, INFINITE);
-		CloseHandle(eventHandle);
-	}
+	Flush();
+	//debughr=DX12Base->D3D12CommandAllocator->Reset();
+	//debughr=mCommandList->Reset(DX12Base->D3D12CommandAllocator.get(), PSO.get());
 }
 
 void FGame::BuildPSO()
@@ -166,8 +154,6 @@ void FGame::BuildPSO()
 	psoDesc.SampleDesc.Quality = 0;
 	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	debughr=DX12Base->D3D12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(PSO.put()));
-
-	DX12Base->D3D12GraphicsCommandList->ClearDepthStencilView(DX12Base->D3D12DescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 }
 
 void FGame::BuildShadersAndInputLayout()
@@ -231,10 +217,10 @@ void FGame::BuildBox()
 
 	auto mCommandList = DX12Base->D3D12GraphicsCommandList;
 
-	(D3DCreateBlob(vbByteSize, mBoxGeo->VertexBufferCPU.put()));
+	debughr=(D3DCreateBlob(vbByteSize, mBoxGeo->VertexBufferCPU.put()));
 	CopyMemory(mBoxGeo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
 
-	(D3DCreateBlob(ibByteSize, mBoxGeo->IndexBufferCPU.put()));
+	debughr=(D3DCreateBlob(ibByteSize, mBoxGeo->IndexBufferCPU.put()));
 	CopyMemory(mBoxGeo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
 	mBoxGeo->VertexBufferGPU = MDX12Base::CreateDefaultBuffer(DX12Base->D3D12Device.get(),
@@ -265,6 +251,29 @@ XMFLOAT4X4 FGame::Identity4x4()
 		0.0f, 0.0f, 0.0f, 1.0f);
 
 	return I;
+}
+
+void FGame::Flush()
+{
+	mCurrentFence++;
+
+	// Add an instruction to the command queue to set a new fence point.  Because we 
+	// are on the GPU timeline, the new fence point won't be set until the GPU finishes
+	// processing all the commands prior to this Signal().
+	(DX12Base->D3D12CommandQueue->Signal(DX12Base->D3D12Fence.get(), mCurrentFence));
+
+	// Wait until the GPU has completed commands up to this fence point.
+	if (DX12Base->D3D12Fence->GetCompletedValue() < mCurrentFence)
+	{
+		HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
+
+		// Fire event when GPU hits current fence.  
+		(DX12Base->D3D12Fence->SetEventOnCompletion(mCurrentFence, eventHandle));
+
+		// Wait until the GPU hits current fence event is fired.
+		WaitForSingleObject(eventHandle, INFINITE);
+		CloseHandle(eventHandle);
+	}
 }
 
 ObjectConstants::ObjectConstants()
