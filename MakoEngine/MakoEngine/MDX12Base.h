@@ -37,6 +37,7 @@ public:
 	winrt::com_ptr<IDXGISwapChain>				DXGISwapChain = nullptr;
 	winrt::com_ptr<ID3D12DescriptorHeap>		D3D12DescriptorHeapRTV = nullptr;
 	winrt::com_ptr<ID3D12DescriptorHeap>		D3D12DescriptorHeapDSV = nullptr;
+	winrt::com_ptr<ID3D12DescriptorHeap>		mCbvHeap = nullptr;
 	winrt::com_ptr<ID3D12Resource>				D3D12ResourceDepthStencilBuffer = nullptr;
 
 	winrt::com_ptr<ID3D12Resource>				mSwapChainBuffer[2];

@@ -7,7 +7,6 @@
 #include "UploadBuffer.h"
 
 
-void TestTemp();
 
 using namespace DirectX;
 
@@ -111,6 +110,7 @@ public:
 	winrt::com_ptr<ID3D12PipelineState> PSO = nullptr;
 
 	winrt::com_ptr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
+	winrt::com_ptr<ID3D12RootSignature> mRootSignature = nullptr;
 
 	class FRootSignature* RootSignature;
 	UINT64 mCurrentFence = 0;
@@ -124,5 +124,15 @@ public:
 
 	void Flush();
 
+	bool Initialize();
+
+	void Tick666();
+
+
+	//
+	HWND      mhMainWnd = nullptr; // main window handle
+	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView();
+	ID3D12Resource* CurrentBackBuffer();
+	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView();
 };
 

@@ -15,6 +15,7 @@
 
 int Func0()
 {
+	//Initialize();
 	MWindow Window;
 	Window.CreateWindows();
 	FGame Game(&Window);
@@ -41,6 +42,5 @@ int Func0()
 
 int Func1()
 {
-	TestTemp();
 	return 0;
 }

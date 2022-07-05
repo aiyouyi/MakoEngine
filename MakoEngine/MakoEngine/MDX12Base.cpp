@@ -13,10 +13,11 @@ bool MDX12Base::InitEnviroment()
 	CreateCommandObject(D3D12Device);
 	GetDescriptorSize(D3D12Device);
 	SetMSAA(D3D12Device);	
-	CreateDescriptorHeap(D3D12Device);
 	CreateSwapChain(D3D12CommandQueue, DXGIFactory, WindowHwnd);
-	CreateRTV(D3D12Device, D3D12DescriptorHeapRTV, DXGISwapChain, RtvDescriptorSize);
-	CreateDSV(D3D12Device, MsaaQualityLevels, D3D12DescriptorHeapDSV);	
+	CreateDescriptorHeap(D3D12Device);
+	
+	/*CreateRTV(D3D12Device, D3D12DescriptorHeapRTV, DXGISwapChain, RtvDescriptorSize);
+	CreateDSV(D3D12Device, MsaaQualityLevels, D3D12DescriptorHeapDSV);	*/
 	return false;
 }
 
@@ -133,14 +134,15 @@ void MDX12Base::CreateSwapChain(winrt::com_ptr<ID3D12CommandQueue> CmdQueue, win
 	SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 	DxgiFactory->CreateSwapChain(CmdQueue.get(), &SwapChainDesc, SwapChain.put());
 
-	//CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(D3D12DescriptorHeapRTV->GetCPUDescriptorHandleForHeapStart());
-	//for (UINT i = 0; i < 2; i++)
-	//{
-	//	mSwapChainBuffer[i] = nullptr;
-	//	(SwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-	//	D3D12Device->CreateRenderTargetView(mSwapChainBuffer[i].get(), nullptr, rtvHeapHandle);
-	//	rtvHeapHandle.Offset(1, RtvDescriptorSize);
-	//}
+	(SwapChain->ResizeBuffers(
+		2,
+		1280, 720,
+		DXGI_FORMAT_R8G8B8A8_UNORM,
+		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+
+	for (int i = 0; i < 2; ++i)
+		mSwapChainBuffer[i] = nullptr;
+	D3D12ResourceDepthStencilBuffer = nullptr;
 }
 
 void MDX12Base::CreateDescriptorHeap(winrt::com_ptr<ID3D12Device> D3dDevice)
@@ -151,15 +153,13 @@ void MDX12Base::CreateDescriptorHeap(winrt::com_ptr<ID3D12Device> D3dDevice)
 	RtvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	RtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	RtvDescriptorHeapDesc.NodeMask = 0;
-	winrt::com_ptr<ID3D12DescriptorHeap>& RtvHeap= D3D12DescriptorHeapRTV;
-	D3dDevice->CreateDescriptorHeap(&RtvDescriptorHeapDesc, IID_PPV_ARGS(&RtvHeap));
+	D3dDevice->CreateDescriptorHeap(&RtvDescriptorHeapDesc, IID_PPV_ARGS(D3D12DescriptorHeapRTV.put()));
 	//DSV
 	D3D12_DESCRIPTOR_HEAP_DESC DsvDescriptorHeapDesc;
 	DsvDescriptorHeapDesc.NumDescriptors = 1;
 	DsvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	DsvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	DsvDescriptorHeapDesc.NodeMask = 0;
-	winrt::com_ptr<ID3D12DescriptorHeap> &DsvHeap= D3D12DescriptorHeapDSV;
 	D3dDevice->CreateDescriptorHeap(&DsvDescriptorHeapDesc, IID_PPV_ARGS(D3D12DescriptorHeapDSV.put()));
 }
 
@@ -208,7 +208,6 @@ void MDX12Base::CreateDSV(winrt::com_ptr<ID3D12Device>& D3dDevice, D3D12_FEATURE
 		&OptClear,	//上面定义的优化值指针
 		IID_PPV_ARGS(DepthStencilBuffer.put()));	//返回深度模板资源
 
-	winrt::com_ptr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
 	cbvHeapDesc.NumDescriptors = 1;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
