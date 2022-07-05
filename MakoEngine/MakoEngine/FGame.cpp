@@ -17,6 +17,15 @@ FGame::FGame(MWindow* pMWindow)
 	DX12Base = new MDX12Base();
 	DX12Base->WindowHwnd = pMWindow->WindowHwnd;
 	DX12Base->InitEnviroment();
+
+
+	auto& mCommandList = DX12Base->D3D12GraphicsCommandList;
+	auto feg = CD3DX12_RESOURCE_BARRIER::Transition(DX12Base->D3D12ResourceDepthStencilBuffer.get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	mCommandList->ResourceBarrier(1, &feg);
+	(mCommandList->Close());
+	ID3D12CommandList* cmdsLists[] = { mCommandList.get() };
+	DX12Base->D3D12CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+	Flush();
 	Init();
 	
 }
@@ -41,6 +50,8 @@ void FGame::Init()
 		IID_PPV_ARGS(&mCbvHeap)));
 
 	auto& mCommandList = DX12Base->D3D12GraphicsCommandList;
+	auto feg = CD3DX12_RESOURCE_BARRIER::Transition(DX12Base->D3D12ResourceDepthStencilBuffer.get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	mCommandList->ResourceBarrier(1, &feg);
 	(mCommandList->Close());
 	ID3D12CommandList* cmdsLists[] = { mCommandList.get() };
 	DX12Base->D3D12CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);

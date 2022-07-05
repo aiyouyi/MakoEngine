@@ -21,7 +21,7 @@ public:
 	void SetMSAA(winrt::com_ptr<ID3D12Device> D3dDevice);
 	void CreateSwapChain(winrt::com_ptr<ID3D12CommandQueue> CmdQueue, winrt::com_ptr<IDXGIFactory4> DxgiFactory, HWND Hwnd);
 	void CreateDescriptorHeap(winrt::com_ptr<ID3D12Device> D3dDevice);
-	void CreateRTV(winrt::com_ptr<ID3D12Device> D3dDevice, winrt::com_ptr<ID3D12DescriptorHeap> RtvHeap, winrt::com_ptr<IDXGISwapChain> SwapChain, UINT RtvSize);
+	void CreateRTV(winrt::com_ptr<ID3D12Device> D3dDevice, winrt::com_ptr<ID3D12DescriptorHeap>& RtvHeap, winrt::com_ptr<IDXGISwapChain> SwapChain, UINT RtvSize);
 	void CreateDSV(winrt::com_ptr<ID3D12Device>& D3dDevice, D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MsaaQualityLevel, winrt::com_ptr<ID3D12DescriptorHeap>& DsvHeap);
 	void FlushCmdQueue(winrt::com_ptr<ID3D12Fence> Fence, winrt::com_ptr<ID3D12CommandQueue> CmdQueue);
 
@@ -37,6 +37,7 @@ public:
 	winrt::com_ptr<IDXGISwapChain>				DXGISwapChain = nullptr;
 	winrt::com_ptr<ID3D12DescriptorHeap>		D3D12DescriptorHeapRTV = nullptr;
 	winrt::com_ptr<ID3D12DescriptorHeap>		D3D12DescriptorHeapDSV = nullptr;
+	winrt::com_ptr<ID3D12DescriptorHeap>		D3D12CbvHeap = nullptr;
 	winrt::com_ptr<ID3D12Resource>				D3D12ResourceDepthStencilBuffer = nullptr;
 
 	winrt::com_ptr<ID3D12Resource>				mSwapChainBuffer[2];

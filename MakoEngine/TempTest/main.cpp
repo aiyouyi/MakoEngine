@@ -10,6 +10,7 @@
 #include <DirectXCollision.h>
 #include <string>
 #include <memory>
+#include< iostream >
 #include <algorithm>
 #include <vector>
 #include <array>
@@ -412,24 +413,51 @@ bool Initialize()
 	mhMainWnd = Window.WindowHwnd;
 
 	{
-		ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mdxgiFactory)));
-
-		// Try to create hardware device.
-		HRESULT hardwareResult = D3D12CreateDevice(
-			nullptr,             // default adapter
-			D3D_FEATURE_LEVEL_11_0,
-			IID_PPV_ARGS(&md3dDevice));
-
-		// Fallback to WARP device.
-		if (FAILED(hardwareResult))
+		//CreateDXGIFactory
 		{
-			winrt::com_ptr<IDXGIAdapter> pWarpAdapter;
-			ThrowIfFailed(mdxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
+			UINT DxgiFactoryFlags = 0;
+			mdxgiFactory = nullptr;
+			CreateDXGIFactory2(DxgiFactoryFlags, IID_PPV_ARGS(&mdxgiFactory));
+		}
+		//ChooseAdapter
+		{
+			auto Factory = mdxgiFactory;
+			winrt::com_ptr<IDXGIAdapter1> Adapter = nullptr;
+			int BestAdapterIndex = -1;
+			SIZE_T MaxGPUMemory = 0;
+			for (UINT AdapterIndex = 0; DXGI_ERROR_NOT_FOUND != Factory->EnumAdapters1(AdapterIndex, Adapter.put()); ++AdapterIndex)
+			{
+				DXGI_ADAPTER_DESC1 Desc;
+				Adapter->GetDesc1(&Desc);
+				if (Desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+				{
+					Adapter = nullptr;
+					continue;
+				}
+				if (SUCCEEDED(D3D12CreateDevice(Adapter.get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)))
+				{
+					float SizeGB = 1 << 30;
+					std::wcout << "***Adapter: " << Desc.Description << ": " << Desc.DedicatedVideoMemory / SizeGB << "G" << std::endl;
+					if (Desc.DedicatedVideoMemory > MaxGPUMemory)
+					{
+						BestAdapterIndex = AdapterIndex;
+						MaxGPUMemory = Desc.DedicatedVideoMemory;
+					}
+				}
+				Adapter = nullptr;
+			}
+			if (BestAdapterIndex < 0)
+			{
+				return 0;
+			}
+			Adapter = nullptr;
+			Factory->EnumAdapters1(BestAdapterIndex, Adapter.put());
+			DXGI_ADAPTER_DESC1 Desc2;
+			Adapter->GetDesc1(&Desc2);
 
-			ThrowIfFailed(D3D12CreateDevice(
-				pWarpAdapter.get(),
-				D3D_FEATURE_LEVEL_11_0,
-				IID_PPV_ARGS(&md3dDevice)));
+			winrt::com_ptr<ID3D12Device>& Device = md3dDevice;
+			D3D12CreateDevice(Adapter.get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&Device));
+			Device->SetName(L"D3D12 Device");
 		}
 
 		ThrowIfFailed(md3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
@@ -442,89 +470,83 @@ bool Initialize()
 		// Check 4X MSAA quality support for our back buffer format.
 		// All Direct3D 11 capable devices support 4X MSAA for all render 
 		// target formats, so we only need to check quality support.
-
-		D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
-		msQualityLevels.Format = mBackBufferFormat;
-		msQualityLevels.SampleCount = 4;
-		msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
-		msQualityLevels.NumQualityLevels = 0;
-		ThrowIfFailed(md3dDevice->CheckFeatureSupport(
-			D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
-			&msQualityLevels,
-			sizeof(msQualityLevels)));
-
-		m4xMsaaQuality = msQualityLevels.NumQualityLevels;
-		assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level.");
+		{
+			D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MsaaQualityLevels;
+			MsaaQualityLevels.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			MsaaQualityLevels.SampleCount = 1;
+			MsaaQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+			MsaaQualityLevels.NumQualityLevels = 0;
+			md3dDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &MsaaQualityLevels, sizeof(MsaaQualityLevels));
+			assert(MsaaQualityLevels.NumQualityLevels > 0);
+			m4xMsaaQuality = MsaaQualityLevels.NumQualityLevels;
+		}
 	}
 
-
+	//CreateCommandObject
 	{
-		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-		ThrowIfFailed(md3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
-
-		ThrowIfFailed(md3dDevice->CreateCommandAllocator(
-			D3D12_COMMAND_LIST_TYPE_DIRECT,
-			IID_PPV_ARGS(mDirectCmdListAlloc.put())));
-
-		ThrowIfFailed(md3dDevice->CreateCommandList(
-			0,
-			D3D12_COMMAND_LIST_TYPE_DIRECT,
-			mDirectCmdListAlloc.get(), // Associated command allocator
-			nullptr,                   // Initial PipelineStateObject
-			IID_PPV_ARGS(mCommandList.put())));
-
-		// Start off in a closed state.  This is because the first time we refer 
-		// to the command list we will Reset it, and it needs to be closed before
-		// calling Reset.
-		mCommandList->Close();
+		D3D12_COMMAND_QUEUE_DESC CommandQueueDesc = {};
+		CommandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+		CommandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+		winrt::com_ptr<ID3D12CommandQueue>& CmdQueue = mCommandQueue;
+		md3dDevice->CreateCommandQueue(&CommandQueueDesc, IID_PPV_ARGS(&CmdQueue));
+		winrt::com_ptr<ID3D12CommandAllocator>& CmdAllocator = mDirectCmdListAlloc;
+		md3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&CmdAllocator));
+		winrt::com_ptr<ID3D12GraphicsCommandList>& CmdList = mCommandList;
+		md3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, CmdAllocator.get(), nullptr, IID_PPV_ARGS(&CmdList));
+		CmdList->Close();
 	}
 	{
-		// Release the previous swapchain we will be recreating.
-		//mSwapChain=nullptr;
-		mSwapChain = nullptr;
-		DXGI_SWAP_CHAIN_DESC sd;
-		sd.BufferDesc.Width = mClientWidth;
-		sd.BufferDesc.Height = mClientHeight;
-		sd.BufferDesc.RefreshRate.Numerator = 60;
-		sd.BufferDesc.RefreshRate.Denominator = 1;
-		sd.BufferDesc.Format = mBackBufferFormat;
-		sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-		sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-		sd.SampleDesc.Count = m4xMsaaState ? 4 : 1;
-		sd.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
-		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		sd.BufferCount = SwapChainBufferCount;
-		sd.OutputWindow = mhMainWnd;
-		sd.Windowed = true;
-		sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-		sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+		winrt::com_ptr<IDXGISwapChain>& SwapChain = mSwapChain;
+		SwapChain = nullptr;
+		DXGI_SWAP_CHAIN_DESC SwapChainDesc;
+		SwapChainDesc.BufferDesc.Width = 1280;
+		SwapChainDesc.BufferDesc.Height = 720;
+		SwapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+		SwapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
+		SwapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+		SwapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+		SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		SwapChainDesc.OutputWindow = mhMainWnd;
+		SwapChainDesc.SampleDesc.Count = 1;
+		SwapChainDesc.SampleDesc.Quality = 0;
+		SwapChainDesc.Windowed = true;
+		SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+		SwapChainDesc.BufferCount = 2;
+		SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+		mdxgiFactory->CreateSwapChain(mCommandQueue.get(), &SwapChainDesc, SwapChain.put());
 
-		// Note: Swap chain uses queue to perform flush.
-		ThrowIfFailed(mdxgiFactory->CreateSwapChain(
-			mCommandQueue.get(),
-			&sd,
-			mSwapChain.put()));
+		for (int i = 0; i < 2; ++i)
+			mSwapChainBuffer[i] = nullptr;
+		mDepthStencilBuffer = nullptr;
+
+		// Resize the swap chain.
+		(SwapChain->ResizeBuffers(
+			2,
+			1280, 720,
+			DXGI_FORMAT_R8G8B8A8_UNORM,
+			DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 	}
+
 	{
-		D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-		rtvHeapDesc.NumDescriptors = SwapChainBufferCount;
-		rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		rtvHeapDesc.NodeMask = 0;
-		ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
-			&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.put())));
+		//RTV
+		D3D12_DESCRIPTOR_HEAP_DESC RtvDescriptorHeapDesc;
+		RtvDescriptorHeapDesc.NumDescriptors = 2;
+		RtvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		RtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+		RtvDescriptorHeapDesc.NodeMask = 0;
+		winrt::com_ptr<ID3D12DescriptorHeap>& RtvHeap = mRtvHeap;
+		md3dDevice->CreateDescriptorHeap(&RtvDescriptorHeapDesc, IID_PPV_ARGS(&RtvHeap));
+		//DSV
+		D3D12_DESCRIPTOR_HEAP_DESC DsvDescriptorHeapDesc;
+		DsvDescriptorHeapDesc.NumDescriptors = 1;
+		DsvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		DsvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		DsvDescriptorHeapDesc.NodeMask = 0;
+		winrt::com_ptr<ID3D12DescriptorHeap>& DsvHeap = mDsvHeap;
+		md3dDevice->CreateDescriptorHeap(&DsvDescriptorHeapDesc, IID_PPV_ARGS(DsvHeap.put()));
+	}	
 
-
-		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
-		dsvHeapDesc.NumDescriptors = 1;
-		dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-		dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		dsvHeapDesc.NodeMask = 0;
-		ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
-			&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.put())));
-	}
 	// Do the initial resize code.
 	//OnResize();
 	{
@@ -537,70 +559,66 @@ bool Initialize()
 
 		ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.get(), nullptr));
 
-		// Release the previous resources we will be recreating.
-		for (int i = 0; i < SwapChainBufferCount; ++i)
-			mSwapChainBuffer[i]=nullptr;
-		mDepthStencilBuffer=nullptr;
-
-		// Resize the swap chain.
-		ThrowIfFailed(mSwapChain->ResizeBuffers(
-			SwapChainBufferCount,
-			mClientWidth, mClientHeight,
-			mBackBufferFormat,
-			DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
 		mCurrBackBuffer = 0;
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
-		for (UINT i = 0; i < SwapChainBufferCount; i++)
+		CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
+		for (int i = 0; i < 2; i++)
 		{
-			ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-			md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].get(), nullptr, rtvHeapHandle);
-			rtvHeapHandle.Offset(1, mRtvDescriptorSize);
+			mSwapChain->GetBuffer(i, __uuidof(mSwapChainBuffer[i]), mSwapChainBuffer[i].put_void());
+			md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].get(), nullptr, RtvHeapHandle);
+			RtvHeapHandle.Offset(1, mRtvDescriptorSize);
 		}
 
-		// Create the depth/stencil buffer and view.
-		D3D12_RESOURCE_DESC depthStencilDesc;
-		depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		depthStencilDesc.Alignment = 0;
-		depthStencilDesc.Width = mClientWidth;
-		depthStencilDesc.Height = mClientHeight;
-		depthStencilDesc.DepthOrArraySize = 1;
-		depthStencilDesc.MipLevels = 1;
+		{
+			auto D3dDevice = md3dDevice;
+			auto D3D12Device = md3dDevice;
+			D3D12_RESOURCE_DESC DsvResourceDesc;
+			DsvResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+			DsvResourceDesc.Alignment = 0;
+			DsvResourceDesc.Width = 1280;
+			DsvResourceDesc.Height = 720;
+			DsvResourceDesc.DepthOrArraySize = 1;
+			DsvResourceDesc.MipLevels = 1;
+			DsvResourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+			DsvResourceDesc.SampleDesc.Count = 1;
+			DsvResourceDesc.SampleDesc.Quality = 0;
+			DsvResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+			DsvResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+			CD3DX12_CLEAR_VALUE OptClear;
+			OptClear.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+			OptClear.DepthStencil.Depth = 1;
+			OptClear.DepthStencil.Stencil = 0;
+			winrt::com_ptr<ID3D12Resource>& DepthStencilBuffer= mDepthStencilBuffer;
+			D3D12_HEAP_PROPERTIES HeapProps;
+			HeapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+			HeapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+			HeapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+			HeapProps.CreationNodeMask = 1;
+			HeapProps.VisibleNodeMask = 1;
+			D3dDevice->CreateCommittedResource(&HeapProps,	//堆类型为默认堆（不能写入）
+				D3D12_HEAP_FLAG_NONE,	//Flag
+				&DsvResourceDesc,	//上面定义的DSV资源指针
+				D3D12_RESOURCE_STATE_COMMON,	//资源的状态为初始状态
+				&OptClear,	//上面定义的优化值指针
+				IID_PPV_ARGS(DepthStencilBuffer.put()));	//返回深度模板资源
 
-		// Correction 11/12/2016: SSAO chapter requires an SRV to the depth buffer to read from 
-		// the depth buffer.  Therefore, because we need to create two views to the same resource:
-		//   1. SRV format: DXGI_FORMAT_R24_UNORM_X8_TYPELESS
-		//   2. DSV Format: DXGI_FORMAT_D24_UNORM_S8_UINT
-		// we need to create the depth buffer resource with a typeless format.  
-		depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+			D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
+			cbvHeapDesc.NumDescriptors = 1;
+			cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+			cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+			cbvHeapDesc.NodeMask = 0;
+			(D3D12Device->CreateDescriptorHeap(&cbvHeapDesc,
+				IID_PPV_ARGS(&mCbvHeap)));
 
-		depthStencilDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
-		depthStencilDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
-		depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+			dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+			dsvDesc.Texture2D.MipSlice = 0;
+			D3dDevice->CreateDepthStencilView(DepthStencilBuffer.get(), &dsvDesc, mDsvHeap->GetCPUDescriptorHandleForHeapStart());
 
-		D3D12_CLEAR_VALUE optClear;
-		optClear.Format = mDepthStencilFormat;
-		optClear.DepthStencil.Depth = 1.0f;
-		optClear.DepthStencil.Stencil = 0;
-
-		auto Pro01 = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-		ThrowIfFailed(md3dDevice->CreateCommittedResource(
-			&Pro01,
-			D3D12_HEAP_FLAG_NONE,
-			&depthStencilDesc,
-			D3D12_RESOURCE_STATE_COMMON,
-			&optClear,
-			IID_PPV_ARGS(mDepthStencilBuffer.put())));
-
-		// Create descriptor to mip level 0 of entire resource using the format of the resource.
-		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
-		dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-		dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		dsvDesc.Format = mDepthStencilFormat;
-		dsvDesc.Texture2D.MipSlice = 0;
-		md3dDevice->CreateDepthStencilView(mDepthStencilBuffer.get(), &dsvDesc, DepthStencilView());
+		}
 
 		// Transition the resource from its initial state to be used as a depth buffer.
 		auto feg = CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
@@ -630,16 +648,7 @@ bool Initialize()
 	// Reset the command list to prep for initialization commands.
 	ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.get(), nullptr));
 
-	//BuildDescriptorHeaps();
-	{
-		D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-		cbvHeapDesc.NumDescriptors = 1;
-		cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		cbvHeapDesc.NodeMask = 0;
-		ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&cbvHeapDesc,
-			IID_PPV_ARGS(&mCbvHeap)));
-	}
+
 	//BuildConstantBuffers();
 	{
 		mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(md3dDevice.get(), 1, true);

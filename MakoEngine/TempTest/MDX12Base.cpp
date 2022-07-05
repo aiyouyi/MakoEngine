@@ -10,11 +10,11 @@ bool MDX12Base::InitEnviroment()
 	ChooseAdapter(DXGIFactory);
 	CreateDevice(DXGIAdapter);
 	CreateFence(D3D12Device);
-	CreateCommandObject(D3D12Device);
 	GetDescriptorSize(D3D12Device);
-	SetMSAA(D3D12Device);	
-	CreateDescriptorHeap(D3D12Device);
+	SetMSAA(D3D12Device);
+	CreateCommandObject(D3D12Device);	
 	CreateSwapChain(D3D12CommandQueue, DXGIFactory, WindowHwnd);
+	CreateDescriptorHeap(D3D12Device);	
 	CreateRTV(D3D12Device, D3D12DescriptorHeapRTV, DXGISwapChain, RtvDescriptorSize);
 	CreateDSV(D3D12Device, MsaaQualityLevels, D3D12DescriptorHeapDSV);	
 	return false;
@@ -80,6 +80,24 @@ winrt::com_ptr<ID3D12Fence> MDX12Base::CreateFence(winrt::com_ptr<ID3D12Device> 
 	return  Fence;
 }
 
+void MDX12Base::GetDescriptorSize(winrt::com_ptr<ID3D12Device> D3dDevice)
+{
+	RtvDescriptorSize = D3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	DsvDescriptorSize = D3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	Cbv_Srv_UavDescriptorSize = D3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
+
+
+void MDX12Base::SetMSAA(winrt::com_ptr<ID3D12Device> D3dDevice)
+{
+	MsaaQualityLevels.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	MsaaQualityLevels.SampleCount = 1;
+	MsaaQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+	MsaaQualityLevels.NumQualityLevels = 0;
+	D3dDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &MsaaQualityLevels, sizeof(MsaaQualityLevels));
+	assert(MsaaQualityLevels.NumQualityLevels > 0);
+}
+
 void MDX12Base::CreateCommandObject(winrt::com_ptr<ID3D12Device> D3dDevice)
 {
 	D3D12_COMMAND_QUEUE_DESC CommandQueueDesc = {};
@@ -94,22 +112,8 @@ void MDX12Base::CreateCommandObject(winrt::com_ptr<ID3D12Device> D3dDevice)
 	CmdList->Close();
 }
 
-void MDX12Base::GetDescriptorSize(winrt::com_ptr<ID3D12Device> D3dDevice)
-{
-	RtvDescriptorSize = D3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	DsvDescriptorSize = D3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-	Cbv_Srv_UavDescriptorSize = D3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-}
 
-void MDX12Base::SetMSAA(winrt::com_ptr<ID3D12Device> D3dDevice)
-{
-	MsaaQualityLevels.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	MsaaQualityLevels.SampleCount = 1;
-	MsaaQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
-	MsaaQualityLevels.NumQualityLevels = 0;
-	D3dDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &MsaaQualityLevels, sizeof(MsaaQualityLevels));
-	assert(MsaaQualityLevels.NumQualityLevels > 0);
-}
+
 
 void MDX12Base::CreateSwapChain(winrt::com_ptr<ID3D12CommandQueue> CmdQueue, winrt::com_ptr<IDXGIFactory4> DxgiFactory, HWND Hwnd)
 {
@@ -133,14 +137,16 @@ void MDX12Base::CreateSwapChain(winrt::com_ptr<ID3D12CommandQueue> CmdQueue, win
 	SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 	DxgiFactory->CreateSwapChain(CmdQueue.get(), &SwapChainDesc, SwapChain.put());
 
-	//CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(D3D12DescriptorHeapRTV->GetCPUDescriptorHandleForHeapStart());
-	//for (UINT i = 0; i < 2; i++)
-	//{
-	//	mSwapChainBuffer[i] = nullptr;
-	//	(SwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-	//	D3D12Device->CreateRenderTargetView(mSwapChainBuffer[i].get(), nullptr, rtvHeapHandle);
-	//	rtvHeapHandle.Offset(1, RtvDescriptorSize);
-	//}
+	for (int i = 0; i < 2; ++i)
+		mSwapChainBuffer[i] = nullptr;
+	D3D12ResourceDepthStencilBuffer = nullptr;
+
+	// Resize the swap chain.
+	(DXGISwapChain->ResizeBuffers(
+		2,
+		1280, 720,
+		DXGI_FORMAT_R8G8B8A8_UNORM,
+		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 }
 
 void MDX12Base::CreateDescriptorHeap(winrt::com_ptr<ID3D12Device> D3dDevice)
@@ -163,21 +169,22 @@ void MDX12Base::CreateDescriptorHeap(winrt::com_ptr<ID3D12Device> D3dDevice)
 	D3dDevice->CreateDescriptorHeap(&DsvDescriptorHeapDesc, IID_PPV_ARGS(D3D12DescriptorHeapDSV.put()));
 }
 
-void MDX12Base::CreateRTV(winrt::com_ptr<ID3D12Device> D3dDevice, winrt::com_ptr<ID3D12DescriptorHeap> RtvHeap, winrt::com_ptr<IDXGISwapChain> SwapChain, UINT RtvSize)
+void MDX12Base::CreateRTV(winrt::com_ptr<ID3D12Device> D3dDevice, winrt::com_ptr<ID3D12DescriptorHeap>& RtvHeap, winrt::com_ptr<IDXGISwapChain> SwapChain, UINT RtvSize)
 {
+	FlushCmdQueue(D3D12Fence, D3D12CommandQueue);
+
+	(D3D12GraphicsCommandList->Reset(D3D12CommandAllocator.get(), nullptr));
 	CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHeapHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());
-	winrt::com_ptr<ID3D12Resource> SwapChainBuffer[2];
 	for (int i = 0; i < 2; i++)
 	{
-		SwapChain->GetBuffer(i, __uuidof(SwapChainBuffer[i]), SwapChainBuffer[i].put_void());
-		D3dDevice->CreateRenderTargetView(SwapChainBuffer[i].get(), nullptr, RtvHeapHandle);
+		SwapChain->GetBuffer(i, __uuidof(mSwapChainBuffer[i]), mSwapChainBuffer[i].put_void());
+		D3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].get(), nullptr, RtvHeapHandle);
 		RtvHeapHandle.Offset(1, RtvSize);
 	}
 }
 
 void MDX12Base::CreateDSV(winrt::com_ptr<ID3D12Device>& D3dDevice, D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MsaaQualityLevel, winrt::com_ptr<ID3D12DescriptorHeap>& DsvHeap)
 {
-	//在CPU中创建好深度模板数据资源
 	D3D12_RESOURCE_DESC DsvResourceDesc;
 	DsvResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	DsvResourceDesc.Alignment = 0;
@@ -194,7 +201,7 @@ void MDX12Base::CreateDSV(winrt::com_ptr<ID3D12Device>& D3dDevice, D3D12_FEATURE
 	OptClear.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	OptClear.DepthStencil.Depth = 1;	
 	OptClear.DepthStencil.Stencil = 0;	
-	winrt::com_ptr<ID3D12Resource> DepthStencilBuffer;
+	winrt::com_ptr<ID3D12Resource>& DepthStencilBuffer= D3D12ResourceDepthStencilBuffer;
 	D3D12_HEAP_PROPERTIES HeapProps;
 	HeapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
 	HeapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -208,14 +215,13 @@ void MDX12Base::CreateDSV(winrt::com_ptr<ID3D12Device>& D3dDevice, D3D12_FEATURE
 		&OptClear,	//上面定义的优化值指针
 		IID_PPV_ARGS(DepthStencilBuffer.put()));	//返回深度模板资源
 
-	winrt::com_ptr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
 	cbvHeapDesc.NumDescriptors = 1;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
 	debughr01 = (D3D12Device->CreateDescriptorHeap(&cbvHeapDesc,
-		IID_PPV_ARGS(&mCbvHeap)));
+		IID_PPV_ARGS(&D3D12CbvHeap)));
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;

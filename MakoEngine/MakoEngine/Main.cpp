@@ -2,7 +2,7 @@
 #include"GLBMeshData.h"
 #include"FGame.h"
 
-#define STest 1 
+#define STest 0 
 #if STest
 #define Func0 main2
 #define Func1 main
