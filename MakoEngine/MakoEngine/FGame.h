@@ -98,7 +98,6 @@ public:
 	MWindow* pWindow;
 	GLBMeshData* GLBScene;
 	class MDX12Base* DX12Base = nullptr;
-	void Init();
 	void Tick();
 
 	void BuildPSO();
@@ -121,18 +120,13 @@ public:
 	std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
 
 	static XMFLOAT4X4 Identity4x4();
-
-	void Flush();
+	static winrt::com_ptr<ID3D12Resource> CreateDefaultBuffer(
+		ID3D12Device* device,
+		ID3D12GraphicsCommandList* cmdList,
+		const void* initData,
+		UINT64 byteSize,
+		winrt::com_ptr<ID3D12Resource>& uploadBuffer);
 
 	bool Initialize();
-
-	void Tick666();
-
-
-	//
-	HWND      mhMainWnd = nullptr; // main window handle
-	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView();
-	ID3D12Resource* CurrentBackBuffer();
-	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView();
 };
 
