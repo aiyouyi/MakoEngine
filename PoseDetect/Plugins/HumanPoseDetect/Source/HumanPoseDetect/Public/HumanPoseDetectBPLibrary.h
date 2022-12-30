@@ -21,6 +21,10 @@ class HUMANPOSEDETECT_API UHumanPoseDetectBPLibrary : public UBlueprintFunctionL
 
 public:
 
+	UFUNCTION(BlueprintPure, Category = "Utilities", meta = (Keywords = "unproject"))
+		static bool GetInvViewProjectionMatrix(APlayerController const* Player, FLinearColor& M0, FLinearColor& M1, FLinearColor& M2, FLinearColor& M3,FVector2D& ViewRect);
+
+
 	static void InitPoseDetect();
 
 	static void DoPOSEProcess(unsigned char* ptr, int height, int width, int format, float* mesh_ptr);

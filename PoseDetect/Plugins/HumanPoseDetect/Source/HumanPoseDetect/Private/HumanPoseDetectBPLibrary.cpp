@@ -73,6 +73,42 @@ float UHumanPoseDetectBPLibrary::HumanPoseDetectSampleFunction(float Param)
 	return -1;
 }
 
+bool UHumanPoseDetectBPLibrary::GetInvViewProjectionMatrix(APlayerController const* Player, FLinearColor& M0, FLinearColor& M1, FLinearColor& M2, FLinearColor& M3, FVector2D& ViewRect)
+{
+	ULocalPlayer* const LP = Player ? Player->GetLocalPlayer() : nullptr;
+	if (LP && LP->ViewportClient)
+	{
+		FSceneViewProjectionData ProjectionData;
+		if (LP->GetProjectionData(LP->ViewportClient->Viewport, eSSP_FULL, /*out*/ ProjectionData))
+		{
+			ViewRect.X=ProjectionData.GetConstrainedViewRect().Width();
+			ViewRect.Y = ProjectionData.GetConstrainedViewRect().Height();
+			FMatrix const InvViewProjMatrix = ProjectionData.ComputeViewProjectionMatrix().InverseFast();
+			M0.R = InvViewProjMatrix.M[0][0];
+			M0.G = InvViewProjMatrix.M[1][0];
+			M0.B = InvViewProjMatrix.M[2][0];
+			M0.A = InvViewProjMatrix.M[3][0];
+
+			M1.R = InvViewProjMatrix.M[0][1];
+			M1.G = InvViewProjMatrix.M[1][1];
+			M1.B = InvViewProjMatrix.M[2][1];
+			M1.A = InvViewProjMatrix.M[3][1];
+
+			M2.R = InvViewProjMatrix.M[0][2];
+			M2.G = InvViewProjMatrix.M[1][2];
+			M2.B = InvViewProjMatrix.M[2][2];
+			M2.A = InvViewProjMatrix.M[3][2];
+
+			M3.R = InvViewProjMatrix.M[0][3];
+			M3.G = InvViewProjMatrix.M[1][3];
+			M3.B = InvViewProjMatrix.M[2][3];
+			M3.A = InvViewProjMatrix.M[3][3];
+			return true;
+		}
+	}
+	return false;
+}
+
 void UHumanPoseDetectBPLibrary::InitPoseDetect()
 {
 	POSEInit();
