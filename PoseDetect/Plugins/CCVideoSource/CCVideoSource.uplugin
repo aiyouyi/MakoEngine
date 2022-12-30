@@ -1,0 +1,30 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "CCVideoSource",
+	"Description": "PuimanWang",
+	"Category": "Other",
+	"CreatedBy": "PuimanWang",
+	"CreatedByURL": "PuimanWang",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "wangpeimin@corp.netease.com",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "CCVideoSource",
+			"Type": "Runtime",
+			"LoadingPhase": "PreLoadingScreen"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "CCActorLib",
+			"Enabled": true
+		}
+	]
+}

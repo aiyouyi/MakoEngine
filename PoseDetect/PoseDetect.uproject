@@ -1,0 +1,16 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{9CB8E801-4DC2-5DD4-ADB7-399009C23144}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "PoseDetect",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		}
+	]
+}
