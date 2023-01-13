@@ -12,11 +12,13 @@
 #include <iostream>
 
 #include "Toolbox/string_util.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 using namespace std;
 
 
-const char *s_szStickerShader = "\
+const char* s_szStickerShader = "\
 cbuffer ConstantBuffer : register(b0)\
 {\
 	matrix matWVP;\
@@ -50,7 +52,7 @@ float4 PS(VS_OUTPUT input) : SV_Target\
 	return txDiffuse.Sample(samLinear, input.Tex)*input.Color;\
 }";
 
-const char *s_szHeaderForCullShader = "\
+const char* s_szHeaderForCullShader = "\
 cbuffer ConstantBuffer : register(b0)\
 {\
 	matrix matWVP;\
@@ -75,16 +77,16 @@ float4 PS(VS_OUTPUT input) : SV_Target\
 	return float4(1.0f,1.0f,1.0f,1.0f);\
 }";
 
-extern bool loadFSObject(HZIP hZip, const char *szFile, FSObject *pObject, XMLNode &nodeCocosModel);
-bool Cocos3DScene::loadFromXML(const XMLNode &nodeModels, HZIP hZip, const char *szFile)
+extern bool loadFSObject(HZIP hZip, const char* szFile, FSObject* pObject, XMLNode& nodeCocosModel);
+bool Cocos3DScene::loadFromXML(const XMLNode& nodeModels, HZIP hZip, const char* szFile)
 {
 	//载入普通物体
 	int i = -1;
 	XMLNode nodeCocosModel = nodeModels.getChildNode("fsObject", ++i);
 	while (!nodeCocosModel.isEmpty())
 	{
-		const char *szModelPath = nodeCocosModel.getAttribute("file");
-		FSObject *pObject = FSObject::createFromZip(szModelPath, hZip, szFile);
+		const char* szModelPath = nodeCocosModel.getAttribute("file");
+		FSObject* pObject = FSObject::createFromZip(szModelPath, hZip, szFile);
 		if (pObject != NULL)
 		{
 			pObject->retain();
@@ -100,10 +102,10 @@ bool Cocos3DScene::loadFromXML(const XMLNode &nodeModels, HZIP hZip, const char 
 	XMLNode nodeFacialObject = nodeModels.getChildNode("facialObject", ++i);
 	while (!nodeFacialObject.isEmpty())
 	{
-		const char *szModelPath = nodeFacialObject.getAttribute("file");
-		const char *szNeckBone = nodeFacialObject.getAttribute("neckBone");
-		const char *szNeckBone2 = nodeFacialObject.getAttribute("neckBone2");
-		FacialObject *pFacialObject = FacialObject::createFromZip(szModelPath, hZip, szFile);
+		const char* szModelPath = nodeFacialObject.getAttribute("file");
+		const char* szNeckBone = nodeFacialObject.getAttribute("neckBone");
+		const char* szNeckBone2 = nodeFacialObject.getAttribute("neckBone2");
+		FacialObject* pFacialObject = FacialObject::createFromZip(szModelPath, hZip, szFile);
 		if (pFacialObject != NULL)
 		{
 			pFacialObject->retain();
@@ -128,10 +130,10 @@ bool Cocos3DScene::loadFromXML(const XMLNode &nodeModels, HZIP hZip, const char 
 	{
 		BaseLight light;
 		memset(&light, 0, sizeof(BaseLight));
-		const char *szAmbient = nodeLight.getAttribute("ambient");
-		const char *szDiffuse = nodeLight.getAttribute("diffuse");
-		const char *szSpecular = nodeLight.getAttribute("specular");
-		const char *szOrientation = nodeLight.getAttribute("orientation");
+		const char* szAmbient = nodeLight.getAttribute("ambient");
+		const char* szDiffuse = nodeLight.getAttribute("diffuse");
+		const char* szSpecular = nodeLight.getAttribute("specular");
+		const char* szOrientation = nodeLight.getAttribute("orientation");
 		if (szAmbient != NULL)
 		{
 			sscanf(szAmbient, "%f,%f,%f,%f", &light.m_vAmbient.x, &light.m_vAmbient.y, &light.m_vAmbient.z, &light.m_vAmbient.w);
@@ -159,7 +161,7 @@ bool Cocos3DScene::loadFromXML(const XMLNode &nodeModels, HZIP hZip, const char 
 
 void Cocos3DScene::destory()
 {
-	vector<FSObject *>::iterator it = m_vRootObjects.begin();
+	vector<FSObject*>::iterator it = m_vRootObjects.begin();
 	while (it != m_vRootObjects.end())
 	{
 		(*it)->release();
@@ -230,7 +232,7 @@ public:
 	DX11ShaderForHeaderCull() {}
 	~DX11ShaderForHeaderCull() {}
 
-	virtual bool initInputLayout(ID3DBlob *pVSBlob)
+	virtual bool initInputLayout(ID3DBlob* pVSBlob)
 	{
 		HRESULT hr = S_OK;
 		D3D11_INPUT_ELEMENT_DESC layout[] =
@@ -306,9 +308,9 @@ void StickerEffect::setMaxCacheSize(int nSize)
 	m_nMaxCacheSize = nSize;
 
 	//清理掉不需要的缓存数据
-	while(m_listEffectCache.size() > m_nMaxCacheSize)
+	while (m_listEffectCache.size() > m_nMaxCacheSize)
 	{
-		SEffectCache *effectCache = m_listEffectCache.front();
+		SEffectCache* effectCache = m_listEffectCache.front();
 		if (effectCache != NULL)
 		{
 			effectCache->m_effectInfo.destory();
@@ -318,7 +320,7 @@ void StickerEffect::setMaxCacheSize(int nSize)
 	}
 }
 
-bool StickerEffect::loadEffect(const string &szPath, const string &file, EffectCallback callback, void *lpParam)
+bool StickerEffect::loadEffect(const string& szPath, const string& file, EffectCallback callback, void* lpParam)
 {
 	if (m_effectStatus == SES_LOADING)
 	{
@@ -335,7 +337,7 @@ bool StickerEffect::loadEffect(const string &szPath, const string &file, EffectC
 		RecycleEffect();
 	}
 
-	if (szPath.size() > 0 && file.size()>0)
+	if (szPath.size() > 0 && file.size() > 0)
 	{
 		if (bNeedReload)
 		{
@@ -368,7 +370,7 @@ bool StickerEffect::loadEffect(const string &szPath, const string &file, EffectC
 	return true;
 }
 
-bool StickerEffect::loadEffectFromZip(const string &szZipFile, const string &xml, EffectCallback callback, void *lpParam)
+bool StickerEffect::loadEffectFromZip(const string& szZipFile, const string& xml, EffectCallback callback, void* lpParam)
 {
 	if (m_effectStatus == SES_LOADING)
 	{
@@ -424,7 +426,7 @@ bool StickerEffect::loadEffectFromZip(const string &szZipFile, const string &xml
 	return true;
 }
 
-bool StickerEffect::loadEffectFromZip_aysn(const string &szZipFile, const string &xml, EffectCallback callback, void *lpParam)
+bool StickerEffect::loadEffectFromZip_aysn(const string& szZipFile, const string& xml, EffectCallback callback, void* lpParam)
 {
 	if (m_effectStatus == SES_LOADING)
 	{
@@ -480,7 +482,7 @@ bool StickerEffect::loadEffectFromZip_aysn(const string &szZipFile, const string
 	return true;
 }
 
-bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
+bool StickerEffect::loadEffect_impl(const char* szPath, const char* szXMLFile)
 {
 	char szFullFile[256];
 	sprintf(szFullFile, "%s/%s", szPath, szXMLFile);
@@ -488,8 +490,8 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 	XMLResults xResults;
 	XMLNode nodeModels = XMLNode::parseFile(szFullFile, "models", &xResults);
 
-	const char *szLoopMode = nodeModels.getAttribute("loopMode");
-	const char *szEffectDuring = nodeModels.getAttribute("effectDuring");
+	const char* szLoopMode = nodeModels.getAttribute("loopMode");
+	const char* szEffectDuring = nodeModels.getAttribute("effectDuring");
 	en_EffectLoop_Mode effectLoopMode = ELM_REPEAT;
 	long effectDuring = -1;
 	if (szLoopMode != NULL && strcmp(szLoopMode, "oneShot") == 0)
@@ -505,15 +507,15 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 	m_effectLoopMode = effectLoopMode;
 	m_nEffectDuring = effectDuring;
 
-	typedef map<string, Drawable *> DrawableMap_;
+	typedef map<string, Drawable*> DrawableMap_;
 	DrawableMap_ m_mapImage;
 	int i = -1;
 	XMLNode nodeDrawable = nodeModels.getChildNode("drawable", ++i);
 	while (!nodeDrawable.isEmpty())
 	{
-		const char *szDrawableName = nodeDrawable.getAttribute("name");
-		const char *szImagePath = nodeDrawable.getAttribute("image");
-		const char *szGenMipmap = nodeDrawable.getAttribute("genMipmaps");
+		const char* szDrawableName = nodeDrawable.getAttribute("name");
+		const char* szImagePath = nodeDrawable.getAttribute("image");
+		const char* szGenMipmap = nodeDrawable.getAttribute("genMipmaps");
 		bool bGenMipmap = false;
 		if (szGenMipmap != NULL && (strcmp(szGenMipmap, "yes") || strcmp(szGenMipmap, "YES")))
 		{
@@ -535,17 +537,17 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 	nodeDrawable = nodeModels.getChildNode("anidrawable", ++i);
 	while (!nodeDrawable.isEmpty())
 	{
-		const char *szDrawableName = nodeDrawable.getAttribute("name");
-		AnimationDrawable *drawable = NULL;
+		const char* szDrawableName = nodeDrawable.getAttribute("name");
+		AnimationDrawable* drawable = NULL;
 
-		const char *szTarget = nodeDrawable.getAttribute("ref");
+		const char* szTarget = nodeDrawable.getAttribute("ref");
 		if (szTarget != NULL)
 		{
-			map<std::string, Drawable *>::iterator it = m_mapImage.find(szTarget);
+			map<std::string, Drawable*>::iterator it = m_mapImage.find(szTarget);
 			if (it != m_mapImage.end())
 			{
-				AnimationDrawable *targetDrawable = (AnimationDrawable *)(it->second);
-				drawable = (AnimationDrawable *)targetDrawable->Clone();
+				AnimationDrawable* targetDrawable = (AnimationDrawable*)(it->second);
+				drawable = (AnimationDrawable*)targetDrawable->Clone();
 			}
 		}
 		if (drawable == NULL)
@@ -553,11 +555,11 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 			drawable = new AnimationDrawable();
 		}
 
-		const char *szOffset = nodeDrawable.getAttribute("offset");
+		const char* szOffset = nodeDrawable.getAttribute("offset");
 		long offset = atol(szOffset);
 		drawable->setOffset(offset);
 
-		const char *szLoopMode = nodeDrawable.getAttribute("loopMode");
+		const char* szLoopMode = nodeDrawable.getAttribute("loopMode");
 		if (szLoopMode != NULL && strcmp(szLoopMode, "oneShot") == 0)
 		{
 			drawable->setLoopMode(ELM_ONESHOT);
@@ -567,7 +569,7 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 			drawable->setLoopMode(ELM_REPEAT);
 		}
 
-		const char *szGenMipmap = nodeDrawable.getAttribute("genMipmaps");
+		const char* szGenMipmap = nodeDrawable.getAttribute("genMipmaps");
 		bool bGenMipmap = false;
 		if (szGenMipmap != NULL && (strcmp(szGenMipmap, "yes") || strcmp(szGenMipmap, "YES")))
 		{
@@ -579,11 +581,11 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 		XMLNode nodeItem = nodeDrawable.getChildNode("item", ++j);
 		while (!nodeItem.isEmpty())
 		{
-			const char *szImagePath = nodeItem.getAttribute("image");
+			const char* szImagePath = nodeItem.getAttribute("image");
 			sprintf(szFullFile, "%s/%s", szPath, szImagePath);
 			std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
 
-			const char *szDuring = nodeItem.getAttribute("duration");
+			const char* szDuring = nodeItem.getAttribute("duration");
 			long during = atol(szDuring);
 
 			drawable->appandTex(during, TexRHI);
@@ -603,12 +605,12 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 	{
 		EffectModel model;
 		//const char *szModelName = nodeModel.getAttribute("name");
-		const char *szFaceCount = nodeModel.getAttribute("faceCount");
-		const char *szVertexCount = nodeModel.getAttribute("vertexCount");
+		const char* szFaceCount = nodeModel.getAttribute("faceCount");
+		const char* szVertexCount = nodeModel.getAttribute("vertexCount");
 		//const char *szVertexDecl = nodeModel.getAttribute("vertexDecl");
-		const char *szDrawable = nodeModel.getAttribute("drawable");
-		const char *szColor = nodeModel.getAttribute("color");
-		const char *szTransparent = nodeModel.getAttribute("transparent");
+		const char* szDrawable = nodeModel.getAttribute("drawable");
+		const char* szColor = nodeModel.getAttribute("color");
+		const char* szTransparent = nodeModel.getAttribute("transparent");
 		if (szColor != NULL)
 		{
 			vec4 vColor(1, 1, 1, 1);
@@ -627,7 +629,7 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 
 		if (szDrawable != NULL && strlen(szDrawable) > 0)
 		{
-			map<string, Drawable *>::iterator it = m_mapImage.find(szDrawable);
+			map<string, Drawable*>::iterator it = m_mapImage.find(szDrawable);
 			if (it != m_mapImage.end())
 			{
 				model.m_drawable = it->second->Clone();
@@ -642,11 +644,11 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 			}
 		}
 
-		const char *szModelRef = nodeModel.getAttribute("modeRef");
+		const char* szModelRef = nodeModel.getAttribute("modeRef");
 		if (szModelRef != NULL)
 		{
 			sprintf(szFullFile, "%s/%s", szPath, szModelRef);
-			FILE *file = fopen(szFullFile, "rb");
+			FILE* file = fopen(szFullFile, "rb");
 			if (file != NULL)
 			{
 				unsigned int nCode;
@@ -669,12 +671,12 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 					for (int indexVertex = 0; indexVertex < nVertexCount; ++indexVertex)
 					{
 						fread(&(model.m_arrVertices[indexVertex].vUV), sizeof(vec2), 1, file);
-						vec2 &vUV = model.m_arrVertices[indexVertex].vUV;
-						if (vUV.x<0.0f || vUV.x > 1.0f)
+						vec2& vUV = model.m_arrVertices[indexVertex].vUV;
+						if (vUV.x < 0.0f || vUV.x > 1.0f)
 						{
 							vUV.x -= floor(vUV.x);
 						}
-						if (vUV.y<0.0f || vUV.y > 1.0f)
+						if (vUV.y < 0.0f || vUV.y > 1.0f)
 						{
 							vUV.y -= floor(vUV.y);
 						}
@@ -708,18 +710,18 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 				XMLNode nodeVertex = nodeModel.getChildNode("vertex", ++j);
 				while (!nodeVertex.isEmpty())
 				{
-					const char *szPos = nodeVertex.getAttribute("pos");
-					const char *szUV = nodeVertex.getAttribute("uv");
+					const char* szPos = nodeVertex.getAttribute("pos");
+					const char* szUV = nodeVertex.getAttribute("uv");
 
 					vec2 vUV;
 					vec3 vPos;
 					sscanf(szPos, "%f,%f,%f", &vPos.x, &vPos.y, &vPos.z);
 					sscanf(szUV, "%f,%f", &vUV.x, &vUV.y);
-					if (vUV.x<0.0f || vUV.x > 1.0f)
+					if (vUV.x < 0.0f || vUV.x > 1.0f)
 					{
 						vUV.x -= floor(vUV.x);
 					}
-					if (vUV.y<0.0f || vUV.y > 1.0f)
+					if (vUV.y < 0.0f || vUV.y > 1.0f)
 					{
 						vUV.y -= floor(vUV.y);
 					}
@@ -735,7 +737,7 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 				XMLNode nodeIndex = nodeModel.getChildNode("face", ++j);
 				while (!nodeIndex.isEmpty())
 				{
-					const char *szIndex = nodeIndex.getAttribute("index");
+					const char* szIndex = nodeIndex.getAttribute("index");
 					int index[3];
 					sscanf(szIndex, "%d,%d,%d", index, index + 1, index + 2);
 
@@ -756,7 +758,7 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 
 	for (int i = 0; i < m_effectInfo.m_vEffectModel.size(); ++i)
 	{
-		EffectModel &effectModel = m_effectInfo.m_vEffectModel[i];
+		EffectModel& effectModel = m_effectInfo.m_vEffectModel[i];
 		//创建渲染buffer
 		D3D11_BUFFER_DESC verBufferDesc;
 		memset(&verBufferDesc, 0, sizeof(D3D11_BUFFER_DESC));
@@ -792,11 +794,11 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 		</rect>
 		*/
 		Effect2DRect rectEffect;
-		const char *szX = nodeRect.getAttribute("x");
-		const char *szY = nodeRect.getAttribute("y");
-		const char *szWidth = nodeRect.getAttribute("width");
-		const char *szHeight = nodeRect.getAttribute("height");
-		const char *szAlignType = nodeRect.getAttribute("alignType");
+		const char* szX = nodeRect.getAttribute("x");
+		const char* szY = nodeRect.getAttribute("y");
+		const char* szWidth = nodeRect.getAttribute("width");
+		const char* szHeight = nodeRect.getAttribute("height");
+		const char* szAlignType = nodeRect.getAttribute("alignType");
 
 		int x = atoi(szX);
 		int y = atoi(szY);
@@ -806,7 +808,7 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 		if (szAlignType != NULL)
 		{
 			string szArrAlignType[] = { "EAPT_LT", "EAPT_LB", "EAPT_RT", "EAPT_RB", "EAPT_CT", "EAPT_CB", "EAPT_LC", "EAPT_RC", "EAPT_CC" };
-			for (int index = 0; index<EAPT_MAX; ++index)
+			for (int index = 0; index < EAPT_MAX; ++index)
 			{
 				if (strcmp(szAlignType, szArrAlignType[index].c_str()) == 0)
 				{
@@ -818,10 +820,10 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 
 		rectEffect.setRect(x, y, width, height, alignType);
 
-		const char *szDrawable = nodeRect.getAttribute("drawable");
+		const char* szDrawable = nodeRect.getAttribute("drawable");
 		if (szDrawable != NULL && strlen(szDrawable) > 0)
 		{
-			map<std::string, Drawable *>::iterator it = m_mapImage.find(szDrawable);
+			map<std::string, Drawable*>::iterator it = m_mapImage.find(szDrawable);
 			if (it != m_mapImage.end())
 			{
 				rectEffect.m_drawable = it->second->Clone();
@@ -859,20 +861,20 @@ bool StickerEffect::loadEffect_impl(const char *szPath, const char *szXMLFile)
 }
 
 
-DX11Texture *CreateFromZIP(HZIP hZip, const char *szImagePath, bool bGenMipmap)
+DX11Texture* CreateFromZIP(HZIP hZip, const char* szImagePath, bool bGenMipmap)
 {
-	DX11Texture *pTex = new DX11Texture();
+	DX11Texture* pTex = new DX11Texture();
 	pTex->initTextureFromZip(hZip, szImagePath, bGenMipmap);
 	return pTex;
 }
 
 DWORD WINAPI ThreadFun(LPVOID pM)
 {
-	SResourceAsyn *pResourceAsyn = (SResourceAsyn *)pM;
+	SResourceAsyn* pResourceAsyn = (SResourceAsyn*)pM;
 
-	const char *szPath = pResourceAsyn->szPath.c_str();
-	const char *szXMLFile = pResourceAsyn->szXMLFile.c_str();
-	const char *szDesc = pResourceAsyn->szDesc.c_str();
+	const char* szPath = pResourceAsyn->szPath.c_str();
+	const char* szXMLFile = pResourceAsyn->szXMLFile.c_str();
+	const char* szDesc = pResourceAsyn->szDesc.c_str();
 
 	std::wstring wPath = core::u8_ucs2(pResourceAsyn->szPath);
 
@@ -898,15 +900,15 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 		long effectDuring = -1;
 		if (strlen(szDesc) > 0 && ZR_OK == FindZipItem(hZip, szDesc, true, &index, &ze))
 		{
-			char *pDataBuffer = new char[ze.unc_size];
+			char* pDataBuffer = new char[ze.unc_size];
 			ZRESULT res = UnzipItem(hZip, index, pDataBuffer, ze.unc_size);
 			if (res == ZR_OK)
 			{
 				XMLResults xResults;
 				XMLNode nodeModels = XMLNode::parseBuffer(pDataBuffer, ze.unc_size, "giftDesc", &xResults);
-				const char *effectXML = nodeModels.getAttribute("effectXML");
-				const char *szDuring = nodeModels.getAttribute("during");
-				const char *effectXML_V2 = nodeModels.getAttribute("effectXML_V2");
+				const char* effectXML = nodeModels.getAttribute("effectXML");
+				const char* szDuring = nodeModels.getAttribute("during");
+				const char* effectXML_V2 = nodeModels.getAttribute("effectXML_V2");
 				if (effectXML != NULL)
 				{
 					pResourceAsyn->szXMLFile = effectXML;
@@ -928,7 +930,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 
 		if (ZR_OK == FindZipItem(hZip, pResourceAsyn->szXMLFile.c_str(), true, &index, &ze))
 		{
-			char *pDataBuffer = new char[ze.unc_size];
+			char* pDataBuffer = new char[ze.unc_size];
 			ZRESULT res = UnzipItem(hZip, index, pDataBuffer, ze.unc_size);
 			if (res != ZR_OK)
 			{
@@ -943,10 +945,10 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 			XMLResults xResults;
 			XMLNode nodeModels = XMLNode::parseBuffer(pDataBuffer, ze.unc_size, "models", &xResults);
 			delete[]pDataBuffer;
-			const char *szLoopMode = nodeModels.getAttribute("loopMode");
-			const char *szEffectDuring = nodeModels.getAttribute("effectDuring");
+			const char* szLoopMode = nodeModels.getAttribute("loopMode");
+			const char* szEffectDuring = nodeModels.getAttribute("effectDuring");
 			en_EffectLoop_Mode effectLoopMode = ELM_REPEAT;
-			if (szLoopMode != NULL && strcmp(szLoopMode, "oneShot")==0)
+			if (szLoopMode != NULL && strcmp(szLoopMode, "oneShot") == 0)
 			{
 				effectLoopMode = ELM_ONESHOT;
 			}
@@ -961,20 +963,20 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 			char szFullFile[256];
 			sprintf(szFullFile, "%s/%s", szPath, szXMLFile);
 
-			typedef map<string, Drawable *> DrawableMap_;
+			typedef map<string, Drawable*> DrawableMap_;
 			DrawableMap_ m_mapImage;
 			int i = -1;
 			XMLNode nodeDrawable = nodeModels.getChildNode("drawable", ++i);
 			while (!nodeDrawable.isEmpty())
 			{
-				const char *szDrawableName = nodeDrawable.getAttribute("name");
-				const char *szImagePath = nodeDrawable.getAttribute("image");
+				const char* szDrawableName = nodeDrawable.getAttribute("name");
+				const char* szImagePath = nodeDrawable.getAttribute("image");
 
 				sprintf(szFullFile, "%s/%s", pResourceAsyn->szPath.c_str(), szImagePath);
 
-				const char *szGenMipmap = nodeDrawable.getAttribute("genMipmaps");
+				const char* szGenMipmap = nodeDrawable.getAttribute("genMipmaps");
 				bool bGenMipmap = false;
-				if (szGenMipmap != NULL && (strcmp(szGenMipmap, "yes")==0 || strcmp(szGenMipmap, "YES")==0))
+				if (szGenMipmap != NULL && (strcmp(szGenMipmap, "yes") == 0 || strcmp(szGenMipmap, "YES") == 0))
 				{
 					bGenMipmap = true;
 				}
@@ -997,17 +999,17 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 			nodeDrawable = nodeModels.getChildNode("anidrawable", ++i);
 			while (!nodeDrawable.isEmpty())
 			{
-				const char *szDrawableName = nodeDrawable.getAttribute("name");
-				AnimationDrawable *drawable = NULL;
+				const char* szDrawableName = nodeDrawable.getAttribute("name");
+				AnimationDrawable* drawable = NULL;
 
-				const char *szTarget = nodeDrawable.getAttribute("ref");
+				const char* szTarget = nodeDrawable.getAttribute("ref");
 				if (szTarget != NULL)
 				{
-					map<std::string, Drawable *>::iterator it = m_mapImage.find(szTarget);
+					map<std::string, Drawable*>::iterator it = m_mapImage.find(szTarget);
 					if (it != m_mapImage.end())
 					{
-						AnimationDrawable *targetDrawable = (AnimationDrawable *)(it->second);
-						drawable = (AnimationDrawable *)targetDrawable->Clone();
+						AnimationDrawable* targetDrawable = (AnimationDrawable*)(it->second);
+						drawable = (AnimationDrawable*)targetDrawable->Clone();
 					}
 				}
 				if (drawable == NULL)
@@ -1015,11 +1017,11 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 					drawable = new AnimationDrawable();
 				}
 
-				const char *szOffset = nodeDrawable.getAttribute("offset");
+				const char* szOffset = nodeDrawable.getAttribute("offset");
 				long offset = atol(szOffset);
 				drawable->setOffset(offset);
 
-				const char *szLoopMode = nodeDrawable.getAttribute("loopMode");
+				const char* szLoopMode = nodeDrawable.getAttribute("loopMode");
 				if (szLoopMode != NULL && strcmp(szLoopMode, "oneShot") == 0)
 				{
 					drawable->setLoopMode(ELM_ONESHOT);
@@ -1029,15 +1031,15 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 					drawable->setLoopMode(ELM_REPEAT);
 				}
 
-				const char *szGenMipmap = nodeDrawable.getAttribute("genMipmaps");
+				const char* szGenMipmap = nodeDrawable.getAttribute("genMipmaps");
 				bool bGenMipmap = false;
-				if (szGenMipmap != NULL && (strcmp(szGenMipmap, "yes")==0 || strcmp(szGenMipmap, "YES")==0))
+				if (szGenMipmap != NULL && (strcmp(szGenMipmap, "yes") == 0 || strcmp(szGenMipmap, "YES") == 0))
 				{
 					bGenMipmap = true;
 				}
 
-				const char *szItems = nodeDrawable.getAttribute("items");
-				const char *szItemInfo = nodeDrawable.getAttribute("iteminfo");
+				const char* szItems = nodeDrawable.getAttribute("items");
+				const char* szItemInfo = nodeDrawable.getAttribute("iteminfo");
 				if (szItems != NULL && szItemInfo != NULL)
 				{
 					int iStart = 0;
@@ -1074,7 +1076,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 				XMLNode nodeItem = nodeDrawable.getChildNode("item", ++j);
 				while (!nodeItem.isEmpty())
 				{
-					const char *szImagePath = nodeItem.getAttribute("image");
+					const char* szImagePath = nodeItem.getAttribute("image");
 					sprintf(szFullFile, "%s/%s", pResourceAsyn->szPath.c_str(), szImagePath);
 
 					std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
@@ -1084,7 +1086,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 						GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
 					}
 
-					const char *szDuring = nodeItem.getAttribute("duration");
+					const char* szDuring = nodeItem.getAttribute("duration");
 					long during = atol(szDuring);
 
 					drawable->appandTex(during, TexRHI);
@@ -1105,14 +1107,14 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 			{
 				EffectModel model;
 				//const char *szModelName = nodeModel.getAttribute("name");
-				const char *szFaceCount = nodeModel.getAttribute("faceCount");
-				const char *szVertexCount = nodeModel.getAttribute("vertexCount");
+				const char* szFaceCount = nodeModel.getAttribute("faceCount");
+				const char* szVertexCount = nodeModel.getAttribute("vertexCount");
 				//const char *szVertexDecl = nodeModel.getAttribute("vertexDecl");
-				const char *szDrawable = nodeModel.getAttribute("drawable");
-				const char *szColor = nodeModel.getAttribute("color");
-				const char *szTransparent = nodeModel.getAttribute("transparent");
+				const char* szDrawable = nodeModel.getAttribute("drawable");
+				const char* szColor = nodeModel.getAttribute("color");
+				const char* szTransparent = nodeModel.getAttribute("transparent");
 
-				const char *szLayer = nodeModel.getAttribute("Layer");
+				const char* szLayer = nodeModel.getAttribute("Layer");
 				if (szLayer != NULL)
 				{
 					model.m_Layer = atoi(szLayer);
@@ -1136,7 +1138,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 
 				if (szDrawable != NULL && strlen(szDrawable) > 0)
 				{
-					map<string, Drawable *>::iterator it = m_mapImage.find(szDrawable);
+					map<string, Drawable*>::iterator it = m_mapImage.find(szDrawable);
 					if (it != m_mapImage.end())
 					{
 						model.m_drawable = it->second->Clone();
@@ -1151,12 +1153,12 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 					}
 				}
 
-				const char *szModelRef = nodeModel.getAttribute("modeRef");
+				const char* szModelRef = nodeModel.getAttribute("modeRef");
 				if (szModelRef != NULL)
 				{
 					if (ZR_OK == FindZipItem(hZip, szModelRef, true, &index, &ze))
 					{
-						char *pDataBuffer = new char[ze.unc_size];
+						char* pDataBuffer = new char[ze.unc_size];
 						ZRESULT res = UnzipItem(hZip, index, pDataBuffer, ze.unc_size);
 						if (res == ZR_OK)
 						{
@@ -1165,7 +1167,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 							int nFaceCount;
 							int nVertexCount;
 
-							char *pDataTemp = pDataBuffer;
+							char* pDataTemp = pDataBuffer;
 							memcpy(&nCode, pDataTemp, sizeof(unsigned int)); pDataTemp += 4;
 							memcpy(&version, pDataTemp, sizeof(int)); pDataTemp += 4;
 							if (nCode == 0x1f1f1f0f && version == 1)
@@ -1174,7 +1176,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 
 								model.m_nVertex = nVertexCount;
 								model.m_arrVertices = new EffectVertex[nVertexCount];
-								float *fDataTemp = (float *)pDataTemp;
+								float* fDataTemp = (float*)pDataTemp;
 								for (int indexVertex = 0; indexVertex < nVertexCount; ++indexVertex)
 								{
 									model.m_arrVertices[indexVertex].vPos = vec3(fDataTemp[0], fDataTemp[1], fDataTemp[2]);
@@ -1183,12 +1185,12 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 								for (int indexVertex = 0; indexVertex < nVertexCount; ++indexVertex)
 								{
 									model.m_arrVertices[indexVertex].vUV = vec2(fDataTemp[0], fDataTemp[1]);
-									vec2 &vUV = model.m_arrVertices[indexVertex].vUV;
-									if (vUV.x<0.0f || vUV.x > 1.0f)
+									vec2& vUV = model.m_arrVertices[indexVertex].vUV;
+									if (vUV.x < 0.0f || vUV.x > 1.0f)
 									{
 										vUV.x -= floor(vUV.x);
 									}
-									if (vUV.y<0.0f || vUV.y > 1.0f)
+									if (vUV.y < 0.0f || vUV.y > 1.0f)
 									{
 										vUV.y -= floor(vUV.y);
 									}
@@ -1196,13 +1198,13 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 
 									fDataTemp += 2;
 								}
-								pDataTemp += sizeof(EffectVertex)*nVertexCount;
+								pDataTemp += sizeof(EffectVertex) * nVertexCount;
 
 								//
 								memcpy(&nFaceCount, pDataTemp, sizeof(int)); pDataTemp += 4;
 								model.m_nFaces = nFaceCount;
 								model.m_arrIndex = new unsigned short[nFaceCount * 3];
-								memcpy(model.m_arrIndex, pDataTemp, sizeof(short)*nFaceCount * 3);
+								memcpy(model.m_arrIndex, pDataTemp, sizeof(short) * nFaceCount * 3);
 							}
 
 							pResourceAsyn->m_effectInfo.m_vEffectModel.push_back(model);
@@ -1227,18 +1229,18 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 						XMLNode nodeVertex = nodeModel.getChildNode("vertex", ++j);
 						while (!nodeVertex.isEmpty())
 						{
-							const char *szPos = nodeVertex.getAttribute("pos");
-							const char *szUV = nodeVertex.getAttribute("uv");
+							const char* szPos = nodeVertex.getAttribute("pos");
+							const char* szUV = nodeVertex.getAttribute("uv");
 
 							vec2 vUV;
 							vec3 vPos;
 							sscanf(szPos, "%f,%f,%f", &vPos.x, &vPos.y, &vPos.z);
 							sscanf(szUV, "%f,%f", &vUV.x, &vUV.y);
-							if (vUV.x<0.0f || vUV.x > 1.0f)
+							if (vUV.x < 0.0f || vUV.x > 1.0f)
 							{
 								vUV.x -= floor(vUV.x);
 							}
-							if (vUV.y<0.0f || vUV.y > 1.0f)
+							if (vUV.y < 0.0f || vUV.y > 1.0f)
 							{
 								vUV.y -= floor(vUV.y);
 							}
@@ -1254,7 +1256,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 						XMLNode nodeIndex = nodeModel.getChildNode("face", ++j);
 						while (!nodeIndex.isEmpty())
 						{
-							const char *szIndex = nodeIndex.getAttribute("index");
+							const char* szIndex = nodeIndex.getAttribute("index");
 							int index[3];
 							sscanf(szIndex, "%d,%d,%d", index, index + 1, index + 2);
 
@@ -1274,7 +1276,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 
 			for (int i = 0; i < pResourceAsyn->m_effectInfo.m_vEffectModel.size(); ++i)
 			{
-				EffectModel &effectModel = pResourceAsyn->m_effectInfo.m_vEffectModel[i];
+				EffectModel& effectModel = pResourceAsyn->m_effectInfo.m_vEffectModel[i];
 				//创建渲染buffer
 				D3D11_BUFFER_DESC verBufferDesc;
 				memset(&verBufferDesc, 0, sizeof(D3D11_BUFFER_DESC));
@@ -1304,10 +1306,10 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 			//解析背景效果元素
 			i = -1;
 			XMLNode nodeBGEffect = nodeModels.getChildNode("bgEffect", ++i);
-			if(!nodeBGEffect.isEmpty())
+			if (!nodeBGEffect.isEmpty())
 			{
-				const char *szDrawable = nodeBGEffect.getAttribute("drawable");
-				map<string, Drawable *>::iterator it = m_mapImage.find(szDrawable);
+				const char* szDrawable = nodeBGEffect.getAttribute("drawable");
+				map<string, Drawable*>::iterator it = m_mapImage.find(szDrawable);
 				if (it != m_mapImage.end())
 				{
 					pResourceAsyn->m_effectInfo.m_v2DBGAnimation = it->second->Clone();
@@ -1327,11 +1329,11 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 				</rect>
 				*/
 				Effect2DRect rectEffect;
-				const char *szX = nodeRect.getAttribute("x");
-				const char *szY = nodeRect.getAttribute("y");
-				const char *szWidth = nodeRect.getAttribute("width");
-				const char *szHeight = nodeRect.getAttribute("height");
-				const char *szAlignType = nodeRect.getAttribute("alignType");
+				const char* szX = nodeRect.getAttribute("x");
+				const char* szY = nodeRect.getAttribute("y");
+				const char* szWidth = nodeRect.getAttribute("width");
+				const char* szHeight = nodeRect.getAttribute("height");
+				const char* szAlignType = nodeRect.getAttribute("alignType");
 
 				int x = 0;
 				int y = 0;
@@ -1340,7 +1342,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 					int r1, r2;
 					sscanf(szX, "rand(%d,%d)", &r1, &r2);
 					x = r1 + rand() % (r2 - r1 + 1);
-				//	printf("a");
+					//	printf("a");
 				}
 				else
 				{
@@ -1352,20 +1354,20 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 					int r1, r2;
 					sscanf(szY, "rand(%d,%d)", &r1, &r2);
 					y = r1 + rand() % (r2 - r1 + 1);
-				//	printf("a");
+					//	printf("a");
 				}
 				else
 				{
 					y = atoi(szY);
 				}
-				
+
 				int width = atoi(szWidth);
 				int height = atoi(szHeight);
 				int alignType = EAPT_CC;
 				if (szAlignType != NULL)
 				{
 					std::string szArrAlignType[] = { "EAPT_LT", "EAPT_LB", "EAPT_RT", "EAPT_RB", "EAPT_CT", "EAPT_CB", "EAPT_LC", "EAPT_RC", "EAPT_CC" };
-					for (int index = 0; index<EAPT_MAX; ++index)
+					for (int index = 0; index < EAPT_MAX; ++index)
 					{
 						if (strcmp(szAlignType, szArrAlignType[index].c_str()) == 0)
 						{
@@ -1377,10 +1379,10 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 
 				rectEffect.setRect(x, y, width, height, alignType);
 
-				const char *szDrawable = nodeRect.getAttribute("drawable");
+				const char* szDrawable = nodeRect.getAttribute("drawable");
 				if (szDrawable != NULL && strlen(szDrawable) > 0)
 				{
-					map<std::string, Drawable *>::iterator it = m_mapImage.find(szDrawable);
+					map<std::string, Drawable*>::iterator it = m_mapImage.find(szDrawable);
 					if (it != m_mapImage.end())
 					{
 						rectEffect.m_drawable = it->second->Clone();
@@ -1395,7 +1397,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 					}
 				}
 
-				const char *szLayer = nodeRect.getAttribute("layer");
+				const char* szLayer = nodeRect.getAttribute("layer");
 				if (szLayer != NULL)
 				{
 					rectEffect.m_Layer = atoi(szLayer);
@@ -1437,7 +1439,7 @@ DWORD WINAPI ThreadFun(LPVOID pM)
 }
 
 
-void StickerEffect::loadEffectFromZip_impl(const char *szPath, const char *szXMLFile)
+void StickerEffect::loadEffectFromZip_impl(const char* szPath, const char* szXMLFile)
 {
 	if (m_effectStatus == SES_LOADING)
 	{
@@ -1456,7 +1458,7 @@ void StickerEffect::loadEffectFromZip_impl(const char *szPath, const char *szXML
 	ThreadFun(&m_resourceAsyn);
 }
 
-void StickerEffect::loadEffectFromZip_asyn_impl(const char *szPath, const char *szXMLFile)
+void StickerEffect::loadEffectFromZip_asyn_impl(const char* szPath, const char* szXMLFile)
 {
 	if (m_effectStatus == SES_LOADING)
 	{
@@ -1496,10 +1498,10 @@ void StickerEffect::RecycleEffect()
 		return;
 	}
 
-	list<SEffectCache *>::iterator it = m_listEffectCache.begin();
-	while(it != m_listEffectCache.end())
+	list<SEffectCache*>::iterator it = m_listEffectCache.begin();
+	while (it != m_listEffectCache.end())
 	{
-		SEffectCache *pCache = (*it);
+		SEffectCache* pCache = (*it);
 		if (m_szCurrentDir == pCache->szPath && m_szCurrentXML == pCache->szXMLFile)
 		{
 			return;
@@ -1507,7 +1509,7 @@ void StickerEffect::RecycleEffect()
 		++it;
 	}
 
-	SEffectCache *pCache = new SEffectCache();
+	SEffectCache* pCache = new SEffectCache();
 	pCache->m_effectInfo = m_effectInfo;
 	pCache->szPath = m_szCurrentDir;
 	pCache->szXMLFile = m_szCurrentXML;
@@ -1523,12 +1525,12 @@ void StickerEffect::RecycleEffect()
 	setMaxCacheSize(m_nMaxCacheSize);
 }
 
-bool StickerEffect::loadFromCache(const std::string &szZipFile, const std::string &xml)
+bool StickerEffect::loadFromCache(const std::string& szZipFile, const std::string& xml)
 {
-	list<SEffectCache *>::iterator it = m_listEffectCache.begin();
+	list<SEffectCache*>::iterator it = m_listEffectCache.begin();
 	while (it != m_listEffectCache.end())
 	{
-		SEffectCache *pCache = (*it);
+		SEffectCache* pCache = (*it);
 		if (szZipFile == pCache->szPath && xml == pCache->szXMLFile)
 		{
 			m_effectInfo = (*it)->m_effectInfo;
@@ -1669,7 +1671,7 @@ inline bool CTPLayer_Func(int layer)
 	return layer >= 0;
 }
 
-void StickerEffect::renderEffect(int width, int height, const ccFDFaceRes *faceRes, void *pExtInfo, int *arrRenderView)
+void StickerEffect::renderEffect(int width, int height, const ccFDFaceRes* faceRes, void* pExtInfo, int* arrRenderView)
 {
 	prepare();
 	touchThreadSource();
@@ -1698,7 +1700,7 @@ void StickerEffect::renderEffect(int width, int height, const ccFDFaceRes *faceR
 			m_nEffectDuring = m_nAniLoopTime;
 		}
 
-		during = during%m_nAniLoopTime;
+		during = during % m_nAniLoopTime;
 	}
 
 	//end animation?
@@ -1726,14 +1728,14 @@ void StickerEffect::renderEffect(int width, int height, const ccFDFaceRes *faceR
 		DeviceContextPtr->RSSetViewports(1, &vp);
 	}
 
-	cocos2d::Vector<cocos2d::MeshRenderCmd *> m_renderCMD;
+	cocos2d::Vector<cocos2d::MeshRenderCmd*> m_renderCMD;
 	//更新cocos动画信息
 	{
-		vector<FSObject *>::iterator it = m_effectInfo.m_cocosScene.m_vRootObjects.begin();
+		vector<FSObject*>::iterator it = m_effectInfo.m_cocosScene.m_vRootObjects.begin();
 		while (it != m_effectInfo.m_cocosScene.m_vRootObjects.end())
 		{
-			FSObject *pObject = (*it);
-			pObject->update(frameTime*0.001);
+			FSObject* pObject = (*it);
+			pObject->update(frameTime * 0.001);
 			if (pObject != NULL)
 			{
 				pObject->visit(m_renderCMD, m_effectInfo.m_cocosScene.m_vLights.size() > 0);
@@ -1762,83 +1764,84 @@ void StickerEffect::renderEffect(int width, int height, const ccFDFaceRes *faceR
 	std::sort(vFaceSort.begin(), vFaceSort.end(), compare_face_depth);
 	for (int k = 0; k < vFaceSort.size(); ++k)
 	{
-		ccFDFaceRes *faceResT = (ccFDFaceRes *)faceRes;
+		ccFDFaceRes* faceResT = (ccFDFaceRes*)faceRes;
 		int faceIndex = vFaceSort[k].index;
-		ccFDShape68 &faceInfo = faceResT->arrFace[faceIndex];
+		ccFDShape68& faceInfo = faceResT->arrFace[faceIndex];
 		Mat4 matRotateX;
 		Mat4 matRotateY;
 		Mat4 matRotateZ;
 		Mat4 matTranslate;
 		Mat4 matRotateXYZ;
 
-		Mat4::createRotationX(-faceRes->arrFace[faceIndex].pitch / 180.0f*PI, &matRotateX);
-		Mat4::createRotationY(-faceRes->arrFace[faceIndex].yaw / 180.0f*PI, &matRotateY);
-		Mat4::createRotationZ(faceRes->arrFace[faceIndex].roll / 180.0f*PI, &matRotateZ);
+		Mat4::createRotationX(-faceRes->arrFace[faceIndex].pitch / 180.0f * PI, &matRotateX);
+		Mat4::createRotationY(-faceRes->arrFace[faceIndex].yaw / 180.0f * PI, &matRotateY);
+		Mat4::createRotationZ(faceRes->arrFace[faceIndex].roll / 180.0f * PI, &matRotateZ);
 
 		Mat4::multiply(matRotateX, matRotateY, &matRotateXYZ);
 		Mat4::multiply(matRotateXYZ, matRotateZ, &matRotateXYZ);
 		Mat4::createTranslation(Vec3(faceRes->arrFace[faceIndex].x, faceRes->arrFace[faceIndex].y, -faceRes->arrFace[faceIndex].z), &matTranslate);
 		Mat4::multiply(matTranslate, matRotateXYZ, &matRotateXYZ);
-		memcpy(faceInfo.arrWMatrix, (float *)(&matRotateXYZ), sizeof(Mat4));
+		memcpy(faceInfo.arrWMatrix, (float*)(&matRotateXYZ), sizeof(Mat4));
 	}
 
 	float blendFactor[] = { 0.f,0.f,0.f,0.f };
 	//绘制背景动画信息
-	if(pExtInfo != NULL)
+	if (pExtInfo != NULL)
 	{
 		DeviceContextPtr->OMSetBlendState(m_pBSEnable, blendFactor, 0xffffffff);
 		DeviceContextPtr->OMSetDepthStencilState(m_pDepthStateDisable, 0);
 		render2DEffect(width, height, during, BTLayer_Func);
-		
+
 		struct SMaskInfo
 		{
 			unsigned char type;
-			unsigned char *pMask;
+			unsigned char* pMask;
 			int maskW;
 			int maskH;
 		};
-		SMaskInfo *info = (SMaskInfo *)pExtInfo;
-		if(info->type == 1 && m_effectInfo.m_v2DBGAnimation != NULL)
+		SMaskInfo* info = (SMaskInfo*)pExtInfo;
+		if (info->type == 1 && m_effectInfo.m_v2DBGAnimation != NULL)
 		{
 			float arrClip[] = { 0,0,1,1 };
-			ID3D11ShaderResourceView *pBGRV = m_effectInfo.m_v2DBGAnimation->GetSRV(during);
+			std::shared_ptr<CC3DTextureRHI> TexRHI = m_effectInfo.m_v2DBGAnimation->GetTexRHI(during);
+			//ID3D11ShaderResourceView* pBGRV = RHIResourceCast(TexRHI.get())->GetSRV();
 			int dw, dh;
 			m_effectInfo.m_v2DBGAnimation->getSize(dw, dh);
 
 			if (dw > 0 && dh > 0)
 			{
-				float fImgRatio = 1.0f*dw / dh;
+				float fImgRatio = 1.0f * dw / dh;
 				float fRTRatio = 1.0f * width / height;
 				if (fImgRatio > fRTRatio)
 				{
 					float fClipX = fRTRatio / fImgRatio;
 					fClipX = 1.0f - fClipX;
-					arrClip[0] = fClipX*0.5f;
-					arrClip[2] = 1.0f - fClipX*0.5f;
+					arrClip[0] = fClipX * 0.5f;
+					arrClip[2] = 1.0f - fClipX * 0.5f;
 				}
 				else
 				{
-					fImgRatio = 1.0f*dh / dw;
-					fRTRatio = 1.0f*height / width;
+					fImgRatio = 1.0f * dh / dw;
+					fRTRatio = 1.0f * height / width;
 					float fClipY = fRTRatio / fImgRatio;
 					fClipY = 1.0f - fClipY;
-					arrClip[1] = fClipY*0.5f;
-					arrClip[3] = 1.0f - fClipY*0.5f;
+					arrClip[1] = fClipY * 0.5f;
+					arrClip[3] = 1.0f - fClipY * 0.5f;
 				}
 			}
 
-			m_rectDraw->render(pBGRV, arrClip, info->pMask, info->maskW, info->maskH);
+			m_rectDraw->render(TexRHI, arrClip, info->pMask, info->maskW, info->maskH);
 		}
 		else if (info->type == 2 && m_effectInfo.m_cocosScene.m_pFacialObj != NULL)
 		{
-			#define AVANTAR_TYPE 2
+#define AVANTAR_TYPE 2
 			struct SAvantarInfo
 			{
 				unsigned char type;
 				float arrAlpha[51];
 			};
 
-			SAvantarInfo *info = (SAvantarInfo *)pExtInfo;
+			SAvantarInfo* info = (SAvantarInfo*)pExtInfo;
 			m_effectInfo.m_cocosScene.m_pFacialObj->updateFacialInfo(info->arrAlpha);
 		}
 		else
@@ -1878,7 +1881,7 @@ void StickerEffect::renderEffect(int width, int height, const ccFDFaceRes *faceR
 		{
 			//构建人脸变换矩阵信息
 			int faceIndex = vFaceSort[k].index;
-			const ccFDShape68 &faceInfo = faceRes->arrFace[faceIndex];
+			const ccFDShape68& faceInfo = faceRes->arrFace[faceIndex];
 			Mat4 matRotateXYZ = Mat4(faceInfo.arrWMatrix);
 
 			//构建人脸变换矩阵信息
@@ -1886,12 +1889,12 @@ void StickerEffect::renderEffect(int width, int height, const ccFDFaceRes *faceR
 			int faceL = faceRes->arrFace[faceIndex].gesture_box_left;
 			int faceT = faceRes->arrFace[faceIndex].gesture_box_top;
 			int faceW = faceRes->arrFace[faceIndex].gesture_box_right - faceL;
-			int faceH = faceRes->arrFace[faceIndex].gesture_box_bottom- faceT;
+			int faceH = faceRes->arrFace[faceIndex].gesture_box_bottom - faceT;
 			if (faceH > faceW)
 			{
-				fAngle = atan(0.5*faceH / faceW) * 2;
+				fAngle = atan(0.5 * faceH / faceW) * 2;
 			}
-			XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, faceW*1.0f / faceH, 1, 2000);
+			XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, faceW * 1.0f / faceH, 1, 2000);
 			matProjDX = XMMatrixTranspose(matProjDX);
 
 			D3D11_VIEWPORT vp;
@@ -1910,9 +1913,9 @@ void StickerEffect::renderEffect(int width, int height, const ccFDFaceRes *faceR
 
 			HeaderForCullConstantBuffer matWVP;
 			matWVP.mWVP = matRotateXYZ;
-			for (int i = 0; i<m_vHeaderModel.size(); ++i)
+			for (int i = 0; i < m_vHeaderModel.size(); ++i)
 			{
-				HeaderModel &model = m_vHeaderModel[i];
+				HeaderModel& model = m_vHeaderModel[i];
 
 				//设置矩阵变换
 				DeviceContextPtr->UpdateSubresource(m_pConstantBufferForHeaderCull, 0, NULL, &matWVP, 0, 0);
@@ -1982,7 +1985,7 @@ bool StickerEffect::prepare()
 	{
 		HeaderModel headerModel;
 		headerModel.m_arrIndex = g_headerModelForCullIndces;
-		headerModel.m_arrPos = (vec3 *)g_headerModelForCullVertices;
+		headerModel.m_arrPos = (vec3*)g_headerModelForCullVertices;
 		headerModel.m_nFaces = g_headerModelForCullFaceCount;
 		headerModel.m_nVertex = g_headerModelForCullVerticesCount;
 
@@ -2022,7 +2025,7 @@ bool StickerEffect::prepare()
 		hr = DevicePtr->CreateBuffer(&bd, NULL, &m_pConstantBuffer);
 		if (FAILED(hr))return false;
 	}
-	
+
 	//创建
 	{
 		m_pShaderForHeaderCull = new DX11ShaderForHeaderCull();
@@ -2073,7 +2076,7 @@ bool StickerEffect::prepare()
 	return true;
 }
 
-ID3D11ShaderResourceView *StickerEffect::renderEffectToTexture(ID3D11ShaderResourceView *pTexture, int width, int height, const ccFDFaceRes *faceRes)
+ID3D11ShaderResourceView* StickerEffect::renderEffectToTexture(ID3D11ShaderResourceView* pTexture, int width, int height, const ccFDFaceRes* faceRes)
 {
 	assert(width > 0);
 	assert(width > 0);
@@ -2091,14 +2094,15 @@ ID3D11ShaderResourceView *StickerEffect::renderEffectToTexture(ID3D11ShaderResou
 	}
 	if (m_rectDraw == NULL)
 	{
+		m_InputSRV = GetDynamicRHI()->CreateTexture();
 		m_rectDraw = new RectDraw();
 		m_rectDraw->init(1, 1);
 	}
 
 	float blendFactor[] = { 0.f,0.f,0.f,0.f };
 	DeviceContextPtr->OMSetBlendState(m_pBSEnable, blendFactor, 0xffffffff);
-
-	m_rectDraw->setShaderTextureView(pTexture);
+	m_InputSRV->AttatchSRV(pTexture);
+	m_rectDraw->setShaderTextureView(m_InputSRV);
 
 	m_pFBO->bind();
 	//渲染背景
@@ -2110,7 +2114,7 @@ ID3D11ShaderResourceView *StickerEffect::renderEffectToTexture(ID3D11ShaderResou
 	return m_pFBO->getTexture()->getTexShaderView();
 }
 
-bool StickerEffect::renderEffectToTexture(ID3D11ShaderResourceView *pInputTexture, ID3D11Texture2D *pTargetTexture, int width, int height, const ccFDFaceRes *faceRes, void *pExtInfo)
+bool StickerEffect::renderEffectToTexture(ID3D11ShaderResourceView* pInputTexture, ID3D11Texture2D* pTargetTexture, int width, int height, const ccFDFaceRes* faceRes, void* pExtInfo)
 {
 	if (m_effectStatus == SES_IDLE || m_effectStatus == SES_RUN)
 	{
@@ -2143,6 +2147,7 @@ bool StickerEffect::renderEffectToTexture(ID3D11ShaderResourceView *pInputTextur
 	}
 	if (m_rectDraw == NULL)
 	{
+		m_InputSRV = GetDynamicRHI()->CreateTexture();
 		m_rectDraw = new RectDraw();
 		m_rectDraw->init(1, 1);
 	}
@@ -2155,7 +2160,7 @@ bool StickerEffect::renderEffectToTexture(ID3D11ShaderResourceView *pInputTextur
 	float blendFactor[] = { 0.f,0.f,0.f,0.f };
 	DeviceContextPtr->OMSetBlendState(m_pBSEnable, blendFactor, 0xffffffff);
 
-	unsigned char *pExtInfoBytes = (unsigned char *)pExtInfo;
+	unsigned char* pExtInfoBytes = (unsigned char*)pExtInfo;
 	if (pExtInfoBytes != NULL && pExtInfoBytes[0] <= 0)
 	{
 		pExtInfo = NULL;
@@ -2163,7 +2168,8 @@ bool StickerEffect::renderEffectToTexture(ID3D11ShaderResourceView *pInputTextur
 
 	m_pFBO->bind();
 	//渲染背景
-	m_rectDraw->setShaderTextureView(pInputTexture);
+	m_InputSRV->AttatchSRV(pInputTexture);
+	m_rectDraw->setShaderTextureView(m_InputSRV);
 
 	int nBGEffect = 0;
 	for (int i = 0; i < m_effectInfo.m_v2DEffectModel.size(); ++i)
@@ -2206,9 +2212,9 @@ void StickerEffect::render2DEffect(int width, int height, long during, LayerRend
 	}
 	StickerConstantBuffer matWVP;
 	matWVP.mWVP = Mat4::IDENTITY;
-	for (int i = 0; i<m_effectInfo.m_v2DEffectModel.size(); ++i)
+	for (int i = 0; i < m_effectInfo.m_v2DEffectModel.size(); ++i)
 	{
-		Effect2DRect &rectEffect = m_effectInfo.m_v2DEffectModel[i];
+		Effect2DRect& rectEffect = m_effectInfo.m_v2DEffectModel[i];
 
 		if ((*fRender)(rectEffect.m_Layer))
 		{
@@ -2223,7 +2229,7 @@ void StickerEffect::render2DEffect(int width, int height, long during, LayerRend
 			DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 
 			//设置纹理以及纹理采样
-			ID3D11ShaderResourceView *pMyShaderResourceView = rectEffect.m_drawable->GetSRV(during);
+			ID3D11ShaderResourceView* pMyShaderResourceView = GetSRV(rectEffect.m_drawable->GetTexRHI(during));
 			DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
 			DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
@@ -2237,16 +2243,16 @@ void StickerEffect::render2DEffect(int width, int height, long during, LayerRend
 }
 
 
-void StickerEffect::render3DSEffect(int width, int height, long during, LayerRenderFunc fRender, const ccFDFaceRes *faceRes, void *pExtInfo)
+void StickerEffect::render3DSEffect(int width, int height, long during, LayerRenderFunc fRender, const ccFDFaceRes* faceRes, void* pExtInfo)
 {
-	cocos2d::Vector<cocos2d::MeshRenderCmd *> renderCMDT;
-	cocos2d::Vector<cocos2d::MeshRenderCmd *> *pRenderCMDT = &renderCMDT;
+	cocos2d::Vector<cocos2d::MeshRenderCmd*> renderCMDT;
+	cocos2d::Vector<cocos2d::MeshRenderCmd*>* pRenderCMDT = &renderCMDT;
 	if (pExtInfo != NULL)
 	{
-		pRenderCMDT = (cocos2d::Vector<cocos2d::MeshRenderCmd *> *)pExtInfo;
+		pRenderCMDT = (cocos2d::Vector<cocos2d::MeshRenderCmd*> *)pExtInfo;
 	}
 
-	cocos2d::Vector<cocos2d::MeshRenderCmd *> &m_renderCMD = *pRenderCMDT;
+	cocos2d::Vector<cocos2d::MeshRenderCmd*>& m_renderCMD = *pRenderCMDT;
 	if (faceRes != NULL && faceRes->numFace > 0)
 	{
 		vector<FaceInfoSort> vFaceSort;
@@ -2267,7 +2273,7 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 		{
 			//构建人脸变换矩阵信息
 			int faceIndex = vFaceSort[k].index;
-			const ccFDShape68 &faceInfo = faceRes->arrFace[faceIndex];
+			const ccFDShape68& faceInfo = faceRes->arrFace[faceIndex];
 			//构建人脸变换矩阵信息
 			float fAngle = atan(0.5) * 2;
 			int faceL = faceRes->arrFace[faceIndex].gesture_box_left;
@@ -2276,9 +2282,9 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 			int faceH = faceRes->arrFace[faceIndex].gesture_box_bottom - faceT;
 			if (faceH > faceW)
 			{
-				fAngle = atan(0.5*faceH / faceW) * 2;
+				fAngle = atan(0.5 * faceH / faceW) * 2;
 			}
-			XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, faceW*1.0f / faceH, 1, 2000);
+			XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, faceW * 1.0f / faceH, 1, 2000);
 			matProjDX = XMMatrixTranspose(matProjDX);
 
 			D3D11_VIEWPORT vp;
@@ -2298,9 +2304,9 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 			Mat4::multiply(matProj, matRotateXYZ, &matRotateXYZ);
 			StickerConstantBuffer matWVP;
 			matWVP.mWVP = matRotateXYZ;
-			for (int i = 0; i<m_effectInfo.m_vEffectModel.size(); ++i)
+			for (int i = 0; i < m_effectInfo.m_vEffectModel.size(); ++i)
 			{
-				EffectModel &model = m_effectInfo.m_vEffectModel[i];
+				EffectModel& model = m_effectInfo.m_vEffectModel[i];
 				if (!model.m_bTransparent && (*fRender)(model.m_Layer))
 				{
 					matWVP.mColor = XMVectorSet(model.m_fMixColor.x, model.m_fMixColor.y, model.m_fMixColor.z, model.m_fMixColor.w);
@@ -2310,7 +2316,7 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 					DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 
 					//设置纹理以及纹理采样
-					ID3D11ShaderResourceView *pMyShaderResourceView = model.m_drawable->GetSRV(during);
+					ID3D11ShaderResourceView* pMyShaderResourceView = GetSRV(model.m_drawable->GetTexRHI(during));
 					DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
 					DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
@@ -2327,7 +2333,7 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 		for (int k = 0; k < vFaceSort.size(); ++k)
 		{
 			int faceIndex = vFaceSort[k].index;
-			const ccFDShape68 &faceInfo = faceRes->arrFace[faceIndex];
+			const ccFDShape68& faceInfo = faceRes->arrFace[faceIndex];
 			Mat4 matRotateXYZ = Mat4(faceInfo.arrWMatrix);
 
 			//构建人脸变换矩阵信息
@@ -2338,9 +2344,9 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 			int faceH = faceRes->arrFace[faceIndex].gesture_box_bottom - faceT;
 			if (faceH > faceW)
 			{
-				fAngle = atan(0.5*faceH / faceW) * 2;
+				fAngle = atan(0.5 * faceH / faceW) * 2;
 			}
-			XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, faceW*1.0f / faceH, 1, 2000);
+			XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, faceW * 1.0f / faceH, 1, 2000);
 			matProjDX = XMMatrixTranspose(matProjDX);
 
 			D3D11_VIEWPORT vp;
@@ -2359,7 +2365,7 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 			for (size_t i = 0; i < m_renderCMD.size(); ++i)
 			{
 				Mat4 matWorld = matRotateXYZ;
-				const Mat4 &matInit = m_renderCMD.at(i)->getInitWTransform();
+				const Mat4& matInit = m_renderCMD.at(i)->getInitWTransform();
 				Mat4::multiply(matWorld, matInit, &matWorld);
 				m_renderCMD.at(i)->updateTransform(matWorld);
 			}
@@ -2382,7 +2388,7 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 		for (int k = 0; k < vFaceSort.size(); ++k)
 		{
 			int faceIndex = vFaceSort[k].index;
-			const ccFDShape68 &faceInfo = faceRes->arrFace[faceIndex];
+			const ccFDShape68& faceInfo = faceRes->arrFace[faceIndex];
 			Mat4 matRotateXYZ = Mat4(faceInfo.arrWMatrix);
 
 			//构建人脸变换矩阵信息
@@ -2394,16 +2400,16 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 			int faceW = faceRes->arrFace[faceIndex].gesture_box_right - faceL;
 			int faceH = faceRes->arrFace[faceIndex].gesture_box_bottom - faceT;
 
-		    faceL -=  faceW;
+			faceL -= faceW;
 			faceT -= faceH;
 			faceW *= 3;
 			faceH *= 3;
 
 			if (faceH > faceW)
 			{
-				fAngle = atan(0.5*faceH / faceW) * 2;
+				fAngle = atan(0.5 * faceH / faceW) * 2;
 			}
-			XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, faceW*1.0f / faceH, 1, 2000);
+			XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, faceW * 1.0f / faceH, 1, 2000);
 			matProjDX = XMMatrixTranspose(matProjDX);
 
 			D3D11_VIEWPORT vp;
@@ -2424,9 +2430,9 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 
 			StickerConstantBuffer matWVP;
 			matWVP.mWVP = matRotateXYZ;
-			for (int i = 0; i<m_effectInfo.m_vEffectModel.size(); ++i)
+			for (int i = 0; i < m_effectInfo.m_vEffectModel.size(); ++i)
 			{
-				EffectModel &model = m_effectInfo.m_vEffectModel[i];
+				EffectModel& model = m_effectInfo.m_vEffectModel[i];
 				if (model.m_bTransparent && (*fRender)(model.m_Layer))
 				{
 					matWVP.mColor = XMVectorSet(model.m_fMixColor.x, model.m_fMixColor.y, model.m_fMixColor.z, model.m_fMixColor.w);
@@ -2436,7 +2442,7 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 					DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 
 					//设置纹理以及纹理采样
-					ID3D11ShaderResourceView *pMyShaderResourceView = model.m_drawable->GetSRV(during);
+					ID3D11ShaderResourceView* pMyShaderResourceView = GetSRV(model.m_drawable->GetTexRHI(during));
 					DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
 					DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
@@ -2458,7 +2464,7 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 		for (int k = 0; k < vFaceSort.size(); ++k)
 		{
 			int faceIndex = vFaceSort[k].index;
-			const ccFDShape68 &faceInfo = faceRes->arrFace[faceIndex];
+			const ccFDShape68& faceInfo = faceRes->arrFace[faceIndex];
 
 			//构建人脸变换矩阵信息
 			float fAngle = atan(0.5) * 2;
@@ -2468,9 +2474,9 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 			int faceH = faceRes->arrFace[faceIndex].gesture_box_bottom - faceT;
 			if (faceH > faceW)
 			{
-				fAngle = atan(0.5*faceH / faceW) * 2;
+				fAngle = atan(0.5 * faceH / faceW) * 2;
 			}
-			XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, faceW*1.0f / faceH, 1, 2000);
+			XMMATRIX matProjDX = XMMatrixPerspectiveFovRH(fAngle, faceW * 1.0f / faceH, 1, 2000);
 			matProjDX = XMMatrixTranspose(matProjDX);
 
 			D3D11_VIEWPORT vp;
@@ -2490,7 +2496,7 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 			for (size_t i = 0; i < m_renderCMD.size(); ++i)
 			{
 				Mat4 matWorld = matRotateXYZ;
-				const Mat4 &matInit = m_renderCMD.at(i)->getInitWTransform();
+				const Mat4& matInit = m_renderCMD.at(i)->getInitWTransform();
 				Mat4::multiply(matWorld, matInit, &matWorld);
 				m_renderCMD.at(i)->updateTransform(matWorld);
 			}
@@ -2509,4 +2515,13 @@ void StickerEffect::render3DSEffect(int width, int height, long during, LayerRen
 		DeviceContextPtr->OMSetDepthStencilState(m_pDepthStateDisable, 0);
 		ContextInst->setCullMode(D3D11_CULL_NONE);
 	}
+}
+
+ID3D11ShaderResourceView* StickerEffect::GetSRV(std::shared_ptr<CC3DTextureRHI> TexRHI)
+{
+	if (TexRHI)
+	{
+		return RHIResourceCast(TexRHI.get())->GetSRV();
+	}
+	return nullptr;
 }

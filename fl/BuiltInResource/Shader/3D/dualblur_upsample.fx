@@ -33,17 +33,17 @@ VS_OUTPUT VS( VS_INPUT input)
     float2 mainTex_texelSize = float2(param.y, param.z);
 	float2 offset = float2( 1 + param.x, 1 + param.x );
 
-	output.uv01.xy = output.Tex + float2( -mainTex_texelSize.x * 2, 0 ) * offset;
-	output.uv01.zw = output.Tex + float2( -mainTex_texelSize.x, mainTex_texelSize.y ) * offset;
+	output.uv01.xy = output.Tex + float2( -mainTex_texelSize.x * 2.0, 0 ) * offset; //left
+	output.uv01.zw = output.Tex + float2( -mainTex_texelSize.x, -mainTex_texelSize.y ) * offset; //top left
 
-	output.uv23.xy = output.Tex + float2( 0, mainTex_texelSize.y * 2 ) * offset;
-	output.uv23.zw = output.Tex + mainTex_texelSize * offset;
+	output.uv23.xy = output.Tex + float2( 0, mainTex_texelSize.y * 2 ) * offset; //bottom
+	output.uv23.zw = output.Tex + mainTex_texelSize * offset;// bottom-right
 
-	output.uv45.xy = output.Tex + float2(mainTex_texelSize.x * 2, 0) * offset;
-	output.uv45.zw = output.Tex + float2(mainTex_texelSize.x, -mainTex_texelSize.y) * offset;
+	output.uv45.xy = output.Tex + float2(mainTex_texelSize.x * 2, 0) * offset; //right
+	output.uv45.zw = output.Tex + float2(mainTex_texelSize.x, -mainTex_texelSize.y) * offset;//top-right
 
-	output.uv67.xy = output.Tex + float2(0, -mainTex_texelSize.y * 2) * offset;
-	output.uv67.zw = output.Tex - mainTex_texelSize * offset;
+	output.uv67.xy = output.Tex + float2(0, -mainTex_texelSize.y * 2) * offset; //up
+	output.uv67.zw = output.Tex + float2( -mainTex_texelSize.x, mainTex_texelSize.y ) * offset; //bottom-left
     return output;  
 }  
 

@@ -2,8 +2,7 @@
 #define CC3D_RenderTargetRHI
 
 #include "CC3DEngine/Common/CC3DUtils.h"
-
-class CC3DTextureRHI;
+#include "Toolbox/Render/TextureRHI.h"
 
 class CC3DRenderTargetRHI
 {

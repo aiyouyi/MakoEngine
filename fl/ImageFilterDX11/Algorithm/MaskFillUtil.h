@@ -4,6 +4,7 @@
 #include "BaseDefine/Define.h"
 #include "BaseDefine/Vectors.h"
 #include <algorithm>
+#include "Toolbox/inc.h"
 using namespace std;
 
 	/*
@@ -49,7 +50,7 @@ using namespace std;
 		 * @param outside				多边形外部（Mask内部）填充颜色（-1为无效值，表示保留原色）
 		 * @return						填充是否成功
 		 */
-		static bool FillMask(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTPolygonType polygonType, MTFillColor inside, MTFillColor outside);
+		static bool FillMask(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTPolygonType polygonType, MTFillColor inside, MTFillColor outside);
 
 	protected:
 		/*
@@ -63,7 +64,7 @@ using namespace std;
 		 * @param outside				多边形外部（Mask内部）填充颜色（-1为无效值，表示保留原色）
 		 * @return						填充是否成功
 		 */
-		static bool DirectFillPolygon(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside);
+		static bool DirectFillPolygon(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside);
 		/*
 		 * 填充Mask内除多边形部分（直接填充）
 		 * @param pMask					Mask字节流
@@ -74,7 +75,7 @@ using namespace std;
 		 * @param fillColor				多边形外部（Mask内部）填充颜色（多边形内部保持原色）
 		 * @return						填充是否成功
 		 */
-		static bool DirectFillPolygonOutside(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor);
+		static bool DirectFillPolygonOutside(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor);
 		/*
 		 * 填充Mask内部的多边形（垂直填充Mask，要求多边形必须是水平凸多边形（即左右边不存在大于180度的内角））
 		 * @param pMask					Mask字节流
@@ -86,7 +87,7 @@ using namespace std;
 		 * @param outside				多边形外部（Mask内部）填充颜色（-1为无效值，表示保留原色）
 		 * @return						填充是否成功
 		 */
-		static bool VerticalFillPolygon(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside);
+		static bool VerticalFillPolygon(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside);
 		/*
 		 * 填充Mask内除多边形部分（垂直填充Mask，要求多边形必须是水平凸多边形（即左右边不存在大于180度的内角））
 		 * @param pMask				Mask字节流
@@ -97,7 +98,7 @@ using namespace std;
 		 * @param fillColor			多边形外部（Mask内部）填充颜色（多边形内部保持原色）
 		 * @return						填充是否成功
 		 */
-		static bool VerticalFillPolygonOutside(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor);
+		static bool VerticalFillPolygonOutside(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor);
 		/*
 		 * 填充Mask内部的多边形（水平填充Mask，要求多边形必须是垂直凸多边形（即上下边不存在大于180度的内角））
 		 * @param pMask					Mask字节流
@@ -109,7 +110,7 @@ using namespace std;
 		 * @param outside				多边形外部（Mask内部）填充颜色（-1为无效值，表示保留原色）
 		 * @return						填充是否成功
 		 */
-		static bool HorizontalFillPolygon(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside);
+		static bool HorizontalFillPolygon(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside);
 		/*
 		 * 填充Mask内除多边形部分（水平填充Mask，要求多边形必须是垂直凸多边形（即上下边不存在大于180度的内角））
 		 * @param pMask					Mask字节流
@@ -120,7 +121,7 @@ using namespace std;
 		 * @param fillColor				多边形外部（Mask内部）填充颜色（多边形内部保持原色）
 		 * @return						填充是否成功
 		 */
-		static bool HorizontalFillPolygonOutside(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor);
+		static bool HorizontalFillPolygonOutside(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor);
 		/*
 		 * 判断点是否在多边形内部
 		 * @param pPolygon				多边形点集

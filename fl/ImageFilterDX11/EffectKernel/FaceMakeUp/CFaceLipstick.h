@@ -1,7 +1,12 @@
 #pragma once
 #include "EffectKernel/CEffectPart.h"
 #include "Algorithm/MouthManage.h"
-class CFaceLipstick : public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+#include "Toolbox/inc.h"
+
+class DX11Texture;
+
+class CFaceLipstick : public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceLipstick();

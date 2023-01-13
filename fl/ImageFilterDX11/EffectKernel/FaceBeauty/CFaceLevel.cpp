@@ -1,6 +1,8 @@
 #include "CFaceLevel.h"
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "EffectKernel/ShaderProgramManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CFaceLevel::CFaceLevel()
 {
@@ -109,8 +111,9 @@ void CFaceLevel::Render(BaseRenderParam &RenderParam)
 	pDoubleBuffer->SyncAToB();
 	pDoubleBuffer->BindFBOA();
 	m_pShader->useShader();
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 	
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);

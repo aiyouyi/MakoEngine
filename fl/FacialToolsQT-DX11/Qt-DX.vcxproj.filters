@@ -29,7 +29,7 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\mainWidget.cpp">
+    <ClCompile Include="src\ARZipPreviewWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\effectLayerItem.cpp">
@@ -68,12 +68,57 @@
     <ClCompile Include="src\CImageBeautify.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\mainwindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\glrenderwiget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\glwidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FaceDetector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tasklogic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VideoPreProcess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\3DModelPreview\ARModelPreviewWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\3DModelPreview\ModelRenderLogic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\3DModelPreview\BasicPreview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\3DModelPreview\D3D11Preview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\3DModelPreview\BasicToolTab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\3DModelPreview\DataCenter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\3DModelPreview\QUIEvent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\3DModelPreview\MaterialToolTab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\3DModelPreview\PostProcessToolTab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="src\d3d11renderwidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="src\mainWidget.h">
+    <QtMoc Include="src\ARZipPreviewWindow.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="src\effectLayerItem.h">
@@ -109,10 +154,69 @@
     <QtMoc Include="src\CFaceMakeUp_EditWidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="src\mainwindow.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\glrenderwiget.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\glwidget.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\3DModelPreview\ARModelPreviewWindow.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\3DModelPreview\BasicPreview.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\3DModelPreview\D3D11Preview.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\3DModelPreview\BasicToolTab.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\3DModelPreview\MaterialToolTab.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\3DModelPreview\PostProcessToolTab.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\CImageBeautify.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\FaceDetector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Task\taskevent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Task\basetask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tasklogic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VideoPreProcess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\3DModelPreview\ModelRenderLogic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\3DModelPreview\DataCenter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\3DModelPreview\QUIEvent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <QtUic Include="src\mainwindow.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="src\3DModelPreview\ARModelPreviewWindow.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
   </ItemGroup>
 </Project>

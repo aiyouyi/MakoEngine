@@ -1,24 +1,28 @@
-#pragma once
+ï»¿#pragma once
 
-#include "Toolbox/DXUtils/DX11Shader.h"
-#include "Toolbox/DXUtils/DX11Texture.h"
-#include <xnamath.h>
-#include "mathlib.h"
-struct BaseRectVertex
-{
-	XMFLOAT3 Pos;//Î»ÖÃ  
-	XMFLOAT2 TexCoord;//ÑÕÉ«  
-};
-struct RectConstantBuffer
-{
-	XMMATRIX mWVP; //»ìºÏ¾ØÕó
-};
-struct RectConstantBufferMask
-{
-	XMMATRIX mWVP; //»ìºÏ¾ØÕó
-	XMFLOAT4 mClip;//±³¾°²Ã¼ôÇøÓò
-	vec2 texSize;
-};
+#include "BaseDefine/Vectors.h"
+#include "Toolbox/inc.h"
+#include "Toolbox/Render/CC3DShaderDef.h"
+#include <d3d11.h>
+
+class DX11Texture;
+
+class ShaderRHI;
+class CC3DBlendState;
+
+BEGIN_SHADER_STRUCT(ConstantBufferMask, 0)
+	DECLARE_PARAM(glm::mat4, matWVP)
+	DECLARE_PARAM(Vector4, clip)
+	DECLARE_PARAM(Vector2, texSize)
+	DECLARE_PARAM(Vector2, pad)
+	BEGIN_STRUCT_CONSTRUCT(ConstantBufferMask)
+		IMPLEMENT_PARAM("matWVP", UniformType::MAT4)
+		IMPLEMENT_PARAM("clip", UniformType::FLOAT4)
+		IMPLEMENT_PARAM("texSize", UniformType::FLOAT2)
+		IMPLEMENT_PARAM("pad", UniformType::FLOAT2)
+	END_STRUCT_CONSTRUCT
+END_SHADER_STRUCT
+
 class DX11IMAGEFILTER_EXPORTS_CLASS RectDraw
 {
 public:
@@ -32,19 +36,19 @@ public:
 
 	void setBlend(bool bBlend);
 
-	void setTexture(DX11Texture *pTexture);
+	void setTexture(std::shared_ptr<CC3DTextureRHI> pTexture);
 
-	void setShaderTextureView(ID3D11ShaderResourceView *pShaderTextureView);
+	void setShaderTextureView(std::shared_ptr<CC3DTextureRHI> pShaderTextureView);
 
 	void renderOpaque();
 
 	void render();
 
-	void render(ID3D11ShaderResourceView *pShaderTextureView, float *arrClip, void *pMaskInfo, int w, int h);
+	void render(std::shared_ptr<CC3DTextureRHI> pShaderTextureView, float *arrClip, void *pMaskInfo, int w, int h);
 
 	void renderAlpha(float *arrClip, void *pMaskInfo, int maskW, int maskH, int texW, int TexH);
 
-	void render(vec2 vTrans, vec2 vScale, float fRotate, int w, int h);
+	void render(Vector2 vTrans, Vector2 vScale, float fRotate, int w, int h);
 
 	void destory();
 
@@ -52,25 +56,26 @@ protected:
 	void updateBlendState();
 
 private:
-	ID3D11Buffer *m_rectVerticeBuffer;
-	ID3D11Buffer *m_rectIndexBuffer;
+
+	std::shared_ptr<CC3DVertexBuffer> m_VertexBuffer;
+	std::shared_ptr<CC3DIndexBuffer> m_IndexBuffer;
 	
-	DX11Shader *m_pShader;
-	DX11Shader *m_pShaderOpaque;
-	DX11Shader *m_pShaderWithMask;
-	DX11Shader *m_pShaderWithAlpha;
-	DX11Texture *m_pTexture;
+	std::shared_ptr<ShaderRHI> m_pShader;
+	std::shared_ptr<ShaderRHI> m_pShaderOpaque;
+	std::shared_ptr<ShaderRHI> m_pShaderWithMask;
+	std::shared_ptr<ShaderRHI> m_pShaderWithAlpha;
 
-	bool m_bInvalidBlendState;
-	bool m_bBlend;
-	ID3D11BlendState *m_pBSState;
-	//ID3D11BlendState *m_pBSDisable = NULL;
-	DX11Texture *m_pTextureMask;
 
-	ID3D11ShaderResourceView *m_pShaderTextureView;
-	ID3D11SamplerState* m_pSamplerLinear;
+	std::shared_ptr<CC3DTextureRHI> m_pTexture;
 
-	ID3D11Buffer*       m_pConstantBuffer;  //×ª»»¾ØÕó
-	ID3D11Buffer*       m_pConstantBufferMask;  //×ª»»¾ØÕó
+	bool m_bInvalidBlendState = true;
+	bool m_bBlend  = false;
+	std::shared_ptr<CC3DBlendState> m_pBSState;
+
+	std::shared_ptr<CC3DTextureRHI> m_pTextureMask;
+
+	DECLARE_SHADER_STRUCT_MEMBER(ConstantBufferMat4);
+	DECLARE_SHADER_STRUCT_MEMBER(ConstantBufferMask);
+
 };
 

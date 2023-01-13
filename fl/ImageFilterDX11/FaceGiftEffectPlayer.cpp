@@ -1,4 +1,4 @@
-#include "FaceGiftEffectPlayer.h"
+﻿#include "FaceGiftEffectPlayer.h"
 #include "StickerInterface.h"
 #include "EffectCInterface.h"
 #include "Toolbox/zip/unzip.h"
@@ -47,7 +47,7 @@ public:
 		{
 			m_handleEffect = ccEffectCreate();
 		}
-		ccEffectSetPath(m_handleEffect, (char*)path);
+		ccEffectSetPath(m_handleEffect, path);
 	}
 
 	void SetBGRA(unsigned char*pBGRA)
@@ -140,7 +140,6 @@ public:
 
 	}
 
-
 	void destoryEffect()
 	{
 		if (m_handleSticker != NULL)
@@ -184,6 +183,10 @@ public:
 		}
 	}
 
+	cc_handle_t GetHandle()
+	{
+		return m_handleEffect;
+	}
 private:
 	cc_handle_t m_handleSticker;
 
@@ -272,4 +275,29 @@ DX11IMAGEFILTER_EXPORTS_API void ccSetGiftEffectCacheSize(int nSize)
 DX11IMAGEFILTER_EXPORTS_API void ccDestoryGiftInst()
 {
 	delete FGEPInst;
+}
+
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetGiftAnchor(unsigned char * data, int width, int height, AnchorType type)
+{
+	if (FGEPInst->GetHandle())
+	{
+		ccEffectSetMask(FGEPInst->GetHandle(),data, width, height,UNKNOW_EFFECT,type);
+	}
+}
+
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetBodyPointOld(ccBodyRes* bodyRes)
+{
+	if (FGEPInst->GetHandle())
+	{
+		ccEffectSetBodyPoint(FGEPInst->GetHandle(), bodyRes);
+	}
+	
+}
+
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetSplitScreenOld(int SplitScreen, CCEffectType type)
+{
+	if (FGEPInst->GetHandle())
+	{
+		ccEffectSetSplitScreen(FGEPInst->GetHandle(), SplitScreen, type);
+	}
 }

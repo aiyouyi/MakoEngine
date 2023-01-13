@@ -1,12 +1,22 @@
-#include "RectDraw.h"
-#include "Toolbox/DXUtils/DX11Context.h"
+ï»¿#include "RectDraw.h"
 #include "Helper.h"
 // #include "Toolbox/DXUtils/DXUtils.h"
+#include "RectConstBuffer.h"
+#include "Toolbox/Render/DynamicRHI.h"
+#include "Toolbox/Render/TextureRHI.h"
+#include "Toolbox/RenderState/PiplelineState.h"
+#include "Toolbox/DXUtils/DX11Context.h"
+
+struct RectVertex
+{
+	Vector3 Pos;//ä½ç½®  
+	Vector2 TexCoord;//é¢œè‰²  
+};
 
 const char *s_szBaseRectShader = "\
 cbuffer ConstantBuffer : register(b0)\
 {\
-	matrix matWVP;\
+	float4x4 matWVP;\
 }\
 Texture2D txDiffuse : register(t0);\
 SamplerState samLinear : register(s0);\
@@ -38,7 +48,7 @@ float4 PS(VS_OUTPUT input) : SV_Target\
 const char *s_szBaseRectOpaqueShader = "\
 cbuffer ConstantBuffer : register(b0)\
 {\
-	matrix matWVP;\
+	float4x4 matWVP;\
 }\
 Texture2D txDiffuse : register(t0);\
 SamplerState samLinear : register(s0);\
@@ -71,7 +81,7 @@ float4 PS(VS_OUTPUT input) : SV_Target\
 const char *s_szBaseRectShaderWithMask = "\
 cbuffer ConstantBuffer : register(b0)\
 {\
-	matrix matWVP;\
+	float4x4 matWVP;\
 	float4 bgClip;\
 	float2 texSize;\
 }\
@@ -122,14 +132,14 @@ float4 PS(VS_OUTPUT input) : SV_Target\
 	resMask = resMask/9.0;\
 	float2 vEffectCoord = float2(input.Tex.x*(bgClip.z-bgClip.x) + bgClip.x, input.Tex.y*(bgClip.w-bgClip.y) + bgClip.y);\
 	float4 vEffect = txDiffuseEffect.Sample(samLinear, vEffectCoord);\
-	vEffect.a = 1.0;\
-	return txDiffuse.Sample(samLinear, input.Tex)*resMask + vEffect*(1.0-resMask);\
+	vEffect.a = 1.0-resMask;\
+	return vEffect;\
 }";
 
 const char *s_szBaseRectShaderWithAlpha = "\
 cbuffer ConstantBuffer : register(b0)\
 {\
-	matrix matWVP;\
+	float4x4 matWVP;\
 	float4 bgClip;\
 	float2 texSize;\
 }\
@@ -183,27 +193,76 @@ float4 PS(VS_OUTPUT input) : SV_Target\
 	return vRes;\
 }";
 
+static bool saveAsBMP(const char* pData, uint32_t nLen, int w, int h, int bitCount, const wchar_t* pszFileName)
+{
+	// Writes a BMP file
+	// save to file
+	HANDLE hFile = ::CreateFileW(pszFileName,            // file to create 
+		GENERIC_WRITE,                // open for writing 
+		0,                            // do not share 
+		NULL,                         // default security 
+		OPEN_ALWAYS,                  // overwrite existing 
+		FILE_ATTRIBUTE_NORMAL,        // normal file 
+		NULL);                        // no attr. template 
+	if (!hFile || hFile == INVALID_HANDLE_VALUE)
+	{
+		return false;	// 
+	}
+
+	DWORD dwSizeBytes = nLen;
+
+	// fill in the headers
+	BITMAPFILEHEADER bmfh;
+	bmfh.bfType = 0x4D42; // 'BM'
+	bmfh.bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + dwSizeBytes;//æ•´ä¸ªæ–‡ä»¶çš„å¤§å°
+	bmfh.bfReserved1 = 0;
+	bmfh.bfReserved2 = 0;
+	bmfh.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);//å›¾åƒæ•°æ®åç§»é‡ï¼Œå³å›¾åƒæ•°æ®åœ¨æ–‡ä»¶ä¸­çš„ä¿å­˜ä½ç½®
+
+	DWORD dwBytesWritten;
+	::WriteFile(hFile, &bmfh, sizeof(bmfh), &dwBytesWritten, NULL);
+	if (dwBytesWritten != sizeof(bmfh))
+	{
+	}
+
+	BITMAPINFOHEADER bmih;
+
+	bmih.biSize = sizeof(BITMAPINFOHEADER);
+	bmih.biWidth = w;
+	bmih.biHeight = -h;
+	bmih.biPlanes = 1; // å›¾åƒçš„ç›®æ ‡æ˜¾ç¤ºè®¾å¤‡çš„ä½æ•°ï¼Œé€šå¸¸ä¸º1
+	bmih.biBitCount = bitCount; // æ¯ä¸ªåƒç´ çš„ä½æ•°ï¼Œå¯ä»¥ä¸º1ã€4ã€8ã€24ã€32
+	if (bitCount == 8)
+	{
+		bmih.biCompression = BI_RLE8;
+	}
+	else
+	{
+		bmih.biCompression = BI_RGB;// æ˜¯å¦å‹ç¼©
+	}
+	
+	bmih.biSizeImage = 0;//å›¾åƒå¤§å°çš„å­—èŠ‚æ•°
+	bmih.biXPelsPerMeter = 0;
+	bmih.biYPelsPerMeter = 0;
+	bmih.biClrUsed = 0;
+	bmih.biClrImportant = 0;
+
+	::WriteFile(hFile, &bmih, sizeof(bmih), &dwBytesWritten, NULL);
+	if (dwBytesWritten != sizeof(bmih))
+	{
+	}
+
+	::WriteFile(hFile, pData, dwSizeBytes, &dwBytesWritten, NULL);
+	if (dwBytesWritten != dwSizeBytes)
+	{
+	}
+
+	::CloseHandle(hFile);
+	return true;
+}
+
 RectDraw::RectDraw()
 {
-	m_rectVerticeBuffer = NULL;
-	m_rectIndexBuffer = NULL;
-
-	m_pShader = NULL;
-	m_pShaderOpaque = NULL;
-	m_pShaderWithMask = NULL;
-	m_pShaderWithAlpha = NULL;
-
-	m_pBSState = NULL;
-	m_bInvalidBlendState = true;
-	m_bBlend = false;
-
-	m_pTexture = NULL;
-	m_pTextureMask = NULL;
-	m_pShaderTextureView = NULL;
-	m_pSamplerLinear = NULL;
-
-	m_pConstantBuffer = NULL;
-	m_pConstantBufferMask = NULL;
 }
 
 RectDraw::~RectDraw()
@@ -218,104 +277,48 @@ bool RectDraw::init(float width, float height, const std::string &szTexture)
 
 bool RectDraw::init(float x, float y, float width, float height, const std::string &szTexture)
 {
-	XMFLOAT3 arrCoords[] = { XMFLOAT3(x,y,0), XMFLOAT3(x,y+height,0), XMFLOAT3(x+width, y+height,0), XMFLOAT3(x+width, y,0)};
+	Vector3 arrCoords[] = { Vector3(x,y,0), Vector3(x,y+height,0), Vector3(x+width, y+height,0), Vector3(x+width, y,0)};
 	for (int i = 0; i < 4; ++i)
 	{
 		arrCoords[i].x = arrCoords[i].x*2.0f - 1.0f;
 		arrCoords[i].y = -(arrCoords[i].y*2.0f - 1.0f);
 	}
 
-
-	//´´½¨¶¥µãbuffer
-	BaseRectVertex vertices[] =
+	//åˆ›å»ºé¡¶ç‚¹buffer
+	RectVertex vertices[] =
 	{
-		{ arrCoords[0], XMFLOAT2(0.0f, 0.0f) },
-		{ arrCoords[1], XMFLOAT2(0.0f, 1.0f) },
-		{ arrCoords[2], XMFLOAT2(1.0f, 1.0f) },
-		{ arrCoords[3], XMFLOAT2(1.0f, 0.0f) }
+		{ arrCoords[0], Vector2(0.0f, 0.0f) },
+		{ arrCoords[1], Vector2(0.0f, 1.0f) },
+		{ arrCoords[2], Vector2(1.0f, 1.0f) },
+		{ arrCoords[3], Vector2(1.0f, 0.0f) }
 	};
-	D3D11_BUFFER_DESC verBufferDesc;
-	memset(&verBufferDesc, 0, sizeof(D3D11_BUFFER_DESC));
-	verBufferDesc.ByteWidth = sizeof(BaseRectVertex) * 4;
-	verBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	verBufferDesc.CPUAccessFlags = 0;
-	verBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	D3D11_SUBRESOURCE_DATA vertexInitData;
-	memset(&vertexInitData, 0, sizeof(D3D11_SUBRESOURCE_DATA));
-	vertexInitData.pSysMem = vertices;
-	DevicePtr->CreateBuffer(&verBufferDesc, &vertexInitData, &m_rectVerticeBuffer);
 
+	m_VertexBuffer = GetDynamicRHI()->CreateVertexBuffer(vertices, sizeof(BaseRectVertex),4,false);
 
-	//´´½¨Ë÷Òıbuffer
-	WORD index[] =
+	unsigned short index[] =
 	{
 		0, 1, 2,
 		0, 2, 3
 	};
-	D3D11_BUFFER_DESC indexBufferDesc;
-	memset(&indexBufferDesc, 0, sizeof(D3D11_BUFFER_DESC));
-	indexBufferDesc.ByteWidth = sizeof(WORD) * 6;
-	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	indexBufferDesc.CPUAccessFlags = 0;
-	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	D3D11_SUBRESOURCE_DATA indexInitData;
-	memset(&indexInitData, 0, sizeof(D3D11_SUBRESOURCE_DATA));
-	indexInitData.pSysMem = index;
-	DevicePtr->CreateBuffer(&indexBufferDesc, &indexInitData, &m_rectIndexBuffer);
+	m_IndexBuffer = GetDynamicRHI()->CreateIndexBuffer(index, 2);
 
+	std::shared_ptr<CC3DTextureRHI> TexRHI =  GetDynamicRHI()->FetchTexture(szTexture,false);
+	setTexture(TexRHI);
 
-	//ÊÖ¶¯´´½¨ÎÆÀí¶ÔÏó
-	DX11Texture *pTexture = ContextInst->fetchTexture(szTexture);
-	setTexture(pTexture);
-	if (pTexture != NULL)
-	{
-		pTexture->unref();
-	}
+	//åˆ›å»ºshader
+	m_pShader = GetDynamicRHI()->CreateShaderRHI();
+	m_pShader->InitShaderWithString(s_szBaseRectShader);
 
-	//´´½¨ÎÆÀí²ÉÑù
-	D3D11_SAMPLER_DESC sampDesc;
-	ZeroMemory(&sampDesc, sizeof(sampDesc));
-	sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-	sampDesc.MinLOD = 0;
-	sampDesc.MaxLOD = 0;
-	HRESULT hr = DevicePtr->CreateSamplerState(&sampDesc, &m_pSamplerLinear);
-	if (FAILED(hr))return false;
+	m_pShaderOpaque = GetDynamicRHI()->CreateShaderRHI();
+	m_pShaderOpaque->InitShaderWithString(s_szBaseRectOpaqueShader);
 
+	m_pShaderWithMask = GetDynamicRHI()->CreateShaderRHI();
+	m_pShaderWithMask->InitShaderWithString(s_szBaseRectShaderWithMask);
 
-	//´´½¨shader
-	m_pShader = new DX11Shader();
-	m_pShader->initShaderWithString(s_szBaseRectShader);
+	m_pShaderWithAlpha = GetDynamicRHI()->CreateShaderRHI();
+	m_pShaderWithAlpha->InitShaderWithString(s_szBaseRectShaderWithAlpha);
 
-	m_pShaderOpaque = new DX11Shader();
-	m_pShaderOpaque->initShaderWithString(s_szBaseRectOpaqueShader);
-
-	m_pShaderWithMask = new DX11Shader();
-	m_pShaderWithMask->initShaderWithString(s_szBaseRectShaderWithMask);
-
-	m_pShaderWithAlpha = new DX11Shader();
-	m_pShaderWithAlpha->initShaderWithString(s_szBaseRectShaderWithAlpha);
-
-	//´´½¨constbuffer ²ÎÊı
-	D3D11_BUFFER_DESC bd;
-	memset(&bd, 0, sizeof(bd));
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(RectConstantBuffer);
-	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	hr = DevicePtr->CreateBuffer(&bd, NULL, &m_pConstantBuffer);
-	
-	//´´½¨constbuffer ²ÎÊı
-	memset(&bd, 0, sizeof(bd));
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(RectConstantBufferMask);
-	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	hr = DevicePtr->CreateBuffer(&bd, NULL, &m_pConstantBufferMask);
-	return hr == S_OK;
+	return true;
 }
 
 void RectDraw::setBlend(bool bBlend)
@@ -332,320 +335,216 @@ void RectDraw::updateBlendState()
 	if (m_bInvalidBlendState)
 	{
 		m_bInvalidBlendState = false;
-		m_pBSState = ContextInst->fetchBlendState(m_bBlend, m_bBlend, true);
+		m_pBSState = GetDynamicRHI()->CreateBlendState(m_bBlend, m_bBlend, true);
 	}
 }
 
 void RectDraw::reRect(float x, float y, float width, float height)
 {
-	SAFERALEASE(m_rectVerticeBuffer);
+	m_VertexBuffer.reset();
 
-	//´´½¨¶¥µãbuffer
-	BaseRectVertex vertices[] =
+	//åˆ›å»ºé¡¶ç‚¹buffer
+	RectVertex vertices[] =
 	{
-		{ XMFLOAT3(-1.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) }
+		{ Vector3(-1.0f, 1.0f, 0.0f), Vector2(0.0f, 0.0f) },
+		{ Vector3(-1.0f, -1.0f, 0.0f), Vector2(0.0f, 1.0f) },
+		{ Vector3(1.0f, -1.0f, 0.0f), Vector2(1.0f, 1.0f) },
+		{ Vector3(1, 1.0f, 0.0f), Vector2(1.0f, 0.0f) }
 	};
-	D3D11_BUFFER_DESC verBufferDesc;
-	memset(&verBufferDesc, 0, sizeof(D3D11_BUFFER_DESC));
-	verBufferDesc.ByteWidth = sizeof(BaseRectVertex) * 4;
-	verBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	verBufferDesc.CPUAccessFlags = 0;
-	verBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	D3D11_SUBRESOURCE_DATA vertexInitData;
-	memset(&vertexInitData, 0, sizeof(D3D11_SUBRESOURCE_DATA));
-	vertexInitData.pSysMem = vertices;
-	DevicePtr->CreateBuffer(&verBufferDesc, &vertexInitData, &m_rectVerticeBuffer);
+
+	m_VertexBuffer = GetDynamicRHI()->CreateVertexBuffer(vertices, sizeof(BaseRectVertex), 4,false);
+
 }
 
-void RectDraw::setTexture(DX11Texture *pTexture)
+void RectDraw::setTexture(std::shared_ptr<CC3DTextureRHI> pTexture)
 {
-	if (m_pTexture == pTexture) return;
-
-	if (m_pTexture != NULL)
-	{
-		m_pTexture->unref();
-	}
-
-	if (m_pShaderTextureView != NULL)
-	{
-		m_pShaderTextureView->Release();
-	}
-
 	m_pTexture = pTexture;
-	if (m_pTexture != NULL)
-	{
-		m_pTexture->ref();
-
-		m_pShaderTextureView = m_pTexture->getTexShaderView();
-
-		if (m_pShaderTextureView != NULL)
-		{
-			m_pShaderTextureView->AddRef();
-		}
-	}
 }
 
-void RectDraw::setShaderTextureView(ID3D11ShaderResourceView *pShaderTextureView)
+void RectDraw::setShaderTextureView(std::shared_ptr<CC3DTextureRHI> pShaderTextureView)
 {
-	if (m_pShaderTextureView == pShaderTextureView) return;
-
-	if (m_pTexture != NULL)
-	{
-		m_pTexture->unref();
-		m_pTexture = NULL;
-	}
-
-	if (m_pShaderTextureView != NULL)
-	{
-		m_pShaderTextureView->Release();
-	}
-
-	m_pShaderTextureView = pShaderTextureView;
-	if (m_pShaderTextureView != NULL)
-	{
-		m_pShaderTextureView->AddRef();
-	}
+	m_pTexture = pShaderTextureView;
 }
 
 void RectDraw::renderOpaque()
 {
-	unsigned int nStride = sizeof(BaseRectVertex);
-	unsigned int nOffset = 0;
+	//è®¾ç½®shader
+	m_pShaderOpaque->UseShader();
 
-	//ÉèÖÃshader
-	m_pShaderOpaque->useShader();
+	//è®¾ç½®çŸ©é˜µå˜æ¢
+	glm::mat4 Identity = glm::mat4(1.0);
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMat4).SetParameter("matWVP", Identity);
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMat4).ApplyToVSBuffer();
 
-	//ÉèÖÃ¾ØÕó±ä»»
-	RectConstantBuffer mWVP;
-	mWVP.mWVP = XMMatrixIdentity();
-	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, &mWVP, 0, 0);
-	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
-
-	//ÉèÖÃÎÆÀíÒÔ¼°ÎÆÀí²ÉÑù
-	ID3D11ShaderResourceView *pMyShaderResourceView = m_pShaderTextureView;
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
-	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
-
-	//ÉèÖÃ¶¥µãÊı¾İ
-	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer, &nStride, &nOffset);
-	DeviceContextPtr->IASetIndexBuffer(m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-	DeviceContextPtr->DrawIndexed(6, 0, 0);
+	GetDynamicRHI()->SetPSShaderResource(0, m_pTexture);
+	GetDynamicRHI()->SetSamplerState(CC3DPiplelineState::ClampLinerSampler);
+	GetDynamicRHI()->DrawPrimitive(m_VertexBuffer, m_IndexBuffer);
 }
 
 void RectDraw::render()
 {
-	//if (m_pBSDisable == NULL)
+
+	//è®¾ç½®shader
+	m_pShader->UseShader();
+	
+	glm::mat4 Identity = glm::mat4(1.0);
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMat4).SetParameter("matWVP", Identity);
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMat4).ApplyToVSBuffer();
+
+	GetDynamicRHI()->SetPSShaderResource(0, m_pTexture);
+	GetDynamicRHI()->SetSamplerState(CC3DPiplelineState::ClampLinerSampler);
+
+	GetDynamicRHI()->DrawPrimitive(m_VertexBuffer, m_IndexBuffer);
+}
+
+void RectDraw::render(Vector2 vTrans, Vector2 vScale, float fRotate, int w, int h)
+{
+
+	//è®¾ç½®shader
+	m_pShader->UseShader();
+
+
+	glm::mat4 matIdentity = glm::mat4(1.0);
+	glm::mat4 matScale = glm::scale(matIdentity, glm::vec3(vScale[0], vScale[1], 1.0f));
+	glm::mat4 matRotateZ = glm::rotate(matIdentity, fRotate * 3.1416f / 180.0f, glm::vec3{ 0.0f, 0.0f, 1.0f });
+
+	glm::mat4 matPreScale = glm::scale(matIdentity, glm::vec3(w * 1.0f / h, 1.0f, 1.0f));
+	glm::mat4 matEndScale = glm::scale(matIdentity, glm::vec3(h * 1.0f / w, 1.0f, 1.0f));
+
+	matRotateZ = matPreScale * matRotateZ;
+	matRotateZ = matRotateZ * matEndScale;
+
+	matScale = matRotateZ * matScale;
+
+	glm::mat4 matTranslate = glm::translate(matIdentity, glm::vec3(vTrans[0], vTrans[1], 0));
+	matTranslate = matTranslate * matScale;
+	
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMat4).SetParameter("matWVP", matTranslate);
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMat4).ApplyToVSBuffer();
+
+	GetDynamicRHI()->SetPSShaderResource(0, m_pTexture);
+	GetDynamicRHI()->SetSamplerState(CC3DPiplelineState::ClampLinerSampler);
+
+	GetDynamicRHI()->DrawPrimitive(m_VertexBuffer, m_IndexBuffer);
+}
+
+void RectDraw::render(std::shared_ptr<CC3DTextureRHI> pShaderTextureView, float *arrClip, void *pMaskInfo, int w, int h)
+{
+	if (pMaskInfo == nullptr || w <= 0 || h<0)
+		render();
+
+
+	//è®¾ç½®shader
+	m_pShaderWithMask->UseShader();
+
+	//è®¾ç½®çŸ©é˜µå˜æ¢
+
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMask).SetParameter("matWVP", glm::mat4(1));
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMask).SetParameter("clip", Vector4(arrClip[0], arrClip[1], arrClip[2], arrClip[3]));
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMask).SetParameter("texSize", Vector2(1280 / 1.3, 720 / 1.3));
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMask).ApplyToAllBuffer();
+
+	//è®¾ç½®çº¹ç†ä»¥åŠçº¹ç†é‡‡æ ·
+	GetDynamicRHI()->SetPSShaderResource(0, pShaderTextureView);
+	GetDynamicRHI()->SetSamplerState(CC3DPiplelineState::ClampLinerSampler);
+
+	//std::vector<char> ConvertBuf;
+	//ConvertBuf.resize(w * h * 4);
+
+	//char* pImageSourceTemp = (char*)pMaskInfo;
+	//char* pImageDestTemp = ConvertBuf.data();
+	//for (int r = 0; r < h; ++r)
 	//{
-	//	m_pBSDisable = DXUtils::CloseBlendState();
+	//	for (int c = 0; c < w; ++c)
+	//	{
+	//		pImageDestTemp[0] = pImageSourceTemp[0];
+	//		pImageDestTemp[1] = pImageSourceTemp[0];
+	//		pImageDestTemp[2] = pImageSourceTemp[0];
+	//		pImageDestTemp[3] = 255;
+
+	//		pImageSourceTemp += 1;
+	//		pImageDestTemp += 4;
+	//	}
 	//}
-	//float blendFactor[] = { 0.f,0.f,0.f,0.f };
-	//DeviceContextPtr->OMSetBlendState(m_pBSDisable, blendFactor, 0xffffffff);
-	unsigned int nStride = sizeof(BaseRectVertex);
-	unsigned int nOffset = 0;
 
-	//ÉèÖÃshader
-	m_pShader->useShader();
-	
-	//ÉèÖÃ¾ØÕó±ä»»
-	RectConstantBuffer mWVP;
-	mWVP.mWVP  =XMMatrixIdentity();
-	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, &mWVP, 0, 0);
-	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
-
-	//ÉèÖÃÎÆÀíÒÔ¼°ÎÆÀí²ÉÑù
-	ID3D11ShaderResourceView *pMyShaderResourceView = m_pShaderTextureView;
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
-	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
-
-	//ÉèÖÃ¶¥µãÊı¾İ
-	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer, &nStride, &nOffset);
-	DeviceContextPtr->IASetIndexBuffer(m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-	DeviceContextPtr->DrawIndexed(6, 0, 0);
-}
-
-void RectDraw::render(vec2 vTrans, vec2 vScale, float fRotate, int w, int h)
-{
-	XMMATRIX matScale =  XMMatrixScaling(vScale[0], vScale[1], 1.0f);
-	
-	XMMATRIX matPreScale = XMMatrixScaling(w*1.0f/h, 1.0f, 1.0f);
-	XMMATRIX matRotateZ = XMMatrixRotationZ(fRotate / 180.0f*3.1416f);
-	XMMATRIX matEndScale = XMMatrixScaling(h*1.0f/w, 1.0f, 1.0f);
-	matRotateZ = XMMatrixMultiply(matPreScale, matRotateZ);
-	matRotateZ = XMMatrixMultiply(matRotateZ, matEndScale);
-
-	matScale = XMMatrixMultiply(matRotateZ, matScale);
-
-	XMMATRIX matTranslate = XMMatrixTranslation(vTrans[0], vTrans[1], 0);
-
-	matTranslate = XMMatrixMultiply(matTranslate, matScale);
-
-	unsigned int nStride = sizeof(BaseRectVertex);
-	unsigned int nOffset = 0;
-
-	//ÉèÖÃshader
-	m_pShader->useShader();
-
-	//ÉèÖÃ¾ØÕó±ä»»
-	RectConstantBuffer mWVP;
-	mWVP.mWVP = matTranslate;// XMMatrixIdentity();
-	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, &mWVP, 0, 0);
-	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
-
-	//ÉèÖÃÎÆÀíÒÔ¼°ÎÆÀí²ÉÑù
-	ID3D11ShaderResourceView *pMyShaderResourceView = m_pShaderTextureView;
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
-	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
-
-	//ÉèÖÃ¶¥µãÊı¾İ
-	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer, &nStride, &nOffset);
-	DeviceContextPtr->IASetIndexBuffer(m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-	DeviceContextPtr->DrawIndexed(6, 0, 0);
-}
-
-void RectDraw::render(ID3D11ShaderResourceView *pShaderTextureView, float *arrClip, void *pMaskInfo, int w, int h)
-{
-	if (pMaskInfo == NULL || w <= 0 || h<0)render();
-
-
-	unsigned int nStride = sizeof(BaseRectVertex);
-	unsigned int nOffset = 0;
-
-	//ÉèÖÃshader
-	m_pShaderWithMask->useShader();
-
-	//ÉèÖÃ¾ØÕó±ä»»
-	RectConstantBufferMask mWVP;
-	mWVP.mWVP = XMMatrixIdentity();
-	mWVP.mClip = XMFLOAT4(arrClip[0], arrClip[1], arrClip[2], arrClip[3]);
-	mWVP.texSize = vec2(1280/1.3, 720/1.3);
-
-	DeviceContextPtr->UpdateSubresource(m_pConstantBufferMask, 0, NULL, &mWVP, 0, 0);
-	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBufferMask);
-	DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBufferMask);
-
-	//ÉèÖÃÎÆÀíÒÔ¼°ÎÆÀí²ÉÑù
-	ID3D11ShaderResourceView *pMyShaderResourceView = m_pShaderTextureView;
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
-	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
-
-	//´´½¨ÎÆÀí
-	if (m_pTextureMask == NULL)
+	//åˆ›å»ºçº¹ç†
+	if (m_pTextureMask == nullptr)
 	{
-		m_pTextureMask = new DX11Texture();
-		m_pTextureMask->initTexture(DXGI_FORMAT_R8_UNORM, D3D11_BIND_SHADER_RESOURCE, w, h, pMaskInfo, w, false);
+		m_pTextureMask = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_R8, 0, w, h, pMaskInfo, w, false);
 	}
-	else if (m_pTextureMask->width() == w && m_pTextureMask->height() == h)
+	else if (m_pTextureMask->GetWidth() == w && m_pTextureMask->GetHeight() == h)
 	{
 		m_pTextureMask->updateTextureInfo(pMaskInfo, w, h);
 	}
 	else
 	{
-		m_pTextureMask->destory();
-		m_pTextureMask->initTexture(DXGI_FORMAT_R8_UNORM, D3D11_BIND_SHADER_RESOURCE, w, h, pMaskInfo, w, false);
+		m_pTextureMask.reset();
+		m_pTextureMask = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_R8, 0, w, h, pMaskInfo, w , false);
 	}
 
-	pMyShaderResourceView = m_pTextureMask->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(1, 1, &pMyShaderResourceView);
 
-	DeviceContextPtr->PSSetShaderResources(2, 1, &pShaderTextureView);
+	GetDynamicRHI()->SetPSShaderResource(1, m_pTextureMask);
+	GetDynamicRHI()->SetPSShaderResource(2, pShaderTextureView);
 
-	//ÉèÖÃ¶¥µãÊı¾İ
-	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer, &nStride, &nOffset);
-	DeviceContextPtr->IASetIndexBuffer(m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-	DeviceContextPtr->DrawIndexed(6, 0, 0);
+	GetDynamicRHI()->DrawPrimitive(m_VertexBuffer, m_IndexBuffer);
 }
 
 void RectDraw::renderAlpha(float *arrClip, void *pMaskInfo, int maskW, int maskH, int texW, int TexH)
 {
 	if (pMaskInfo == NULL || maskW <= 0 || maskH<0)render();
 
-	if (m_pBSState == NULL)
+	if (!m_pBSState)
 	{
-		m_pBSState = ContextInst->fetchBlendState(true, false, true);
+		m_pBSState = GetDynamicRHI()->CreateBlendState(true, false, true);
 	}
 
 	float blendFactor[] = { 0.f,0.f,0.f,0.f };
-	DeviceContextPtr->OMSetBlendState(m_pBSState, blendFactor, 0xffffffff);
-	unsigned int nStride = sizeof(BaseRectVertex);
-	unsigned int nOffset = 0;
+	GetDynamicRHI()->SetBlendState(m_pBSState, blendFactor, 0xffffffff);
 
-	//ÉèÖÃshader
-	m_pShaderWithAlpha->useShader();
+	//è®¾ç½®shader
+	m_pShaderWithAlpha->UseShader();
 
-	//ÉèÖÃ¾ØÕó±ä»»
-	RectConstantBufferMask mWVP;
-	mWVP.mWVP = XMMatrixIdentity();
-	mWVP.mClip = XMFLOAT4(arrClip[0], arrClip[1], arrClip[2], arrClip[3]);
-	mWVP.texSize = vec2(texW/1.3, TexH/1.3);
-	
-	DeviceContextPtr->UpdateSubresource(m_pConstantBufferMask, 0, NULL, &mWVP, 0, 0);
-	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBufferMask);
-	DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBufferMask);
+	//è®¾ç½®çŸ©é˜µå˜æ¢
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMask).SetParameter("matWVP", glm::mat4(1));
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMask).SetParameter("clip", Vector4(arrClip[0], arrClip[1], arrClip[2], arrClip[3]));
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMask).SetParameter("texSize", Vector2(texW / 1.3, TexH / 1.3));
+	GET_SHADER_STRUCT_MEMBER(ConstantBufferMask).ApplyToAllBuffer();
 
-	//ÉèÖÃÎÆÀíÒÔ¼°ÎÆÀí²ÉÑù
-	ID3D11ShaderResourceView *pMyShaderResourceView = m_pShaderTextureView;
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
-	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
-	//´´½¨ÎÆÀí
-	if (m_pTextureMask == NULL)
+	//è®¾ç½®çº¹ç†ä»¥åŠçº¹ç†é‡‡æ ·
+	GetDynamicRHI()->SetPSShaderResource(0, m_pTexture);
+	GetDynamicRHI()->SetSamplerState(CC3DPiplelineState::ClampLinerSampler);
+
+	//åˆ›å»ºçº¹ç†
+	if (m_pTextureMask == nullptr)
 	{
-		m_pTextureMask = new DX11Texture();
-		m_pTextureMask->initTexture(DXGI_FORMAT_R8_UNORM, D3D11_BIND_SHADER_RESOURCE, maskW, maskH, pMaskInfo, maskW, false);
+		m_pTextureMask = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_R8, 0, maskW, maskH, pMaskInfo, maskW, false);
 	}
-	else if (m_pTextureMask->width() == maskW && m_pTextureMask->height() == maskH)
+	else if (m_pTextureMask->GetWidth() == maskW && m_pTextureMask->GetHeight() == maskH)
 	{
 		m_pTextureMask->updateTextureInfo(pMaskInfo, maskW, maskH);
 	}
 	else
 	{
-		m_pTextureMask->destory();
-		m_pTextureMask->initTexture(DXGI_FORMAT_R8_UNORM, D3D11_BIND_SHADER_RESOURCE, maskW, maskH, pMaskInfo, maskW, false);
+		m_pTextureMask.reset();
+		m_pTextureMask = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_R8, 0, maskW, maskH, pMaskInfo, maskW, false);
 	}
 
-	pMyShaderResourceView = m_pTextureMask->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(1, 1, &pMyShaderResourceView);
-
-	//ÉèÖÃ¶¥µãÊı¾İ
-	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer, &nStride, &nOffset);
-	DeviceContextPtr->IASetIndexBuffer(m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-	DeviceContextPtr->DrawIndexed(6, 0, 0);
+	GetDynamicRHI()->SetPSShaderResource(1, m_pTextureMask);
+	GetDynamicRHI()->DrawPrimitive(m_VertexBuffer, m_IndexBuffer);
 }
 
 void RectDraw::destory()
 {
-	SAFERALEASE(m_rectVerticeBuffer);
-	SAFERALEASE(m_rectIndexBuffer);
-	SAFERALEASE(m_pShaderTextureView);
-	SAFERALEASE(m_pConstantBuffer);
-	SAFERALEASE(m_pConstantBufferMask);
-	SAFERALEASE(m_pSamplerLinear);
+	m_VertexBuffer.reset();
+	m_IndexBuffer.reset();
+	m_pTexture.reset();
+	m_pTextureMask.reset();
 
-	SAFERALEASE(m_pBSState);
-	//SAFERALEASE(m_pBSDisable);
+	m_pBSState.reset();
 
-	SAFEDEL(m_pShader);
-	SAFEDEL(m_pShaderOpaque);
-	SAFEDEL(m_pShaderWithAlpha);
-	SAFEDEL(m_pShaderWithMask);
-
-	if (m_pTexture != NULL)
-	{
-		m_pTexture->unref();
-		m_pTexture = NULL;
-	}
-
-	if (m_pTextureMask != NULL)
-	{
-		m_pTextureMask->unref();
-		m_pTextureMask = NULL;
-	}
+	m_pShader.reset();
+	m_pShaderOpaque.reset();
+	m_pShaderWithAlpha.reset();
+	m_pShaderWithMask.reset();
 }

@@ -85,12 +85,21 @@ struct CC3DAnimationChannelInfo
 			return;
 		}
 		int Index = -1;
-		if (during<pInputTime[0] || during>pInputTime[nKeyFrame-1])
+		if (during<pInputTime[0])
+		{
+			nKeyL = 0;
+			nKeyR = 0;
+			alpha = 1.0;
+			return;
+		}
+
+		if (during > pInputTime[nKeyFrame - 1])
 		{
 			nKeyL = -1;
 			nKeyR = -1;
 			return;
 		}
+
 		for (int i=0;i<nKeyFrame-1;i++)
 		{
 			if (pInputTime[i]<= during&&pInputTime[i+1]>= during)
@@ -163,6 +172,33 @@ struct CC3DBoneNodeInfo
 	~CC3DBoneNodeInfo()
 	{
 		pChildren.clear();
+	}
+	bool IsChildOfMaskBone(const std::string& node_name)
+	{
+		//如果mask 的骨骼名称为空，则视为使用普通blend,即所有的骨骼动画都生效
+		//只有在mask的骨骼名称不为空，且当前骨骼名称不为mask骨骼的子节点，才返回false
+		if (node_name.empty())
+		{
+			return true;
+		}
+		bool bFind = false;
+		CC3DBoneNodeInfo* n = const_cast<CC3DBoneNodeInfo*>(this);
+		if (n->bone_name == node_name)
+		{
+			bFind = true;
+			return bFind;
+		}
+		while (n->pParent)
+		{
+			n = n->pParent;
+			if (n->bone_name == node_name)
+			{
+				bFind = true;
+				break;
+			}
+		}
+
+		return bFind;
 	}
 	//节点名
 	std::string bone_name;
@@ -317,11 +353,16 @@ public:
 	****************************************************/
 	static void QuaternionInterpolate(Vector4 & vec4Out, const Vector4 &vec4Start, const Vector4 & vec4End, float fFactor);
 
+	static void Slerp(Vector4 & vec4Out, const Vector4 &vec4Start, const Vector4 & vec4End, float fFactor);
+
 	/****************************************************
 	*	旋转四元组归一化
 	*	@param[vec4Out]		四元组
 	****************************************************/
 	static void QuaternionNormalize(Vector4 & vec4Out);
+
+	static std::string GetFileName(const std::string& FilePath);
+	static std::string GetFileNameWithoutExtension(const std::string& FilePath);
 };
 
 std::string GetFilePathExtension(const std::string &FileName);

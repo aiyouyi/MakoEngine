@@ -1,5 +1,7 @@
 ﻿
 #include "CC3DMesh.h"
+#include "GetMaterialData.h"
+#include "GetGLMaterialData.h"
 #include <fstream>
 CC3DMesh::CC3DMesh()
 {
@@ -137,17 +139,17 @@ void CC3DMesh::InitMesh(uint32 meshIndex, uint32 PrimitiveIndex, std::vector<CC3
 			m_pBlendShapeName[i] = subName;
 			//m_pBlendShapeName[i] = BlendShapeName.Get(i).Get<std::string>();
 		}
-		
-		
+	
 	}
 
 	int nMaterial = meshPrimitive.material >= 0 ? meshPrimitive.material: 0;
+
 	m_Material = ModelMatrial[nMaterial];
-	if (m_Material->alphaMode != "OPAQUE")
+	std::string alphaMode = GetMaterialData::GetAlphaMode(m_Material);
+	if (alphaMode != "OPAQUE")
 	{
 		m_isTransparent = true;
 	}
-	
 
 
 	auto &Nodes = m_Model->nodes;

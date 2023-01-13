@@ -3,18 +3,18 @@
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "Toolbox\fileSystem.h"
 #include "EffectKernel/ShaderProgramManager.h"
-//#include "opencv2/opencv.hpp"
+#include "Toolbox/DXUtils/DX11Resource.h"
 
 struct EffectConstantBuffer
 {
-	Mat4 mWVP; //���Ͼ���
+	Mat4 mWVP; 
 	Mat4 mNormal;
 	XMVECTOR mColor;
 };
 
 struct HeaderCullConstantBuffer
 {
-	Mat4 mWVP; //���Ͼ���
+	Mat4 mWVP; 
 };
 CFaceEffect3DModel::CFaceEffect3DModel()
 {
@@ -23,19 +23,17 @@ CFaceEffect3DModel::CFaceEffect3DModel()
 	m_nStartTime = -1;
 	m_nLoopStartTime = -1;
 	m_pSamplerLinear = NULL;
-	//��Ⱦģ����Ϣ
+
 	m_pShaderForHeaderCull = NULL;
 
 	m_pConstantBuffer = NULL;
 	m_pConstantBufferForHeaderCull = NULL;
 
-	//�����Լ�buffer����
 	m_pBSEnable = NULL;
 	m_pBSWriteDisable = NULL;
 	m_pBSDisable = NULL;
 	m_pBSDisableWriteDisable = NULL;
 
-	//���Ȳ���
 	m_pDepthStateEnable = NULL;
 	m_pDepthStateDisable = NULL;
 	m_pDepthStateEnableWriteDisable = NULL;
@@ -179,9 +177,6 @@ bool CFaceEffect3DModel::Prepare()
 
 	m_HeaderModel.updateGpuBuffer();
 
-
-
-	//����״̬
 	if (m_pBSEnable == NULL)
 	{
 		m_pBSEnable = ContextInst->fetchBlendState(true, false, true);
@@ -199,7 +194,6 @@ bool CFaceEffect3DModel::Prepare()
 		m_pBSDisableWriteDisable = ContextInst->fetchBlendState(false, false, false);
 	}
 
-	//����״̬
 	if (m_pDepthStateEnable == NULL)
 	{
 		m_pDepthStateEnable = ContextInst->fetchDepthStencilState(true, true);
@@ -222,12 +216,12 @@ bool CFaceEffect3DModel::Prepare()
 
 	if (m_hasMatcap)
 	{
-		string path = m_resourcePath + "/Shader/face3dEffectMatCap.fx";
+		std::string path = m_resourcePath + "/Shader/face3dEffectMatCap.fx";
 		m_pShader = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path, pAttribute, 2);
 	}
 	else
 	{
-		string path = m_resourcePath + "/Shader/face3dEffect.fx";
+		std::string path = m_resourcePath + "/Shader/face3dEffect.fx";
 		m_pShader = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path, pAttribute, 2);
 	}
 
@@ -236,7 +230,7 @@ bool CFaceEffect3DModel::Prepare()
 		{VERTEX_ATTRIB_POSITION, FLOAT_C3},
 	};
 
-	string path1 = m_resourcePath + "/Shader/face3dForCullFace.fx";
+	std::string path1 = m_resourcePath + "/Shader/face3dForCullFace.fx";
 	m_pShaderForHeaderCull = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path1, pAttribute2, 1);
 
 	m_pConstantBuffer = DXUtils::CreateConstantBuffer(sizeof(EffectConstantBuffer));
@@ -324,8 +318,10 @@ void CFaceEffect3DModel::Render(BaseRenderParam & RenderParam)
 		auto pDoubleBuffer = RenderParam.GetDoubleBuffer();
 
 		pDoubleBuffer->BindFBOA();
-		//��Ⱦ��ͷ����Ϣ,���ں����޳�(��ֹ���ϣ���ֹд����ɫbuffer���������Ȳ��Ժ�����bufferд)
-		DeviceContextPtr->ClearDepthStencilView(pDoubleBuffer->GetFBOA()->getDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+		
+		//DeviceContextPtr->ClearDepthStencilView(pDoubleBuffer->GetFBOA()->getDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+		DeviceContextPtr->ClearDepthStencilView(RHIResourceCast(pDoubleBuffer.get())->GetFBOA()->getDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+		
 		DeviceContextPtr->OMSetDepthStencilState(m_pDepthStateEnable, 0);
 		float blendFactor[] = { 0.f,0.f,0.f,0.f };
 		DeviceContextPtr->OMSetBlendState(m_pBSDisableWriteDisable, blendFactor, 0xffffffff);
@@ -333,7 +329,7 @@ void CFaceEffect3DModel::Render(BaseRenderParam & RenderParam)
 
 		for (int faceIndex = 0; faceIndex < nFaceCount; ++faceIndex)
 		{
-			//���������任������Ϣ
+	
 			FacePosInfo *pFaceInfo = RenderParam.GetFaceInfo(faceIndex);
 			//set roi viewport
 			D3D11_VIEWPORT vp;
@@ -362,11 +358,10 @@ void CFaceEffect3DModel::Render(BaseRenderParam & RenderParam)
 
 			HeaderCullConstantBuffer matWVP;
 			matWVP.mWVP = matRotateXYZ;
-			//���þ����任
+			
 			DeviceContextPtr->UpdateSubresource(m_pConstantBufferForHeaderCull, 0, NULL, &matWVP, 0, 0);
 			DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBufferForHeaderCull);
 
-			//���ö�������
 			unsigned int nStride = sizeof(vec3);
 			unsigned int nOffset = 0;
 			DeviceContextPtr->IASetVertexBuffers(0, 1, &m_HeaderModel.m_headerVerticeBuffer, &nStride, &nOffset);
@@ -374,12 +369,11 @@ void CFaceEffect3DModel::Render(BaseRenderParam & RenderParam)
 			DeviceContextPtr->DrawIndexed(m_HeaderModel.m_nFaces * 3, 0, 0);
 		}
 
-		//���Ʋ�͸��������
 		DeviceContextPtr->OMSetBlendState(m_pBSDisable, blendFactor, 0xffffffff);
 		m_pShader->useShader();
 		for (int faceIndex = 0; faceIndex < nFaceCount; ++faceIndex)
 		{
-			//���������任������Ϣ
+			
 			FacePosInfo *pFaceInfo = RenderParam.GetFaceInfo(faceIndex);
 			//set roi viewport
 			D3D11_VIEWPORT vp;
@@ -422,17 +416,22 @@ void CFaceEffect3DModel::Render(BaseRenderParam & RenderParam)
 				{
 					matWVP.mColor = XMVectorSet(model.m_fMixColor.x, model.m_fMixColor.y, model.m_fMixColor.z, model.m_fMixColor.w);
 
-					//���þ����任
 					DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, &matWVP, 0, 0);
 					DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 					DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 
-					//���������Լ���������
-					ID3D11ShaderResourceView *pMyShaderResourceView = model.m_drawable->GetSRV(runTime1);
-					DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+
+					//ID3D11ShaderResourceView *pMyShaderResourceView = model.m_drawable->GetSRV(runTime1);
+					//DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+					auto pMaterialView = model.m_drawable->GetTex(m_runTime);
+					if (pMaterialView)
+					{
+						pMaterialView->Bind(0);
+					}
+
 					if (m_hasMatcap)
 					{
-						pMyShaderResourceView = m_MatCap->getTexShaderView();
+						auto pMyShaderResourceView = m_MatCap->getTexShaderView();
 						DeviceContextPtr->PSSetShaderResources(1, 1, &pMyShaderResourceView);
 						pMyShaderResourceView = m_MatCapNormal->getTexShaderView();
 						DeviceContextPtr->PSSetShaderResources(2, 1, &pMyShaderResourceView);
@@ -441,8 +440,6 @@ void CFaceEffect3DModel::Render(BaseRenderParam & RenderParam)
 					DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
 
-
-					//���ö�������
 					unsigned int nStride = sizeof(EffectVertex);
 					unsigned int nOffset = 0;
 					DeviceContextPtr->IASetVertexBuffers(0, 1, &model.m_rectVerticeBuffer, &nStride, &nOffset);
@@ -458,7 +455,7 @@ void CFaceEffect3DModel::Render(BaseRenderParam & RenderParam)
 		m_pShader->useShader();
 		for (int faceIndex = 0; faceIndex < nFaceCount; ++faceIndex)
 		{
-			//���������任������Ϣ
+
 			FacePosInfo *pFaceInfo = RenderParam.GetFaceInfo(faceIndex);
 			//set roi viewport
 			D3D11_VIEWPORT vp;
@@ -501,24 +498,30 @@ void CFaceEffect3DModel::Render(BaseRenderParam & RenderParam)
 				{
 					matWVP.mColor = XMVectorSet(model.m_fMixColor.x, model.m_fMixColor.y, model.m_fMixColor.z, model.m_fMixColor.w*alpha);
 
-					//���þ����任
+
 					DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, &matWVP, 0, 0);
 					DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 					DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 
-					//���������Լ���������
-					ID3D11ShaderResourceView *pMyShaderResourceView = model.m_drawable->GetSRV(runTime1);
-					DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+
+					//ID3D11ShaderResourceView *pMyShaderResourceView = model.m_drawable->GetSRV(runTime1);
+					//DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+					auto pMaterialView = model.m_drawable->GetTex(runTime1);
+					if (pMaterialView)
+					{
+						pMaterialView->Bind(0);
+					}
+
 					if (m_hasMatcap)
 					{
-						pMyShaderResourceView = m_MatCap->getTexShaderView();
+						auto pMyShaderResourceView = m_MatCap->getTexShaderView();
 						DeviceContextPtr->PSSetShaderResources(1, 1, &pMyShaderResourceView);
 						pMyShaderResourceView = m_MatCapNormal->getTexShaderView();
 						DeviceContextPtr->PSSetShaderResources(2, 1, &pMyShaderResourceView);
 					}
 					DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
-					//���ö�������
+
 					unsigned int nStride = sizeof(EffectVertex);
 					unsigned int nOffset = 0;
 					DeviceContextPtr->IASetVertexBuffers(0, 1, &model.m_rectVerticeBuffer, &nStride, &nOffset);
@@ -535,7 +538,6 @@ void CFaceEffect3DModel::Render(BaseRenderParam & RenderParam)
 		DeviceContextPtr->OMSetDepthStencilState(m_pDepthStateDisable, 0);
 		ContextInst->setCullMode(D3D11_CULL_NONE);
 	}
-
 
 
 }
@@ -577,12 +579,7 @@ bool CFaceEffect3DModel::loadFromXML(HZIP hZip, const char * szFilePath, const c
 				bGenMipmap = true;
 			}
 
-			std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-			if (TexRHI == nullptr)
-			{
-				TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-				GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-			}
+			std::shared_ptr< MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
 
 			m_mapImage.insert(std::make_pair(szDrawableName, new BitmapDrawable(TexRHI)));
 
@@ -601,7 +598,7 @@ bool CFaceEffect3DModel::loadFromXML(HZIP hZip, const char * szFilePath, const c
 			const char *szTarget = nodeDrawable.getAttribute("ref");
 			if (szTarget != NULL)
 			{
-				map<std::string, Drawable *>::iterator it = m_mapImage.find(szTarget);
+				std::map<std::string, Drawable *>::iterator it = m_mapImage.find(szTarget);
 				if (it != m_mapImage.end())
 				{
 					AnimationDrawable *targetDrawable = (AnimationDrawable *)(it->second);
@@ -653,12 +650,8 @@ bool CFaceEffect3DModel::loadFromXML(HZIP hZip, const char * szFilePath, const c
 
 						sprintf(szFullFile, "%s/%s", szFilePath, szImagePath);
 
-						std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-						if (TexRHI == nullptr)
-						{
-							TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-							GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-						}
+
+						std::shared_ptr< MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
 
 						long during = nDuring;
 
@@ -703,7 +696,7 @@ bool CFaceEffect3DModel::loadFromXML(HZIP hZip, const char * szFilePath, const c
 
 			if (szDrawable != NULL && strlen(szDrawable) > 0)
 			{
-				map<std::string, Drawable *>::iterator it = m_mapImage.find(szDrawable);
+				std::map<std::string, Drawable*>::iterator it = m_mapImage.find(szDrawable);
 				if (it != m_mapImage.end())
 				{
 					model.m_drawable = it->second->Clone();

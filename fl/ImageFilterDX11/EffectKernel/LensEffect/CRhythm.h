@@ -3,8 +3,9 @@
 #include "EffectKernel/CEffectPart.h"
 #include "Toolbox/Render/CC3DShaderDef.h"
 #include "Toolbox/Render/DynamicRHI.h"
+#include "EffectKernel/DXBasicSample.h"
 
-class MAGICSTUDIO_EXPORTS_CLASS CRhythm: public CEffectPart
+class MAGICSTUDIO_EXPORTS_CLASS CRhythm: public CEffectPart, protected DXBaicSample
 {
 public:
 	CRhythm();
@@ -22,11 +23,10 @@ public:
 	int m_Loop = 0;
 	long m_StartTime = 0;
 
-	//TODO:还有数组类型的uniform没有解决，好像可以直接使用size去包含整个数组大小
 	template<typename T>
-	void SetParameter(std::string name, const T* value, size_t count, size_t size)
+	void SetParameter(std::string name, const T& value)
 	{
-		GET_SHADER_STRUCT_MEMBER(ConstantBufferVec4).SetParameter(name, value, size);
+		GET_SHADER_STRUCT_MEMBER(ConstantBufferVec4).SetParameter(name, value);
 	}
 
 	float m_RealScale = 1;
@@ -39,7 +39,7 @@ private:
 
 	std::shared_ptr<CC3DVertexBuffer> mVertexBuffer;
 	std::shared_ptr<CC3DIndexBuffer> mIndexBuffer;
-	DELCARE_SHADER_STRUCT_MEMBER(ConstantBufferVec4);
+	DECLARE_SHADER_STRUCT_MEMBER(ConstantBufferVec4);
 
 	float MaxScale = 1.8;
 	float MidScale = 1.4;

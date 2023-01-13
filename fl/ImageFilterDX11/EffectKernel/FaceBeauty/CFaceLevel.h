@@ -3,7 +3,9 @@
 #define CFaceLevel_H
 
 #include "EffectKernel/CEffectPart.h"
-class CFaceLevel : public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class CFaceLevel : public CEffectPart ,protected DXBaicSample
 {
 public:
 	CFaceLevel();

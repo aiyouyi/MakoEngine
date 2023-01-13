@@ -1,14 +1,16 @@
-#pragma once
+﻿#pragma once
 #include "EffectKernel/CEffectPart.h"
 #include "Toolbox/Drawable.hpp"
 //#include "EffectModel.hpp"
 #include "Toolbox/DXUtils/DXUtils.h"
 #include <vector>
-class CBodyBGEffect :public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class CBodyBGEffect :public CEffectPart, protected DXBaicSample
 {
 public:
 	CBodyBGEffect();
-	~CBodyBGEffect();
+	virtual ~CBodyBGEffect();
 	virtual void* Clone() override;
 	virtual bool ReadConfig(XMLNode& childNode, HZIP hZip = 0, char* pFilePath = NULL) override;
 	virtual bool ReadConfig(XMLNode& childNode, const std::string &path);
@@ -19,7 +21,7 @@ private:
 	bool ReadConfig(XMLNode & childNode, HZIP hZip, char * pFilePath, const std::string & path);
 	bool WriteConfig(std::string &tempPath, XMLNode &root, HZIP dst, HZIP src);
 
-	ID3D11Buffer*       m_pConstantBufferMask;  
+	ID3D11Buffer *m_pConstantBufferMask;  
 	ID3D11Buffer *m_rectVerticeBuffer;
 	ID3D11Buffer *m_rectIndexBuffer;
 

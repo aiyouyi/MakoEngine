@@ -24,6 +24,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ****************************************************************************/
 
+#if defined(_MSC_VER)
+#include <Windows.h>
+#endif
+
 #include "CCFileUtils.h"
 #include <stack>
 #include "base/CCData.h"
@@ -31,9 +35,7 @@ THE SOFTWARE.
 #include<fstream>
 #include <sstream>
 
-#if defined(_MSC_VER)
-#include <Windows.h>
-#endif
+
 
 NS_CC_BEGIN
 

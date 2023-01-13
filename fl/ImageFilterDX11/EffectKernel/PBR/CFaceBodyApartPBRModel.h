@@ -1,15 +1,10 @@
 #pragma once
 #include "EffectKernel/CEffectPart.h"
-#include "EffectKernel/PBR/CRenderPBRModel.h"
-
-#include <vector>
-#include <string>
-#include<map>
-#include <chrono>
+#include "CC3DEngine/Render/CRenderPBRModel.h"
 #include "Toolbox/Render/CC3DShaderDef.h"
+#include "EffectKernel/DXBasicSample.h"
 
-
-class CFaceBodyApartPBRModel :public CEffectPart
+class CFaceBodyApartPBRModel :public CEffectPart , protected DXBaicSample
 {
 public:
 	CFaceBodyApartPBRModel();
@@ -36,7 +31,7 @@ private:
 	float m_rotateX = 0.0f;
 	float m_GradientTime[3] = { 0,0,0 };
 	std::string rotateNodeName;
-	DELCARE_SHADER_STRUCT_MEMBER(ConstantBufferMat4);
+	DECLARE_SHADER_STRUCT_MEMBER(ConstantBufferMat4);
 	bool bFollowFace = false;
 	bool bMatrixInit = false;
 	glm::mat4 worldMat = glm::mat4(1.0);

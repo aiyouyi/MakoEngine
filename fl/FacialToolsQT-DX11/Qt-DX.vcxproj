@@ -5,6 +5,14 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseDBG|Win32">
+      <Configuration>ReleaseDBG</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseDBG|x64">
+      <Configuration>ReleaseDBG</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
@@ -21,25 +29,34 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B12702AD-ABFB-343A-A199-8E24837244A3}</ProjectGuid>
     <Keyword>QtVS_v301</Keyword>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
     <ProjectName>ccFacialToolsQt-DX11</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDBG|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDBG|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -55,8 +72,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDBG|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDBG|Win32'">
+    <OutDir>$(SolutionDir)Release\</OutDir>
     <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <Target Name="QtMsBuildNotFound" BeforeTargets="CustomBuild;ClCompile" Condition="!Exists('$(QtMsBuild)\qt.targets') or !Exists('$(QtMsBuild)\qt.props')">
@@ -73,7 +97,13 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDBG|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDBG|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -85,15 +115,23 @@
     <QtModules>core;gui;widgets</QtModules>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="QtSettings">
-    <QtInstall>msvc2015</QtInstall>
+    <QtInstall>$(DefaultQtVersion)</QtInstall>
     <QtModules>core;gui;widgets</QtModules>
   </PropertyGroup>
   <PropertyGroup Label="QtSettings" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <QtInstall>msvc2015_64</QtInstall>
     <QtModules>core;gui;widgets</QtModules>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDBG|x64'" Label="QtSettings">
+    <QtInstall>msvc2015_64</QtInstall>
+    <QtModules>core;gui;widgets</QtModules>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="QtSettings">
-    <QtInstall>msvc2017</QtInstall>
+    <QtInstall>$(DefaultQtVersion)</QtInstall>
+    <QtModules>core;gui;widgets</QtModules>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDBG|Win32'" Label="QtSettings">
+    <QtInstall>$(DefaultQtVersion)</QtInstall>
     <QtModules>core;gui;widgets</QtModules>
   </PropertyGroup>
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.props')">
@@ -124,7 +162,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
@@ -165,22 +203,69 @@
       <ShaderModel>4.0_level_9_3</ShaderModel>
     </FxCompile>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDBG|x64'">
+    <ClCompile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <AdditionalIncludeDirectories>D:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>D:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;d3dx10.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <FxCompile>
+      <ShaderType>
+      </ShaderType>
+      <ShaderModel>4.0_level_9_3</ShaderModel>
+    </FxCompile>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <AdditionalIncludeDirectories>../3rdparty/D3DX11\Include;../ImageFilterDX11/;../FaceDetectorExt;..\3rdparty\opencv3.0\opencv\build\include;..\3rdparty\opencv3.0\opencv\build\include\opencv2;..\3rdparty\opencv3.0\opencv\build\include\opencv;..\3rdparty\FaSDK\include;..\3rdparty\BodyMask;../ImageFilterDX11/CocosARRender;..\ImageFilterDX11\CocosARRender\external;..\ImageFilterDX11\Toolbox;..\ImageFilterDX11\Toolbox\zip;..\3rdparty\glm;..\3rdparty\ccHPSDK\include;..\3rdparty\cppsdk\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../3rdparty/D3DX11\Include;../ImageFilterDX11/;../FaceDetectorExt;..\3rdparty\opencv3.0\opencv\build\include;..\3rdparty\opencv3.0\opencv\build\include\opencv2;..\3rdparty\opencv3.0\opencv\build\include\opencv;..\3rdparty\FaSDK\include;..\3rdparty\BodyMask;../ImageFilterDX11/CocosARRender;..\ImageFilterDX11\CocosARRender\external;..\ImageFilterDX11\Toolbox;..\ImageFilterDX11\Toolbox\zip;..\3rdparty\glm;..\3rdparty\ccHPSDK\include;..\3rdparty\cppsdk\include;..\3rdparty\BodyDetectSDK\include;..\3rdparty\SplitScreenDetectSDK\include;../3rdparty/glew/include;..\3rdparty\FacialAnimation\include;..\3rdparty\ffmpeg3\include;./src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>ENABLE_SEGMENT;$(Qt_DEFINES_);%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Optimization>Full</Optimization>
+      <Optimization>Disabled</Optimization>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>../3rdparty/D3DX11\Lib\x86;../Release/;..\3rdparty\opencv3.0\opencv\build\x86\vc12\lib\;..\3rdparty\cppsdk\lib;..\3rdparty\ccHPSDK\lib\x86;..\3rdparty\FaSDK\lib\x86;..\3rdparty\BodyMask;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>d3d11.lib;d3dx11.lib;d3dx10.lib;D3DCompiler.lib;dxerr.lib;dxgi.lib;dxguid.lib;FaceDetector.lib;ImageFilterDX11.lib;opencv_world300.lib;HumanParsing.lib;CC_HandPoseEstimation.lib;furnace.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../3rdparty/D3DX11\Lib\x86;../Release/;..\3rdparty\opencv3.0\opencv\build\x86\vc12\lib\;..\3rdparty\cppsdk\lib;..\3rdparty\ccHPSDK\lib\x86;..\3rdparty\FaSDK\lib\x86;..\3rdparty\BodyMask;..\3rdparty\BodyDetectSDK\lib\x86;..\3rdparty\SplitScreenDetectSDK\lib\x86;..\3rdparty\glew\lib\Release\Win32;..\3rdparty\faceExpressionSDK\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;d3dx10.lib;D3DCompiler.lib;dxerr.lib;dxgi.lib;dxguid.lib;FaceDetector.lib;ImageFilterDX11.lib;opencv_world300.lib;HumanParsing.lib;HandDetect.lib;furnace.lib;BodyDetect.lib;SplitScreenDetect.lib;opengl32.lib;glew32s.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <FxCompile>
+      <ShaderType>
+      </ShaderType>
+      <ShaderModel>4.0_level_9_3</ShaderModel>
+    </FxCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDBG|Win32'">
+    <ClCompile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <AdditionalIncludeDirectories>../3rdparty/D3DX11\Include;../ImageFilterDX11/;../FaceDetectorExt;..\3rdparty\opencv3.0\opencv\build\include;..\3rdparty\opencv3.0\opencv\build\include\opencv2;..\3rdparty\opencv3.0\opencv\build\include\opencv;..\3rdparty\FaSDK\include;..\3rdparty\BodyMask;../ImageFilterDX11/CocosARRender;..\ImageFilterDX11\CocosARRender\external;..\ImageFilterDX11\Toolbox;..\ImageFilterDX11\Toolbox\zip;..\3rdparty\glm;..\3rdparty\ccHPSDK\include;..\3rdparty\cppsdk\include;..\3rdparty\BodyDetectSDK\include;..\3rdparty\SplitScreenDetectSDK\include;../3rdparty/glew/include;..\3rdparty\FacialAnimation\include;..\3rdparty\ffmpeg3\include;./src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>ENABLE_SEGMENT;$(Qt_DEFINES_);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Optimization>Disabled</Optimization>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>../3rdparty/D3DX11\Lib\x86;../Release/;..\3rdparty\opencv3.0\opencv\build\x86\vc12\lib\;..\3rdparty\cppsdk\lib;..\3rdparty\ccHPSDK\lib\x86;..\3rdparty\FaSDK\lib\x86;..\3rdparty\BodyMask;..\3rdparty\BodyDetectSDK\lib\x86;..\3rdparty\SplitScreenDetectSDK\lib\x86;..\3rdparty\glew\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;d3dx10.lib;D3DCompiler.lib;dxerr.lib;dxgi.lib;dxguid.lib;FaceDetector.lib;ImageFilterDX11.lib;opencv_world300.lib;HumanParsing.lib;HandDetect.lib;furnace.lib;BodyDetect.lib;SplitScreenDetect.lib;opengl32.lib;glew32s.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderType>
@@ -189,27 +274,42 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\3DModelPreview\ARModelPreviewWindow.cpp" />
+    <ClCompile Include="src\3DModelPreview\BasicPreview.cpp" />
+    <ClCompile Include="src\3DModelPreview\BasicToolTab.cpp" />
+    <ClCompile Include="src\3DModelPreview\D3D11Preview.cpp" />
+    <ClCompile Include="src\3DModelPreview\DataCenter.cpp" />
+    <ClCompile Include="src\3DModelPreview\MaterialToolTab.cpp" />
+    <ClCompile Include="src\3DModelPreview\ModelRenderLogic.cpp" />
+    <ClCompile Include="src\3DModelPreview\PostProcessToolTab.cpp" />
+    <ClCompile Include="src\3DModelPreview\QUIEvent.cpp" />
     <ClCompile Include="src\C2DPicTextureEffect_EditWidget.cpp" />
     <ClCompile Include="src\CImageBeautify.cpp" />
     <ClCompile Include="src\CFaceMakeUp_EditWidget.cpp" />
     <ClCompile Include="src\d3d11renderwidget.cpp" />
     <ClCompile Include="src\EditSwitchWidget.cpp" />
     <ClCompile Include="src\effectLayerItem.cpp" />
+    <ClCompile Include="src\FaceDetector.cpp" />
     <ClCompile Include="src\FacialEditWidget.cpp" />
+    <ClCompile Include="src\glrenderwiget.cpp" />
+    <ClCompile Include="src\glwidget.cpp" />
     <ClCompile Include="src\layersWidget.cpp" />
     <ClCompile Include="src\Light_EditWidget.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\mainWidget.cpp" />
+    <ClCompile Include="src\ARZipPreviewWindow.cpp" />
+    <ClCompile Include="src\mainwindow.cpp" />
     <ClCompile Include="src\NPR_EditWidget.cpp" />
     <ClCompile Include="src\renderBgWidget.cpp" />
     <ClCompile Include="src\Scene2DEffect_EditWidget.cpp" />
+    <ClCompile Include="src\tasklogic.cpp" />
     <ClCompile Include="src\TextureWidget.cpp" />
+    <ClCompile Include="src\VideoPreProcess.cpp" />
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="src\d3d11renderwidget.h" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="src\mainWidget.h" />
+    <QtMoc Include="src\ARZipPreviewWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="src\effectLayerItem.h" />
@@ -245,7 +345,28 @@
     <QtMoc Include="src\FacialEditWidget.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="src\3DModelPreview\ARModelPreviewWindow.h" />
+    <QtMoc Include="src\3DModelPreview\BasicPreview.h" />
+    <QtMoc Include="src\3DModelPreview\D3D11Preview.h" />
+    <QtMoc Include="src\3DModelPreview\BasicToolTab.h" />
+    <ClInclude Include="src\3DModelPreview\DataCenter.h" />
+    <QtMoc Include="src\3DModelPreview\MaterialToolTab.h" />
+    <ClInclude Include="src\3DModelPreview\ModelRenderLogic.h" />
+    <QtMoc Include="src\3DModelPreview\PostProcessToolTab.h" />
+    <ClInclude Include="src\3DModelPreview\QUIEvent.h" />
     <ClInclude Include="src\CImageBeautify.h" />
+    <ClInclude Include="src\FaceDetector.h" />
+    <ClInclude Include="src\tasklogic.h" />
+    <ClInclude Include="src\Task\basetask.h" />
+    <ClInclude Include="src\Task\taskevent.h" />
+    <ClInclude Include="src\VideoPreProcess.h" />
+    <QtMoc Include="src\glwidget.h" />
+    <QtMoc Include="src\glrenderwiget.h" />
+    <QtMoc Include="src\mainwindow.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtUic Include="src\3DModelPreview\ARModelPreviewWindow.ui" />
+    <QtUic Include="src\mainwindow.ui" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

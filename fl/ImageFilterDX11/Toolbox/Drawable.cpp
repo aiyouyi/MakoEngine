@@ -10,46 +10,56 @@
 #include "Toolbox/Render/TextureRHI.h"
 #include "Toolbox/DXUtils/DX11Resource.h"
 
-BitmapDrawable::BitmapDrawable()
+BitmapDrawable::BitmapDrawable(std::shared_ptr<MaterialTexRHI> TexRHI)
+	:m_MaterialTexRHI(TexRHI)
 {
+
 }
-BitmapDrawable::BitmapDrawable(std::shared_ptr<CC3DTextureRHI> TexRHI)
+
+BitmapDrawable::BitmapDrawable(std::shared_ptr<CC3DTextureRHI> pTex)
+	:m_TexRHI(pTex)
 {
-	setTex(TexRHI);
+
 }
+
 BitmapDrawable::~BitmapDrawable()
 {
 	
 }
     
-void BitmapDrawable::setTex(std::shared_ptr<CC3DTextureRHI> TexRHI)
-{
-	m_pTex = TexRHI;
-}
-    
 
 void BitmapDrawable::getSize(int &w, int &h)
 {
-	if (m_pTex != NULL)
+	if (m_MaterialTexRHI != NULL)
 	{
-		w = m_pTex->GetWidth();
-		h = m_pTex->GetHeight();
+		w = m_MaterialTexRHI->GetWidth();
+		h = m_MaterialTexRHI->GetHeight();
 	}
 	else
 	{
-		w = 0;
-		h = 0;
+		if (m_TexRHI)
+		{
+			w = m_TexRHI->GetWidth();
+			h = m_TexRHI->GetHeight();
+		}
+		else
+		{
+			w = 0;
+			h = 0;
+		}
 	}
-}
-
-ID3D11ShaderResourceView* BitmapDrawable::GetSRV(long during)
-{
-	return RHIResourceCast(m_pTex.get())->GetSRV();
 }
 
 Drawable *BitmapDrawable::Clone()
 {
-    return new BitmapDrawable(m_pTex);
+	if (m_MaterialTexRHI)
+	{
+		return new BitmapDrawable(m_MaterialTexRHI);
+	}
+	else
+	{
+		return new BitmapDrawable(m_TexRHI);
+	}
 }
 
 
@@ -75,12 +85,12 @@ void AnimationDrawable::stop()
     m_bRunning = false;
 }
     
-void AnimationDrawable::appandTex(long during, std::shared_ptr<CC3DTextureRHI> pTex)
+void AnimationDrawable::appandTex(long during, std::shared_ptr<MaterialTexRHI> pTex)
 {
 	if (pTex == NULL)return;
 
     AniPair ap;
-    ap.pTex = pTex;
+    ap.MatTexRHI = pTex;
     
     if(m_aniInfo.size() > 0)
     {
@@ -92,6 +102,25 @@ void AnimationDrawable::appandTex(long during, std::shared_ptr<CC3DTextureRHI> p
     }
     
     m_aniInfo.push_back(ap);
+}
+
+void AnimationDrawable::appandTex(long during, std::shared_ptr<CC3DTextureRHI> pTex)
+{
+	if (pTex == NULL)return;
+
+	AniPair ap;
+	ap.TexRHI = pTex;
+
+	if (m_aniInfo.size() > 0)
+	{
+		ap.during = m_aniInfo[m_aniInfo.size() - 1].during + during;
+	}
+	else
+	{
+		ap.during = during;
+	}
+
+	m_aniInfo.push_back(ap);
 }
 
 void AnimationDrawable::setLoopMode(en_EffectLoop_Mode effectLoopMode)
@@ -115,7 +144,64 @@ long AnimationDrawable::getDuring()
 }
 
 
-std::shared_ptr<CC3DTextureRHI> AnimationDrawable::GetTex(long during)
+std::shared_ptr<MaterialTexRHI> AnimationDrawable::GetTex(long during)
+{
+	if (m_aniInfo.size() == 0) return 0;
+
+	if (during < m_offset) return 0;
+
+	if (m_aniInfo[m_aniInfo.size() - 1].during > 0)
+	{
+		while (during < m_offset)
+		{
+			during = during + m_aniInfo[m_aniInfo.size() - 1].during;
+		}
+	}
+	else
+	{
+		if (during < m_offset)
+		{
+			return 0;
+		}
+	}
+
+
+	during -= m_offset;
+
+	if (m_effectLoopMode == ELM_REPEAT)
+	{
+		during = during % m_aniInfo[m_aniInfo.size() - 1].during;
+	}
+	else
+	{
+		if (during > m_aniInfo[m_aniInfo.size() - 1].during)
+		{
+			during = m_aniInfo[m_aniInfo.size() - 1].during;
+		}
+	}
+
+	std::shared_ptr<MaterialTexRHI> TextureRHI;
+	if (m_aniInfo[0].MatTexRHI != NULL)
+	{
+		TextureRHI = m_aniInfo[0].MatTexRHI;
+	}
+	for (int i = 0; i < m_aniInfo.size(); ++i)
+	{
+		if (during <= m_aniInfo[i].during)
+		{
+			if (m_aniInfo[i].MatTexRHI != NULL)
+			{
+				TextureRHI = m_aniInfo[i].MatTexRHI;
+			}
+
+			break;
+		}
+	}
+
+	return TextureRHI;
+}
+
+std::shared_ptr<CC3DTextureRHI> AnimationDrawable::GetTexRHI(long during)
 {
 	if (m_aniInfo.size() == 0) return 0;
 
@@ -152,17 +238,17 @@ std::shared_ptr<CC3DTextureRHI> AnimationDrawable::GetTex(long during)
 	}
 
 	std::shared_ptr<CC3DTextureRHI> TextureRHI;
-	if (m_aniInfo[0].pTex != NULL)
+	if (m_aniInfo[0].TexRHI != NULL)
 	{
-		TextureRHI = m_aniInfo[0].pTex;
+		TextureRHI = m_aniInfo[0].TexRHI;
 	}
 	for (int i = 0; i < m_aniInfo.size(); ++i)
 	{
 		if (during <= m_aniInfo[i].during)
 		{
-			if (m_aniInfo[i].pTex != NULL)
+			if (m_aniInfo[i].TexRHI != NULL)
 			{
-				TextureRHI = m_aniInfo[i].pTex;
+				TextureRHI = m_aniInfo[i].TexRHI;
 			}
 
 			break;
@@ -172,22 +258,26 @@ std::shared_ptr<CC3DTextureRHI> AnimationDrawable::GetTex(long during)
 	return TextureRHI;
 }
 
-ID3D11ShaderResourceView* AnimationDrawable::GetSRV(long during)
-{
-	std::shared_ptr<CC3DTextureRHI> TexRHI = GetTex(during);
-	if (TexRHI)
-	{
-		return RHIResourceCast(TexRHI.get())->GetSRV();
-	}
-	return nullptr;
-}
 
 void AnimationDrawable::getSize(int &w, int &h)
 {
 	if (m_aniInfo.size() > 0)
 	{
-		w = m_aniInfo[0].pTex->GetWidth();
-		h = m_aniInfo[0].pTex->GetHeight();
+		if (m_aniInfo[0].MatTexRHI)
+		{
+			w = m_aniInfo[0].MatTexRHI->GetWidth();
+			h = m_aniInfo[0].MatTexRHI->GetHeight();
+		}
+		else if(m_aniInfo[0].TexRHI)
+		{
+			w = m_aniInfo[0].TexRHI->GetWidth();
+			h = m_aniInfo[0].TexRHI->GetHeight();
+		}
+		else
+		{
+			w = 0;
+			h = 0;
+		}
 	}
 	else
 	{

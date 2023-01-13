@@ -2587,6 +2587,50 @@ XMLCSTR XMLNode::getAttribute(XMLCSTR lpszAttrib, int *j) const
     return NULL;
 }
 
+bool XMLNode::getAttributeFloatValue(XMLCSTR name, float& value) const
+{
+    const char* Text = getAttribute(name);
+    if (Text)
+    {
+        sscanf(Text, "%f", &value);
+        return true;
+    }
+    return false;
+}
+
+bool XMLNode::getAttributeIntValue(XMLCSTR name, int& value) const
+{
+	const char* Text = getAttribute(name);
+	if (Text)
+	{
+		sscanf(Text, "%d", &value);
+		return true;
+	}
+	return false;
+}
+
+bool XMLNode::getAttributeVectorValue(XMLCSTR name, Vector3& value) const
+{
+	const char* Text = getAttribute(name);
+	if (Text)
+	{
+		sscanf(Text, "%f,%f,%f", &value[0], &value[1], &value[2]);
+		return true;
+	}
+    return false;
+}
+
+bool XMLNode::getAttributeVectorValue(XMLCSTR name, float& value1, float& value2, float& value3, float& value4) const
+{
+	const char* Text = getAttribute(name);
+	if (Text)
+	{
+		sscanf(Text, "%f,%f,%f,%f", &value1, &value2, &value3,&value4);
+		return true;
+	}
+	return false;
+}
+
 char XMLNode::isAttributeSet(XMLCSTR lpszAttrib) const
 {
     if (!d) return FALSE;
@@ -2637,6 +2681,8 @@ XMLNodeContents XMLNode::enumContents(int i) const
 XMLCSTR XMLNode::getName() const { if (!d) return NULL; return d->lpszName;   }
 int XMLNode::nText()       const { if (!d) return 0;    return d->nText;      }
 int XMLNode::nChildNode()  const { if (!d) return 0;    return d->nChild;     }
+
+
 int XMLNode::nAttribute()  const { if (!d) return 0;    return d->nAttribute; }
 int XMLNode::nClear()      const { if (!d) return 0;    return d->nClear;     }
 int XMLNode::nElement()    const { if (!d) return 0;    return d->nAttribute+d->nChild+d->nText+d->nClear; }

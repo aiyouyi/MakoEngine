@@ -3,9 +3,12 @@
 #include "common.h"
 #include "DX11ImageFilterDef.h"
 #include "FaceDetectorInterface.h"
-//#include "CCHandGestureInterface.h"
+
+#include "BodyDetectInterface.h"
 #include <d3d11.h>
 #include <vector>
+
+struct ccHandRes_t;
 
 DX11IMAGEFILTER_EXPORTS_API cc_handle_t ccEffectCreate();
 DX11IMAGEFILTER_EXPORTS_API void ccEffectRelease(cc_handle_t);
@@ -20,13 +23,15 @@ DX11IMAGEFILTER_EXPORTS_API bool ccEffectSetEffectZipSync(cc_handle_t handle, co
 
 DX11IMAGEFILTER_EXPORTS_API bool ccEffectAddEffectFromXML(cc_handle_t handle, const char* szPath, const char* szXML);
 
-DX11IMAGEFILTER_EXPORTS_API void ccEffectSetMask(cc_handle_t handle, unsigned char *pMask,  int width, int height,CCEffectType type = UNKNOW_EFFECT);
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetMask(cc_handle_t handle, unsigned char *pMask,  int width, int height, CCEffectType type = UNKNOW_EFFECT, AnchorType anchortype = ANCHOR_UNKNOW);
 
 DX11IMAGEFILTER_EXPORTS_API void ccEffectSetMakeUpZip(cc_handle_t handle, const char *szZipPath);
 
 DX11IMAGEFILTER_EXPORTS_API void ccEffectSetHairMask(cc_handle_t handle, unsigned char *pMask, int width, int height, CCEffectType type = UNKNOW_EFFECT);
 
-//DX11IMAGEFILTER_EXPORTS_API void ccEffectSetHand(cc_handle_t handle, ccHGHandRes * handRes);
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetHand(cc_handle_t handle, ccHandRes_t* handRes);
+
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetBodyPoint(cc_handle_t handle, ccBodyRes * bodyRes);
 
 DX11IMAGEFILTER_EXPORTS_API void ccEffectSetBGRA(cc_handle_t handle, unsigned char *pBGRA);
 
@@ -35,11 +40,13 @@ DX11IMAGEFILTER_EXPORTS_API void ccEffectSetColor(cc_handle_t handle, float r, f
 
 DX11IMAGEFILTER_EXPORTS_API void ccEffectSetRotate(cc_handle_t handle, float x, float y, float z, CCEffectType type = PBR_3D_MODEL);
 
-DX11IMAGEFILTER_EXPORTS_API void ccEffectSetPath(cc_handle_t handle, char *path);
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetPath(cc_handle_t handle, const char *path);
 
 DX11IMAGEFILTER_EXPORTS_API void ccEffectSetBlendShape(cc_handle_t handle, float *pBlendShapeCoeffs);
 
 DX11IMAGEFILTER_EXPORTS_API void ccEffectSetAlpha(cc_handle_t handle,float alpha, CCEffectType type);
+
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetSplitScreen(cc_handle_t handle, int SplitScreen, CCEffectType type);
 
 
 DX11IMAGEFILTER_EXPORTS_API void* ccGetCEffectParts(cc_handle_t handle, int *size);

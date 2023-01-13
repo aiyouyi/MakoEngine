@@ -2,38 +2,41 @@
 #include "Scene/CC3DSceneManage.h"
 #include "Effect/CC3DShadowMap.h"
 
-void ShadowMapManager::setShadowCascades(size_t cascades) noexcept
+namespace CC3DImageFilter
 {
-	if (cascades > CONFIG_MAX_SHADOW_CASCADES)
-		return;
-
-	for ( int ni = 0; ni < cascades; ni++ )
+	void ShadowMapManager::setShadowCascades(size_t cascades) noexcept
 	{
-		cascadeShadowMaps.emplace_back(new ShadowMap());
-	}
-}
+		if (cascades > CONFIG_MAX_SHADOW_CASCADES)
+			return;
 
-void ShadowMapManager::update(CC3DSceneManage& manager)
-{
-	updateCascadeShadowMaps(manager);
-}
-
-ShadowMap* ShadowMapManager::getShadowMap(int index)
-{
-	if (index > cascadeShadowMaps.size())
-	{
-		return nullptr;
+		for (int ni = 0; ni < cascades; ni++)
+		{
+			cascadeShadowMaps.emplace_back(new ShadowMap());
+		}
 	}
 
-	return cascadeShadowMaps[index];
-}
+	void ShadowMapManager::update(CC3DSceneManage& manager)
+	{
+		updateCascadeShadowMaps(manager);
+	}
 
-void ShadowMapManager::updateCascadeShadowMaps(CC3DSceneManage& manager)
-{
-	ShadowMap::CascadeParameters cascadeParams;
+	ShadowMap* ShadowMapManager::getShadowMap(int index)
+	{
+		if (index > cascadeShadowMaps.size())
+		{
+			return nullptr;
+		}
 
-	ShadowMap::computeSceneCascadeParams(manager, cascadeParams);
+		return cascadeShadowMaps[index];
+	}
 
-	ShadowMap& map = *cascadeShadowMaps[0];
-	map.update(cascadeParams);
+	void ShadowMapManager::updateCascadeShadowMaps(CC3DSceneManage& manager)
+	{
+		ShadowMap::CascadeParameters cascadeParams;
+
+		ShadowMap::computeSceneCascadeParams(manager, cascadeParams);
+
+		ShadowMap& map = *cascadeShadowMaps[0];
+		map.update(cascadeParams);
+	}
 }

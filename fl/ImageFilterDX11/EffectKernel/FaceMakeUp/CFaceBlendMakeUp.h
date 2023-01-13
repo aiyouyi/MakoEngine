@@ -2,6 +2,8 @@
 #include "EffectKernel/CEffectPart.h"
 #include "Algorithm/FaceMeshManage.h"
 #include "Toolbox/Drawable.hpp"
+#include "EffectKernel/DXBasicSample.h"
+#include "Toolbox/inc.h"
 
 struct MakeUpBlendInfo
 {
@@ -12,7 +14,7 @@ struct MakeUpBlendInfo
 	float alpha = 0.0;
 };
 
-class DX11IMAGEFILTER_EXPORTS_CLASS CFaceBlendMakeUp : public CEffectPart
+class DX11IMAGEFILTER_EXPORTS_CLASS CFaceBlendMakeUp : public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceBlendMakeUp();
@@ -23,14 +25,14 @@ public:
 	virtual bool ReadConfig(XMLNode& childNode, const std::string &path);
 	virtual bool Prepare();
 	virtual void Render(BaseRenderParam &RenderParam);
-
+	virtual void SetAlpha(float Alpha);
 	virtual void setAnim(AnimInfo &info);
 	virtual void getAnim(AnimInfo &info);
 	virtual void setAnimFps(float fps);
 	CFaceBlendMakeUp * createEffect();
-	vector<MakeUpBlendInfo>m_vMeshType;
+	std::vector<MakeUpBlendInfo>m_vMeshType;
 
-	vector<MakeUpBlendInfo>& getMakeUpBlendInfo() {
+	std::vector<MakeUpBlendInfo>& getMakeUpBlendInfo() {
 		return m_vMeshType;
 	}
 

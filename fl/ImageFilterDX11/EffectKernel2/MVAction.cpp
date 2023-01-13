@@ -3,6 +3,8 @@
 #include <fstream>  
 #include <string>
 #include "Toolbox/DXUtils/DX11Context.h"
+#include "Toolbox/Render/TextureRHI.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 using namespace std;
 #define VALUE_STEP 7
@@ -18,8 +20,8 @@ SLinearData::SLinearData()
 bool SLinearData::load(const char *szAction)
 {
 	bool bRes = false;
-	ifstream in(szAction);
-	string line;
+	std::ifstream in(szAction);
+	std::string line;
 	if (in) // 有该文件  
 	{
 		try
@@ -96,14 +98,14 @@ bool SLinearData::loadFromBuffer(char *pDataBuffer, int nBufferSize)
 	int h = 1080;
 
 	int nDivideR = 0;
-	vector<float> arrTime;
-	vector<float> arrValue;
+	std::vector<float> arrTime;
+	std::vector<float> arrValue;
 	int index = 0;
 
 	char szLine[256];
 	int off = 0;
 	int rPos = 0;
-	string strData = pDataBuffer;
+	std::string strData = pDataBuffer;
 	int iLine = 0;
 
 	int nLastDivideC = 0;
@@ -354,12 +356,7 @@ DWORD WINAPI MVThreadFun(LPVOID pM)
 
 							sprintf(szFullFile, "%s/%s", pResourceAsyn->szPath.c_str(), szImagePath);
 
-							std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-							if (TexRHI == nullptr)
-							{
-								TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-								GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-							}
+							std::shared_ptr<MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
 
 							long during = nDuring;
 
@@ -376,12 +373,7 @@ DWORD WINAPI MVThreadFun(LPVOID pM)
 					const char *szImagePath = nodeItem.getAttribute("image");
 					sprintf(szFullFile, "%s/%s", pResourceAsyn->szPath.c_str(), szImagePath);
 
-					std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-					if (TexRHI == nullptr)
-					{
-						TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-						GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-					}
+					std::shared_ptr< MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
 
 					const char *szDuring = nodeItem.getAttribute("duration");
 					long during = atol(szDuring);
@@ -557,6 +549,7 @@ bool MVAction::renderEffectToTexture(ID3D11ShaderResourceView *pInputTexture, ID
 	}
 	if (m_rectDraw == NULL)
 	{
+		m_InputSRV = GetDynamicRHI()->CreateTexture();
 		m_rectDraw = new RectDraw();
 		m_rectDraw->init(1, 1);
 	}
@@ -588,11 +581,12 @@ bool MVAction::renderEffectToTexture(ID3D11ShaderResourceView *pInputTexture, ID
 	ContextInst->setCullMode(D3D11_CULL_NONE);
 	m_pFBO->bind();
 	//渲染背景
-	m_rectDraw->setShaderTextureView(pInputTexture);
+	m_InputSRV->AttatchSRV(pInputTexture);
+	m_rectDraw->setShaderTextureView(m_InputSRV);
 	//m_rectDraw->render();
 	if (nDivideR*nDivideC <= 1)
 	{
-		m_rectDraw->render(vec2(vRes.x / width*height, -vRes.y), vec2(vRes.z / 100, vRes.z / 100), -vRes.w, width, height);
+		m_rectDraw->render(Vector2(vRes.x / width*height, -vRes.y), Vector2(vRes.z / 100, vRes.z / 100), -vRes.w, width, height);
 		if (m_mvResource.status == SES_RUN)
 		{
 			for (int i = 0; i < m_mvResource.m_v2DEffectModel.size(); ++i)
@@ -617,7 +611,7 @@ bool MVAction::renderEffectToTexture(ID3D11ShaderResourceView *pInputTexture, ID
 				vp.TopLeftX = xStep*c;
 				vp.TopLeftY = yStep*r;
 				DeviceContextPtr->RSSetViewports(1, &vp);
-				m_rectDraw->render(vec2(vRes.x / width*height, -vRes.y), vec2(vRes.z / 100, vRes.z / 100), -vRes.w, width, height);
+				m_rectDraw->render(Vector2(vRes.x / width*height, -vRes.y), Vector2(vRes.z / 100, vRes.z / 100), -vRes.w, width, height);
 
 				if (m_mvResource.status == SES_RUN)
 				{

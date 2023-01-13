@@ -1,8 +1,10 @@
 ﻿#include "CLUTFIlter.h"
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CLUTFIlter::CLUTFIlter()
 {
@@ -100,11 +102,12 @@ void CLUTFIlter::Render(BaseRenderParam &RenderParam)
 	pDoubleBuffer->SwapFBO();
 	pDoubleBuffer->BindFBOA();
 	m_pShader->useShader();
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 	//pSrcShaderView = m_material->getTexShaderView();
 	Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, 0);
-	pSrcShaderView = img->tex->getTexShaderView();
+	auto pSrcShaderView = RHIResourceCast(img->tex.get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
 
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);

@@ -169,6 +169,7 @@ void DynamicBone::InitParticle(UnityNode *rootTransform)
 {
 	m_vecDynameicParticle.clear();
 
+	db_name = rootTransform->getId();
 	m_pGPRoot = rootTransform;
 	AppendParticles(m_pGPRoot, -1, 0.0f);
 	UpdateParticleParam();
@@ -326,6 +327,25 @@ void DynamicBone::UpdateParticleParam()
 	}
 }
 
+
+void DynamicBone::UpdateParticleParam(DynamicBoneInfo& m_info)
+{
+	for (int i = 0; i < m_vecDynameicParticle.size(); ++i) 
+	{
+		DynamicParticle *p = m_vecDynameicParticle[i];
+		p->_fDamping = m_info._fDamping;
+		p->_fElasticity = m_info._fElasticity;
+		p->_fStiffness = m_info._fStiffness;
+		p->_fInert = m_info._fInert;
+		p->_fRadius = m_info._fRadius;
+
+		p->_fDamping = (std::min)((std::max)(p->_fDamping, 0.0f), 1.0f);
+		p->_fElasticity = (std::min)((std::max)(p->_fElasticity, 0.0f), 1.0f);
+		p->_fStiffness = (std::min)((std::max)(p->_fStiffness, 0.0f), 1.0f);
+		p->_fInert = (std::min)((std::max)(p->_fInert, 0.0f), 1.0f);
+		p->_fRadius = (std::max)(p->_fRadius, 0.0f);
+	}
+}
 
 void DynamicBone::UpdateParticle1(float timevar)
 {

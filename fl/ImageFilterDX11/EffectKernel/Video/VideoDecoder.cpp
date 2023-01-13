@@ -2,6 +2,7 @@
 #include "VideoDecoder.h"
 #include "libyuv.h"
 #include "BaseDefine/Define.h"
+#include <process.h>
 
 #undef makeErrorStr
 static char errorStr[AV_ERROR_MAX_STRING_SIZE];
@@ -74,7 +75,11 @@ CVideoDecoder::CVideoDecoder()
 	m_pVideoCodec = NULL;
 	m_pAudioCodec = NULL;
 	m_pSrcFrame = NULL;
-	m_pRGBFrame = NULL;
+	//m_pRGBFrame = NULL;
+	for (int index = 0; index < _ARRAYSIZE(m_RGBFrameArray); ++index)
+	{
+		m_RGBFrameArray[index] = nullptr;
+	}
 	m_pRotateYuvFrame = NULL;
 	rgb_sws_ctx = NULL;
 	m_ReturnRefYUV = NULL;
@@ -181,15 +186,17 @@ int CVideoDecoder::Open(const char* file)
 	}
 	m_pSrcFrame = av_frame_alloc();
 
-	m_pRGBFrame = av_frame_alloc();
+	for (int index = 0; index < _ARRAYSIZE(m_RGBFrameArray); ++index)
 	{
-		m_pRGBFrame->format = AV_PIX_FMT_BGRA;
+		m_RGBFrameArray[index] = av_frame_alloc();
+		m_RGBFrameArray[index]->format = AV_PIX_FMT_BGRA;
 		int numBytes = av_image_get_buffer_size(AV_PIX_FMT_BGRA, m_DstVideoWidth, m_DstVideoHeight, 1);
-		uint8_t *buffer = (uint8_t *)av_malloc_array(1, numBytes);
-		int len = av_image_fill_arrays(m_pRGBFrame->data, m_pRGBFrame->linesize, buffer, AV_PIX_FMT_BGRA, m_DstVideoWidth, m_DstVideoHeight, 1);
-		m_pRGBFrame->width = m_DstVideoWidth;
-		m_pRGBFrame->height = m_DstVideoHeight;
+		uint8_t* buffer = (uint8_t*)av_malloc_array(1, numBytes);
+		int len = av_image_fill_arrays(m_RGBFrameArray[index]->data, m_RGBFrameArray[index]->linesize, buffer, AV_PIX_FMT_BGRA, m_DstVideoWidth, m_DstVideoHeight, 1);
+		m_RGBFrameArray[index]->width = m_DstVideoWidth;
+		m_RGBFrameArray[index]->height = m_DstVideoHeight;
 	}
+
 	m_pRotateYuvFrame = av_frame_alloc();
 	{
 		m_pRotateYuvFrame->format = AV_PIX_FMT_YUV420P;
@@ -322,15 +329,17 @@ int CVideoDecoder::OpenFromMemory(char* buffer, size_t buffer_size)
 	}
 	m_pSrcFrame = av_frame_alloc();
 
-	m_pRGBFrame = av_frame_alloc();
+	for (int index = 0; index < _ARRAYSIZE(m_RGBFrameArray); ++index)
 	{
-		m_pRGBFrame->format = AV_PIX_FMT_BGRA;
+		m_RGBFrameArray[index] = av_frame_alloc();
+		m_RGBFrameArray[index]->format = AV_PIX_FMT_BGRA;
 		int numBytes = av_image_get_buffer_size(AV_PIX_FMT_BGRA, m_DstVideoWidth, m_DstVideoHeight, 1);
-		uint8_t *buffer = (uint8_t *)av_malloc_array(1, numBytes);
-		int len = av_image_fill_arrays(m_pRGBFrame->data, m_pRGBFrame->linesize, buffer, AV_PIX_FMT_BGRA, m_DstVideoWidth, m_DstVideoHeight, 1);
-		m_pRGBFrame->width = m_DstVideoWidth;
-		m_pRGBFrame->height = m_DstVideoHeight;
+		uint8_t* buffer = (uint8_t*)av_malloc_array(1, numBytes);
+		int len = av_image_fill_arrays(m_RGBFrameArray[index]->data, m_RGBFrameArray[index]->linesize, buffer, AV_PIX_FMT_BGRA, m_DstVideoWidth, m_DstVideoHeight, 1);
+		m_RGBFrameArray[index]->width = m_DstVideoWidth;
+		m_RGBFrameArray[index]->height = m_DstVideoHeight;
 	}
+
 	m_pRotateYuvFrame = av_frame_alloc();
 	{
 		m_pRotateYuvFrame->format = AV_PIX_FMT_YUV420P;
@@ -355,11 +364,36 @@ int CVideoDecoder::Start()
 	int64_t seekTime = 0;
 	int ret = avformat_seek_file(m_pFormatContext, -1, INT64_MIN, seekTime, INT64_MAX, 0);
 	avcodec_flush_buffers(m_pVideoCodec);
+
+	_GetFrameByTimeStamp(m_GetFrameMs);
+
+	if (!m_DecodeThread)
+	{
+		m_Leave = false;
+		m_DecodeThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, &CVideoDecoder::DecodeThread, this, 0, nullptr));
+		m_hDecodeEvent = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	}
+
 	return ret;
 }
 
 int CVideoDecoder::Close()
 {
+	if (m_DecodeThread)
+	{
+		if (m_hDecodeEvent)
+		{
+			::SetEvent(m_hDecodeEvent);
+			::CloseHandle(m_hDecodeEvent);
+			m_hDecodeEvent = nullptr;
+		}
+
+		m_Leave = true;
+		WaitForSingleObject(m_DecodeThread, 5 * 1000);
+		CloseHandle(m_DecodeThread);
+		m_DecodeThread = nullptr;
+	}
+
 	if (m_pVideoStream && m_pVideoStream->codec)
 	{
 		avcodec_close(m_pVideoStream->codec);
@@ -384,20 +418,26 @@ int CVideoDecoder::Close()
 		av_frame_free(&m_pSrcFrame);
 		m_pSrcFrame = NULL;
 	}
-	if (m_pRGBFrame)
+
+
+	for (int index = 0; index < _ARRAYSIZE(m_RGBFrameArray); ++index)
 	{
-		for (int i = 0; i < AV_NUM_DATA_POINTERS; ++i)
+		if (m_RGBFrameArray[index])
 		{
-			uint8_t * pDataMem = m_pRGBFrame->data[i];
-			if (pDataMem != NULL)
+			for (int i = 0; i < AV_NUM_DATA_POINTERS; ++i)
 			{
-				av_free(pDataMem);
-				m_pRGBFrame->data[i] = NULL;
+				uint8_t* pDataMem = m_RGBFrameArray[index]->data[i];
+				if (pDataMem != NULL)
+				{
+					av_free(pDataMem);
+					m_RGBFrameArray[index]->data[i] = NULL;
+				}
 			}
+			av_frame_free(&m_RGBFrameArray[index]);
+			m_RGBFrameArray[index] = NULL;
 		}
-		av_frame_free(&m_pRGBFrame);
-		m_pRGBFrame = NULL;
 	}
+
 
 	if (m_pRotateYuvFrame)
 	{
@@ -436,7 +476,7 @@ int CVideoDecoder::Close()
 	return 0;
 }
 
-unsigned char* CVideoDecoder::GetNextFrame()
+unsigned char* CVideoDecoder::_GetFrameByTimeStamp(double ms)
 {
 	if (m_pFormatContext == NULL)
 	{
@@ -447,6 +487,17 @@ unsigned char* CVideoDecoder::GetNextFrame()
 	int frameFinished = 0;
 	AVPacket packet = { 0 };
 	av_init_packet(&packet);
+	if (ms > 0)
+	{
+		long long pos = (int64_t)(ms / (double)1000 / av_q2d(m_pVideoStream->time_base));
+
+		float duration = 1000.0 / 30.0;
+		int framNum = ms / duration;
+
+		ret = av_seek_frame(m_pFormatContext, 0, framNum, AVSEEK_FLAG_FRAME);
+		avcodec_flush_buffers(m_pFormatContext->streams[m_video_stream_idx]->codec);
+	}
+
 	while (av_read_frame(m_pFormatContext, &packet) >= 0)
 	{
 		if (packet.stream_index == m_video_stream_idx)
@@ -460,42 +511,22 @@ unsigned char* CVideoDecoder::GetNextFrame()
 				m_TimeStamp = time_stemp;
 				AVFrame* pDstFrame = m_pSrcFrame;
 
-				if (m_Rotate)
-				{
-					//libyuv::I420Rotate(m_pSrcFrame->data[0], m_pSrcFrame->linesize[0],
-					//	m_pSrcFrame->data[1], m_pSrcFrame->linesize[1],
-					//	m_pSrcFrame->data[2], m_pSrcFrame->linesize[2],
-					//	m_pRotateYuvFrame->data[0], m_pRotateYuvFrame->linesize[0],
-					//	m_pRotateYuvFrame->data[1], m_pRotateYuvFrame->linesize[1],
-					//	m_pRotateYuvFrame->data[2], m_pRotateYuvFrame->linesize[2],
-					//	m_pSrcFrame->width, m_pSrcFrame->height, (libyuv::RotationMode)m_Rotate);
-					//pDstFrame = m_pRotateYuvFrame;
-					//byte* pRotateData = new byte[]
-				}
 				m_ReturnRefYUV = pDstFrame;
-				ret = sws_scale(rgb_sws_ctx, pDstFrame->data, pDstFrame->linesize, 0, pDstFrame->height, m_pRGBFrame->data, m_pRGBFrame->linesize);
-
-				{
-					//SwsContext* swsContext = swsContext = sws_getContext(m_pRGBFrame->width, m_pRGBFrame->height, AV_PIX_FMT_BGRA, m_pRGBFrame->width, m_pRGBFrame->height, AV_PIX_FMT_RGBA,
-					//	NULL, NULL, NULL, NULL);
-
-					//int linesize[8] = { m_pRGBFrame->linesize[0] * 3 };
-					//int num_bytes = av_image_get_buffer_size(AV_PIX_FMT_RGBA, m_pRGBFrame->width, m_pRGBFrame->height, 1);
-					//uint8_t* p_global_bgr_buffer = (uint8_t*)malloc(num_bytes * sizeof(uint8_t));
-					//uint8_t* bgr_buffer[8] = { p_global_bgr_buffer };
-
-					//sws_scale(swsContext, m_pRGBFrame->data, m_pRGBFrame->linesize, 0, m_pRGBFrame->height, bgr_buffer, linesize);
-
-					//sws_freeContext(swsContext);
-					//swsContext = nullptr;
-
-					//free(p_global_bgr_buffer);
-				}
 				av_packet_unref(&packet);
+
+				ret = sws_scale(rgb_sws_ctx, pDstFrame->data, pDstFrame->linesize, 0, pDstFrame->height, m_RGBFrameArray[m_CurentIndex]->data, m_RGBFrameArray[m_CurentIndex]->linesize);
+				if (ret >= 0)
+				{
+					SYSTEMSTATUS::CSAutoLock Lock(m_csDecode);
+					m_CurrentFrame = m_RGBFrameArray[m_CurentIndex]->data[0];
+				}
+
+				m_CurentIndex = ++m_CurentIndex % _ARRAYSIZE(m_RGBFrameArray);
+
 
 				if (ret >= 0)
 				{
-					return m_pRGBFrame->data[0];
+					return m_CurrentFrame;
 				}
 				else
 				{
@@ -511,69 +542,38 @@ unsigned char* CVideoDecoder::GetNextFrame()
 	return NULL;
 }
 
+uint32_t CVideoDecoder::DecodeThread(void* param)
+{
+	CVideoDecoder* pThis = (CVideoDecoder*)param;
+	return pThis->InnerDecodeThread();
+}
+
+uint32_t CVideoDecoder::InnerDecodeThread()
+{
+	while (!m_Leave)
+	{
+		if (WaitForSingleObject(m_hDecodeEvent,1) == WAIT_OBJECT_0)
+		{
+			_GetFrameByTimeStamp(m_GetFrameMs);
+		}
+	}
+	return 0;
+}
+
+unsigned char* CVideoDecoder::GetNextFrame()
+{
+	return GetFrameByTimeStamp(0);
+}
+
 unsigned char* CVideoDecoder::GetFrameByTimeStamp(double ms)
 {
-	if (m_pFormatContext == NULL)
+	SYSTEMSTATUS::CSAutoLock Lock(m_csDecode);
+	m_GetFrameMs = ms;
+	if (m_hDecodeEvent)
 	{
-		LOGE("No any video opened.");
-		return NULL;
+		SetEvent(m_hDecodeEvent);
 	}
-	int ret = -1;
-	int frameFinished = 0;
-	AVPacket packet = { 0 };
-	av_init_packet(&packet);
-	long long pos = (int64_t)(ms / (double)1000 / av_q2d(m_pVideoStream->time_base));
-
-	float duration = 1000.0 / 30.0;
-	int framNum = ms / duration;
-
-	ret = av_seek_frame(m_pFormatContext, 0, framNum , AVSEEK_FLAG_FRAME);
-	avcodec_flush_buffers(m_pFormatContext->streams[m_video_stream_idx]->codec);
-	while (av_read_frame(m_pFormatContext, &packet) >= 0)
-	{
-		if (packet.stream_index == m_video_stream_idx)
-		{
-			ret = avcodec_decode_video2(m_pVideoCodec, m_pSrcFrame, &frameFinished, &packet);
-			if (frameFinished)
-			{
-				int64_t nPTS = av_frame_get_best_effort_timestamp(m_pSrcFrame);
-				double time_stemp = nPTS * av_q2d(m_pVideoStream->time_base);
-				//LOGD("time_stemp = %.2f s", time_stemp);
-				m_TimeStamp = time_stemp;
-				AVFrame* pDstFrame = m_pSrcFrame;
-
-				if (m_Rotate)
-				{
-					//libyuv::I420Rotate(m_pSrcFrame->data[0], m_pSrcFrame->linesize[0],
-					//	m_pSrcFrame->data[1], m_pSrcFrame->linesize[1],
-					//	m_pSrcFrame->data[2], m_pSrcFrame->linesize[2],
-					//	m_pRotateYuvFrame->data[0], m_pRotateYuvFrame->linesize[0],
-					//	m_pRotateYuvFrame->data[1], m_pRotateYuvFrame->linesize[1],
-					//	m_pRotateYuvFrame->data[2], m_pRotateYuvFrame->linesize[2],
-					//	m_pSrcFrame->width, m_pSrcFrame->height, (libyuv::RotationMode)m_Rotate);
-					//pDstFrame = m_pRotateYuvFrame;
-					//byte* pRotateData = new byte[]
-				}
-				m_ReturnRefYUV = pDstFrame;
-				ret = sws_scale(rgb_sws_ctx, pDstFrame->data, pDstFrame->linesize, 0, pDstFrame->height, m_pRGBFrame->data, m_pRGBFrame->linesize);
-				av_packet_unref(&packet);
-
-				if (ret >= 0)
-				{
-					return m_pRGBFrame->data[0];
-				}
-				else
-				{
-					return NULL;
-				}
-
-			}
-		}
-		av_packet_unref(&packet);
-		av_init_packet(&packet);
-	}
-	av_packet_unref(&packet);
-	return NULL;
+	return m_CurrentFrame;
 }
 
 AVFrame* CVideoDecoder::GetYuvFrame()

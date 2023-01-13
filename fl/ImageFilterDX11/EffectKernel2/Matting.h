@@ -1,13 +1,13 @@
-#pragma once
+ï»¿#pragma once
 #include "Toolbox/DXUtils/DX11Shader.h"
-#include "Toolbox/DXUtils/DX11Texture.h"
 #include "Toolbox/DXUtils/DX11FBO.h"
 #include <xnamath.h>
+class DX11Texture;
 
 struct MattingRectVertex
 {
-	XMFLOAT3 Pos;//Î»ÖÃ  
-	XMFLOAT2 TexCoord;//ÑÕÉ«  
+	XMFLOAT3 Pos;//ä½ç½®  
+	XMFLOAT2 TexCoord;//é¢œè‰²  
 };
 
 struct SMattingBuffer
@@ -60,8 +60,8 @@ private:
 	ID3D11ShaderResourceView *m_pShaderTextureView;
 	ID3D11SamplerState* m_pSamplerLinear;
 
-	ID3D11Buffer*       m_pConstantBuffer;  //×ª»»¾ØÕó
-	ID3D11Buffer*       m_pConstantBufferMask;  //×ª»»¾ØÕó
+	ID3D11Buffer*       m_pConstantBuffer;  //è½¬æ¢çŸ©é˜µ
+	ID3D11Buffer*       m_pConstantBufferMask;  //è½¬æ¢çŸ©é˜µ
 
 	ID3D11BlendState *m_pBSEnable;
 };

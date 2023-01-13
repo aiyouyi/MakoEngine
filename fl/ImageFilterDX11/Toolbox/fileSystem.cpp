@@ -48,7 +48,7 @@ void removeFolder(const std::string path) {
 	_rmdir(path.c_str());
 }
 
-void zipFolder(HZIP hz, const std::string path) {
+void zipFolder(HZIP hz, const std::string& path) {
 	int path_npos = path.length() + 1;
 	int last_sep = max(path.find_last_of("\\"), path.find_last_of("/"));
 

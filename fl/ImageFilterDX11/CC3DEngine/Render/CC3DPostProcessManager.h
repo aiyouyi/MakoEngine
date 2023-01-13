@@ -1,12 +1,8 @@
-#ifndef _CC3D_POST_PROCESS_MANAGER_H_
+ï»¿#ifndef _CC3D_POST_PROCESS_MANAGER_H_
 #define _CC3D_POST_PROCESS_MANAGER_H_
 
-#include <memory>
-#include <string>
-#include"BaseDefine/Define.h"
-#include "Toolbox/DXUtils/DX11DoubleBuffer.h"
-#include "Toolbox/DXUtils/DX11Shader.h"
-#include "Toolbox/DXUtils/DX11Texture.h"
+#include "Toolbox/inc.h"
+#include "BaseDefine/Define.h"
 #include "Toolbox/Render/CC3DShaderDef.h"
 #include "Toolbox/Render/DynamicRHI.h"
 
@@ -15,6 +11,9 @@
 
 
 #define DUAL_SAMPLE_COUNT 5
+
+class DoubleBufferRHI;
+
 class PostProcessManager
 {
 public:
@@ -23,34 +22,31 @@ public:
 	void Init(int nWidth, int nHeight);
 	void Process();
 	void SetShaderResource(const std::string& path);
-	DX11Texture *m_EmissTexID;
-	DX11DoubleBuffer *m_FBO_Ext;
+	std::shared_ptr<DoubleBufferRHI> m_FBO_Ext;
 	bool _enableFxaa = false;
 	bool _enableBloom = false;
-	float m_bloomAlpha = 0.0f; //ÔİÊ±ºÍÑ¡ÖĞµÄ·¢¹â²ÄÖÊ±£³ÖÒ»ÖÂ
+	float m_bloomAlpha = 0.0f; //æš‚æ—¶å’Œé€‰ä¸­çš„å‘å…‰æè´¨ä¿æŒä¸€è‡´
 	float m_bloomRadius = 1.0;
 	int nIndex = 0;
-	//TODO:»¹ÓĞÊı×éÀàĞÍµÄuniformÃ»ÓĞ½â¾ö£¬ºÃÏñ¿ÉÒÔÖ±½ÓÊ¹ÓÃsizeÈ¥°üº¬Õû¸öÊı×é´óĞ¡
 	template<typename T>
-	void SetParameter(std::string name, const T* value, size_t count, size_t size)
+	void SetParameter(std::string name, const T& value)
 	{
-		GET_SHADER_STRUCT_MEMBER(ConstantBufferVec4).SetParameter(name, value, size);
+		GET_SHADER_STRUCT_MEMBER(ConstantBufferVec4).SetParameter(name, value);
 	}
 
 
 private:
-	DELCARE_SHADER_STRUCT_MEMBER(ConstantBufferVec4);
+	DECLARE_SHADER_STRUCT_MEMBER(ConstantBufferVec4);
 
-	void Fxaa(DX11Texture * input, int nWidth, int nHeight);
-	void Bloom(DX11DoubleBuffer *pFBO);
+	void Bloom();
 	void DrawTriangle();
 
-	DX11Shader* pFxaaShader = nullptr;
-	DX11Shader* pScaleShader = nullptr;
-	DX11Shader* pShader = nullptr;
+	std::shared_ptr<ShaderRHI> pFxaaShader = nullptr;
+	std::shared_ptr<ShaderRHI> pScaleShader = nullptr;
+	std::shared_ptr<ShaderRHI> pShader = nullptr;
 
-	DX11Shader* pDualDownSample = nullptr;
-	DX11Shader* pDualUpSample = nullptr;
+	std::shared_ptr<ShaderRHI> pDualDownSample = nullptr;
+	std::shared_ptr<ShaderRHI> pDualUpSample = nullptr;
 
 	std::shared_ptr<CC3DVertexBuffer> mVertexBuffer;
 	std::shared_ptr<CC3DIndexBuffer> mIndexBuffer;

@@ -1,7 +1,9 @@
 ﻿#pragma once
 #include "EffectKernel/CEffectPart.h"
 #include "Algorithm/Face2DMesh/MTFace2DInterFace.h"
-class CFaceShadowHighLight : public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class CFaceShadowHighLight : public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceShadowHighLight();

@@ -6,28 +6,41 @@
 #include "CC3DAnimate.h"
 #include "Skeleton/CC3DSkeleton.h"
 #include <vector>
-class CC3DAnimateManage : public CCglTFModel
+
+namespace CC3DImageFilter
 {
-public:
-	CC3DAnimateManage();
-	virtual ~CC3DAnimateManage();
-	
-	void InitAnimate();
+	class CC3DAnimateTimeline;
 
-	void ReadSkeletonAnimate(CC3DModel *pModel, CC3DSkeleton *pSkeleton, const char*pAnimateFile);
-	void play(float fSecond,CC3DModel *pModel, CC3DSkeleton *pSkeleton = NULL);
-	void playOnce(float fSecond, CC3DModel *pModel, CC3DSkeleton *pSkeleton = NULL);
+	class CC3DAnimateManage : public CCglTFModel
+	{
+	public:
+		CC3DAnimateManage();
+		virtual ~CC3DAnimateManage();
 
-	float m_AnimateAllTime = 0;
+		void InitAnimate();
 
-	long frameCount = 0;
-	bool m_hasModelAnimate = false;
-	vector<CC3DAnimate*>m_Animate;
+		void ReadSkeletonAnimate(CC3DModel* pModel, CC3DSkeleton* pSkeleton, const char* pAnimateFile);
+		void ReadSkeletonAnimateData(CC3DModel* pModel, CC3DSkeleton* pSkeleton, const char* pAnimateData);
+		void AddSkeletonAnimateData(CC3DModel* pModel, CC3DSkeleton* pSkeleton, const char* pAnimateData, const std::string& animName);
+		void AddSkeletonAnimateDataForBlend(CC3DModel* pModel, CC3DSkeleton* pSkeleton, const char* pAnimateData, const std::string& animName, const std::string& boneName, float blendWeight = 1.0f);
+		void ReSortAnimateTimeline(float blendTime);
+		void play(float fSecond, CC3DModel* pModel, CC3DSkeleton* pSkeleton = NULL);
+		void playOnce(float fSecond, CC3DModel* pModel, CC3DSkeleton* pSkeleton = NULL);
+		void LoadAnimateJson(const std::string& fileName, CC3DSkeleton* pSkeleton);
 
-private:
+		float m_AnimateAllTime = 0;
 
+		long frameCount = 0;
+		bool m_hasModelAnimate = false;
+		std::vector<CC3DAnimate*>m_Animate;
 
-};
+	private:
+		std::shared_ptr<CC3DAnimateTimeline> m_AnimateTimeline;
+		std::shared_ptr<CC3DAnimate> m_JsonAnimate;
+
+	};
+}
+
 
 
 #endif // _H_CC3D_MODEL_H_

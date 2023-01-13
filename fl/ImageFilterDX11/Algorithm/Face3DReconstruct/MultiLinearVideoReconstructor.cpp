@@ -484,13 +484,13 @@ void MultiLinearVideoReconstructor::SmoothFace(int nSmoothFrame)
 		float cosb = R1.dot(R2);
 		float sinb = sqrt(1 - cosb * cosb);
 
-		m_UserMaxEyeAngle = std::max(sina, m_UserMaxEyeAngle);
-		m_UserMaxEyeAngle = std::max(sinb, m_UserMaxEyeAngle);
-		m_UserMaxEyeAngle = std::min(m_maxEyeAngle, m_UserMaxEyeAngle);
+		m_UserMaxEyeAngle = (std::max)(sina, m_UserMaxEyeAngle);
+		m_UserMaxEyeAngle = (std::max)(sinb, m_UserMaxEyeAngle);
+		m_UserMaxEyeAngle = (std::min)(m_maxEyeAngle, m_UserMaxEyeAngle);
 
-		m_UserMinEyeAngle = std::min(sina, m_UserMinEyeAngle);
-		m_UserMinEyeAngle = std::min(sinb, m_UserMinEyeAngle);
-		m_UserMinEyeAngle = std::max(m_minEyeAngle, m_UserMinEyeAngle);
+		m_UserMinEyeAngle = (std::min)(sina, m_UserMinEyeAngle);
+		m_UserMinEyeAngle = (std::min)(sinb, m_UserMinEyeAngle);
+		m_UserMinEyeAngle = (std::max)(m_minEyeAngle, m_UserMinEyeAngle);
 
 
 		if (sina <m_UserMinEyeAngle+0.1)
@@ -541,7 +541,7 @@ void MultiLinearVideoReconstructor::SmoothFace(int nSmoothFrame)
 		m_pFitCoeffsExpress47[0] = 1.0;
 		for (int j = 0; j < 46; j++)
 		{
-			m_pFitCoeffsExpress47[j + 1] = std::max(-0.2f, m_pFitCoeffsExpress47[j + 1]);
+			m_pFitCoeffsExpress47[j + 1] = (std::max)(-0.2f, m_pFitCoeffsExpress47[j + 1]);
 			m_pFitCoeffsExpress47[0] -= m_pFitCoeffsExpress47[j+1];
 		}
 

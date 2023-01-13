@@ -6,25 +6,48 @@
   
 cbuffer ConstantBuffer : register(b0)
 {
-    matrix world;
-    matrix meshMat;
-    matrix view;
-    matrix projection;
-    matrix meshMatInverse;
-    matrix RotateIBL;
-    matrix lightSpaceMatrix;
-    float4 lightDir[4];
-    float4 lightColors[4];
-    int LightNum;
-    float3 CamPos;
-    float ambientStrength;
-    float RoughnessRate;
-    int AnimationEnable;
-    int ReverseY;
-    int ShadowsEnable;
-    float gamma;
-    int u_EnbleRMGamma;
-    float pad;
+	matrix world;
+	matrix meshMat;
+	matrix view;
+	matrix projection;
+	matrix meshMatInverse;
+	matrix RotateIBL;
+	matrix lightSpaceMatrix;
+	float4 lightDir[4];
+	float4 lightColors[4];
+	int LightNum;
+	float3 CamPos;
+	float ambientStrength;
+	float RoughnessRate;
+	int AnimationEnable;
+	int ReverseY;
+	int ShadowsEnable;
+	float gamma;
+	int u_EnbleRMGamma;
+	int u_EnbleEmiss;
+	float NormalIntensity;
+	float FrontNoramlScale;
+	float FrontNormalOffset;
+	int   EnableKajiya;
+	float PrimaryShift;
+	float SecondaryShift;
+ 	float SpecularPower;
+ 	float ShiftU;
+ 	float KajiyaSpecularScale;
+ 	float KajiyaSpecularWidth;
+	int EnableRenderOutLine;
+	float OutlineWidth;
+	float _specularAntiAliasingVariance;
+	float _specularAntiAliasingThreshold;
+	int bTransparent;
+	float AoOffset;
+	float4 OutLineColor;
+	float4 shadowColor;
+	float4 KajiyaSpecularColor; //a代表强度
+	float BloomThreshold;
+	float BloomStrength;
+	int UseEmissiveMask;
+	float HDRScale;
 };
 Texture2D colorMap : register(t0);
 Texture2D noiseMap : register(t1);
@@ -40,8 +63,9 @@ struct VS_INPUT
 	float3 Pos : POSITION;
 	float3 normal : NORMAL;
 	float2 Tex : TEXCOORD0;
-	float4  BlendIndices  : BLENDINDICES;
-	float4  BlendWeights  : BLENDWEIGHT;
+	float4 Tangent: TANGENT;
+	float4 BlendIndices  : BLENDINDICES;
+	float4 BlendWeights  : BLENDWEIGHT;
 
 };
 struct VS_OUTPUT
@@ -76,7 +100,8 @@ cbuffer ConstantBuffer : register(b2)
 	float furGamma;
 	int useToneMapping;
 	int useLengthTex;
-	float2 padding;
+	float FurAmbientStrength;
+	float padding2;
 }
 
 float3 ACESFilm(float3 color)
@@ -153,7 +178,7 @@ VS_OUTPUT VS(VS_INPUT input)
 	float furLength_coeff = 1.0;
 	if (useLengthTex == 1)
 	{
-		furLength_coeff = lengthMapVS.SampleLevel(samLinearVS, output.Tex1, 0).a;
+		furLength_coeff = lengthMapVS.SampleLevel(samLinearVS, output.Tex1, 0).r;
 		//float4 lengthCof = lengthMapVS[output.Tex1];
 		//furLength_coeff = lengthCof.a;
 	}
@@ -178,7 +203,7 @@ VS_OUTPUT VS(VS_INPUT input)
 	output.normal = normalize(n - ns).xyz;
     output.normal.y = -output.normal.y;
 
-    float4 view_normal = normalize( mul(output.normal, view));
+	float4 view_normal = normalize( mul(output.normal, view));
 	float _sh = clamp(output.normal.y * 0.25 + 0.35, 0.0, 1.0);
     output.SH = float3(_sh, _sh, _sh );
 
@@ -205,16 +230,7 @@ float4 PS(VS_OUTPUT input) : SV_Target
 		baseColor = sRGBToLinear(baseColor);
 	}	
 	float Noise = 1.0;
-	if (useLengthTex == 1)
-	{
-		float3 NoiseMask = noiseMap.Sample(samLinear, input.Tex0).rgb;
-		float3 RegionMask = lengthMap.Sample(samLinear, input.Tex1).rgb;
-		Noise = NoiseMask.r * RegionMask.r + NoiseMask.g * RegionMask.g + NoiseMask.b * RegionMask.b;
-	}
-	else
-	{
-		Noise = noiseMap.Sample(samLinear, input.Tex0).r;
-	}
+	Noise = noiseMap.Sample(samLinear, input.Tex0).r;
 
     //float Noise = noiseMap.Sample(samLinear, input.Tex0).r;
 
@@ -224,10 +240,9 @@ float4 PS(VS_OUTPUT input) : SV_Target
     float3 SHL = lerp( furColor * input.SH, input.SH, Occlusion );
 
     ////次表面散射（太阳光）
-    
-    float NoL = dot(lightDir[0].xyz, input.normal ) * 0.5 + 0.5;
+    float3 L = normalize(lightDir[0].xyz);
+    float NoL = dot(L, normalize(input.normal) );
     float DirLight = clamp( NoL + _LightFilter + FurOffset, 0.0, 1.0 );
-    DirLight *= _FurLightExposure * ambientStrength;
 
     //轮廓光
     float3 V = normalize( CamPos - input.worldPos );
@@ -239,7 +254,7 @@ float4 PS(VS_OUTPUT input) : SV_Target
 
     float alpha = clamp((Noise * 2.0 -(FurOffset * FurOffset +(FurOffset*_FurMask*5.0)))*_tming, 0.0, 1.0);
 
-	float3 outColor = DirLight * baseColor + SHL;
+	float3 outColor =  DirLight * lightColors[0].rgb *baseColor*_FurLightExposure * FurAmbientStrength +SHL*_FurLightExposure;
 
 	if (useToneMapping == 1)
 	{

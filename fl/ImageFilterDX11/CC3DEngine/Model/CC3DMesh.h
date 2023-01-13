@@ -3,10 +3,13 @@
 #define _H_CC3D_MESH_H_
 
 #include "Common/CC3DUtils.h"
-#include "Material/CC3DMaterial.h"
 #include "CC3DNode.h"
 #include"Render/CC3DMeshBuffer.h"
 #include <unordered_map>
+
+class CC3DMaterial;
+class CC3DMaterialGL;
+
 struct BoundingBox
 {
 	Vector3 minPoint = Vector3(0,0,0);
@@ -30,7 +33,7 @@ public:
 	CC3DMesh();
 	~CC3DMesh();
 
-	void InitMesh(uint32 meshIndex, uint32 PrimitiveIndex, std::vector<CC3DMaterial*>&ModelTexture, CC3DNode *m_ModelNode);
+	void InitMesh(uint32 meshIndex, uint32 PrimitiveIndex, std::vector<CC3DMaterial*>&ModelTexture,  CC3DNode *m_ModelNode);
 
 	void GenVertWithWeights(std::vector<float>&weight);
 	void GenVertWithCoeffs(std::vector<float>& coeffs, std::unordered_map<std::string, int>& BlendShapeName);

@@ -1,12 +1,10 @@
 #include "DX11DynamicRHI.h"
 #include "DX11Resource.h"
 #include "DX11Context.h"
-#include "Toolbox/DXUtils/DXUtils.h"
-
-CC3DDynamicRHI* GetDynamicRHI()
-{
-	return DX11DynamicRHI::GetInstance();
-}
+#include "DX11DoubleBuffer.h"
+#include "Toolbox/DXUtils/DX11ShaderRHI.h"
+#include "Toolbox/DXUtils/DX11SwapChainRHI.h"
+#include "Toolbox/DXUtils/DX11VertexBuffer.h"
 
 DX11DynamicRHI* g_Instance = nullptr;
 
@@ -17,7 +15,10 @@ DX11DynamicRHI::DX11DynamicRHI()
 
 DX11DynamicRHI::~DX11DynamicRHI()
 {
-
+	if (UpdateContext)
+	{
+		//ccUnInitFilter();
+	}
 }
 
 DX11DynamicRHI* DX11DynamicRHI::GetInstance()
@@ -56,6 +57,13 @@ std::shared_ptr<CC3DVertexBuffer> DX11DynamicRHI::CreateVertexBuffer(float* pDat
 	return  VertexBuffer;
 }
 
+std::shared_ptr<CC3DVertexBuffer> DX11DynamicRHI::CreateVertexBuffer(void* pData, int StrideByteWidth, int Count, bool StreamOut)
+{
+	std::shared_ptr<CC3DVertexBuffer> VertexBuffer = std::make_shared<DX11VertexBuffer>();
+	VertexBuffer->CreateVertexBuffer(pData, StrideByteWidth, Count, StreamOut);
+	return  VertexBuffer;
+}
+
 std::shared_ptr< CC3DBlendState > DX11DynamicRHI::CreateBlendState(int32_t SrcBlend /*= CC3DBlendState::BP_SRCALPHA*/, int32_t DstBlend /*= CC3DBlendState::BP_INVSRCALPHA*/)
 {
 	std::shared_ptr< CC3DBlendState > BS = std::make_shared<DX11BlendState>();
@@ -79,10 +87,10 @@ std::shared_ptr< CC3DBlendState > DX11DynamicRHI::CreateBlendState(int32_t SrcBl
 	return BS;
 }
 
-std::shared_ptr<CC3DBlendState> DX11DynamicRHI::CreateBlendState(bool bBlend, bool bBlendAlpha, bool writeBuffer)
+std::shared_ptr<CC3DBlendState> DX11DynamicRHI::CreateBlendState(bool bBlend, bool bBlendAlpha, bool writeBuffer, bool maskRGB)
 {
 	std::shared_ptr< DX11BlendState > BS = std::make_shared<DX11BlendState>();
-	BS->CreateState(bBlend, bBlendAlpha, writeBuffer);
+	BS->CreateState(bBlend, bBlendAlpha, writeBuffer, maskRGB);
 	return BS;
 }
 
@@ -143,6 +151,12 @@ std::shared_ptr< CC3DTextureRHI> DX11DynamicRHI::CreateTexture(uint32_t format, 
 	return nullptr;
 }
 
+std::shared_ptr< CC3DTextureRHI> DX11DynamicRHI::CreateTexture()
+{
+	std::shared_ptr<CC3DTextureRHI> TextureRHI = std::make_shared<DX11Texture2D>();
+	return TextureRHI;
+}
+
 std::shared_ptr<CC3DTextureRHI> DX11DynamicRHI::CreateTextureFromFile(const std::string szFile, bool bGenMipmap /*= false*/)
 {
 	std::shared_ptr<CC3DTextureRHI> TextureRHI = std::make_shared<DX11Texture2D>();
@@ -193,6 +207,7 @@ std::shared_ptr<CC3DCubeMapRHI> DX11DynamicRHI::CreateCubeMap(int32_t nTextureWi
 	return nullptr;
 }
 
+
 void DX11DynamicRHI::SetBlendState(std::shared_ptr< CC3DBlendState > BlendStateRHI, const float BlendFactor[4], uint32_t SimpleMask)
 {
 	DX11BlendState* BlendState = RHIResourceCast(BlendStateRHI.get());
@@ -212,22 +227,40 @@ void DX11DynamicRHI::SetDepthStencilState(std::shared_ptr<CC3DDepthStencilState>
 	
 }
 
-void DX11DynamicRHI::SetSamplerState(std::shared_ptr<CC3DSamplerState> SamplerStateRHI)
+void DX11DynamicRHI::SetSamplerState(std::shared_ptr<CC3DSamplerState> SamplerStateRHI, int slot)
 {
 	DX11SampleState* SampleState = RHIResourceCast(SamplerStateRHI.get());
 	if (SampleState && SampleState->PtrSamplerState)
 	{
-		DeviceContextPtr->PSSetSamplers(0, 1, &SampleState->PtrSamplerState);
+		DeviceContextPtr->PSSetSamplers(slot, 1, &SampleState->PtrSamplerState);
 	}
 	
 }
 
-void DX11DynamicRHI::SetVSSamplerState(std::shared_ptr<CC3DSamplerState> SamplerStateRHI)
+void DX11DynamicRHI::SetCSSamplerState(std::shared_ptr<CC3DSamplerState> SamplerStateRHI, int slot /*= 0*/)
 {
 	DX11SampleState* SampleState = RHIResourceCast(SamplerStateRHI.get());
 	if (SampleState && SampleState->PtrSamplerState)
 	{
-		DeviceContextPtr->VSSetSamplers(0, 1, &SampleState->PtrSamplerState);
+		DeviceContextPtr->CSSetSamplers(slot, 1, &SampleState->PtrSamplerState);
+	}
+}
+
+void DX11DynamicRHI::SetVSSamplerState(std::shared_ptr<CC3DSamplerState> SamplerStateRHI,int slot)
+{
+	DX11SampleState* SampleState = RHIResourceCast(SamplerStateRHI.get());
+	if (SampleState && SampleState->PtrSamplerState)
+	{
+		DeviceContextPtr->VSSetSamplers(slot, 1, &SampleState->PtrSamplerState);
+	}
+}
+
+void DX11DynamicRHI::SetGSSamplerState(std::shared_ptr<CC3DSamplerState> SamplerStateRHI, int slot /*= 0*/)
+{
+	DX11SampleState* SampleState = RHIResourceCast(SamplerStateRHI.get());
+	if (SampleState && SampleState->PtrSamplerState)
+	{
+		DeviceContextPtr->GSSetSamplers(slot, 1, &SampleState->PtrSamplerState);
 	}
 }
 
@@ -265,6 +298,15 @@ void DX11DynamicRHI::SetPSConstantBuffer(uint32_t StartSlot, std::shared_ptr<CC3
 	if (ConstantBuffer && ConstantBuffer->PtrConstantBuffer)
 	{
 		DeviceContextPtr->PSSetConstantBuffers(StartSlot, 1, &ConstantBuffer->PtrConstantBuffer);
+	}
+}
+
+void DX11DynamicRHI::SetGSConstantBuffer(uint32_t StartSlot, std::shared_ptr<CC3DConstantBuffer> ConstantBufferRHI)
+{
+	DX11ConstantBuffer* ConstantBuffer = RHIResourceCast(ConstantBufferRHI.get());
+	if (ConstantBuffer && ConstantBuffer->PtrConstantBuffer)
+	{
+		DeviceContextPtr->GSSetConstantBuffers(StartSlot, 1, &ConstantBuffer->PtrConstantBuffer);
 	}
 }
 
@@ -308,6 +350,16 @@ void DX11DynamicRHI::SetVSShaderResource(uint32_t StartSlot, std::shared_ptr<CC3
 	}
 }
 
+void DX11DynamicRHI::SetGSShaderResource(uint32_t StartSlot, std::shared_ptr<CC3DTextureRHI> TextureRHI)
+{
+	DX11Texture2D* Texture2D = RHIResourceCast(TextureRHI.get());
+	if (Texture2D && Texture2D->GetSRV())
+	{
+		ID3D11ShaderResourceView* SRV = Texture2D->GetSRV();
+		DeviceContextPtr->GSSetShaderResources(StartSlot, 1, &SRV);
+	}
+}
+
 bool DX11DynamicRHI::UpdateTextureInfo(std::shared_ptr<CC3DTextureRHI> TextureRHI, void* pBuffer, int32_t w, int32_t h)
 {
 	DX11Texture2D* Texture2D = RHIResourceCast(TextureRHI.get());
@@ -338,7 +390,7 @@ void DX11DynamicRHI::DrawPrimitive(std::shared_ptr<CC3DVertexBuffer> VertexBuffe
 	{
 		return;
 	}
-
+	DeviceContextPtr->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	uint32_t offest = 0;
 	uint32_t stride = VertexBuffer->GetStride();
 	DeviceContextPtr->IASetVertexBuffers(0, 1, &VertexBuffer->PtrVertexBuffer, &stride, &offest);
@@ -376,7 +428,7 @@ void DX11DynamicRHI::DrawPrimitive(const std::array<std::shared_ptr<CC3DVertexBu
 		}
 
 	}
-
+	DeviceContextPtr->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	DeviceContextPtr->IASetVertexBuffers(0, VertexBufferCount, VertexBuffers, Strides, Offset);
 	DeviceContextPtr->IASetIndexBuffer(IndexBuffer->PtrIndexBuffer, (DXGI_FORMAT)IndexBuffer->GetIndexFormat(), 0);
 	DeviceContextPtr->DrawIndexed(IndexBuffer->GetNumberTriangle() * 3, 0, 0);
@@ -390,11 +442,45 @@ void DX11DynamicRHI::DrawPrimitive(std::shared_ptr<CC3DVertexBuffer> VertexBuffe
 	{
 		return;
 	}
-
+	DeviceContextPtr->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	uint32_t offest = 0;
 	uint32_t stride = VertexBuffer->GetStride();
+	DeviceContextPtr->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
 	DeviceContextPtr->IASetVertexBuffers(0, 1, &VertexBuffer->PtrVertexBuffer, &stride, &offest);
 	DeviceContextPtr->Draw(VertexBuffer->GetCount(), 0);
+}
+
+void DX11DynamicRHI::DrawPointList(std::shared_ptr<CC3DVertexBuffer> VertexBufferRHI)
+{
+	DX11VertexBuffer* VertexBuffer = RHIResourceCast(VertexBufferRHI.get());
+
+	if (!VertexBuffer->PtrVertexBuffer)
+	{
+		return;
+	}
+	DeviceContextPtr->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+	uint32_t offest = 0;
+	uint32_t stride = VertexBuffer->GetStride();
+	DeviceContextPtr->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
+	DeviceContextPtr->IASetVertexBuffers(0, 1, &VertexBuffer->PtrVertexBuffer, &stride, &offest);
+	int VertexCount = VertexBuffer->GetCount();
+	DeviceContextPtr->Draw(VertexCount, 0);
+}
+
+void DX11DynamicRHI::DrawAuto(std::shared_ptr<CC3DVertexBuffer> VertexBufferRHI)
+{
+	DX11VertexBuffer* VertexBuffer = RHIResourceCast(VertexBufferRHI.get());
+
+	if (!VertexBuffer->PtrVertexBuffer)
+	{
+		return;
+	}
+	DeviceContextPtr->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+	uint32_t offest = 0;
+	uint32_t stride = VertexBuffer->GetStride();
+	DeviceContextPtr->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
+	DeviceContextPtr->IASetVertexBuffers(0, 1, &VertexBuffer->PtrVertexBuffer, &stride, &offest);
+	DeviceContextPtr->DrawAuto();
 }
 
 void DX11DynamicRHI::GenerateMips(std::shared_ptr<CC3DCubeMapRHI> CubeMapRHI)
@@ -412,4 +498,171 @@ void DX11DynamicRHI::SetViewPort(float TopLeftX, float TopLeftY, float Width, fl
 	envMapviewport.TopLeftX = TopLeftX;
 	envMapviewport.TopLeftY = TopLeftY;
 	DeviceContextPtr->RSSetViewports(1, &envMapviewport);
+}
+
+std::shared_ptr< DoubleBufferRHI> DX11DynamicRHI::CreateDoubleBuffer()
+{
+	return make_shared<DX11DoubleBuffer>();
+}
+
+std::shared_ptr< ShaderRHI> DX11DynamicRHI::CreateShaderRHI()
+{
+	return std::make_shared< DX11ShaderRHI>();
+}
+
+std::shared_ptr< SwapChainRHI> DX11DynamicRHI::CreateSwapChain()
+{
+	return std::make_shared< DX11SwapChainRHI>();
+}
+
+bool DX11DynamicRHI::CreateDevice(bool UpdateInternalContext /*= false*/)
+{
+
+	if (Device.IsValidRefObj() && DeviceContext.IsValidRefObj())
+	{
+		return true;
+	}
+
+	static D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_0,
+		D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0 };
+
+
+	HRESULT hr = S_OK;
+
+	IRefPtr<IDXGIFactory1> pFactory;
+	if (FAILED(hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&pFactory)))
+	{
+		return false;
+	}
+
+
+	IRefPtr<IDXGIAdapter1> pCurrentAdapter;
+	std::vector<IRefPtr<IDXGIAdapter1> > vAdapters;
+
+	int index = 0;
+	while (pFactory->EnumAdapters1(index, &pCurrentAdapter) != DXGI_ERROR_NOT_FOUND)
+	{
+		DXGI_ADAPTER_DESC1 desc;
+		pCurrentAdapter->GetDesc1(&desc);
+
+		if (desc.VendorId != 0x1414)// Basic render
+		{
+			IRefPtr<IDXGIAdapter1> copy;
+			copy = pCurrentAdapter;
+			vAdapters.push_back(copy);
+		}
+
+		pCurrentAdapter.ReleaseRefObj();
+		++index;
+	}
+
+	std::wstring videoCardName;
+	if (vAdapters.size() > 1)
+	{
+		for (std::vector<IRefPtr<IDXGIAdapter1> >::iterator it = vAdapters.begin(); it != vAdapters.end(); ++it)
+		{
+			pCurrentAdapter = *it;
+			DXGI_ADAPTER_DESC1 desc;
+			pCurrentAdapter->GetDesc1(&desc);
+			videoCardName = desc.Description;
+			VideocardId = desc.VendorId;
+
+			if (desc.VendorId != 0x8086)// intel graphic
+			{
+				break;
+			}
+		}
+	}
+	else
+	{
+		if (vAdapters.empty())
+		{
+			return false;
+		}
+
+		pCurrentAdapter = vAdapters[0];
+		DXGI_ADAPTER_DESC1 desc;
+		pCurrentAdapter->GetDesc1(&desc);
+		videoCardName = desc.Description;
+		VideocardId = desc.VendorId;
+	}
+
+	if (!pCurrentAdapter.IsValidRefObj())
+	{
+		return false;
+	}
+
+	DWORD dwFlags = 0;
+	UINT SDKVersion = D3D11_SDK_VERSION;
+	D3D_FEATURE_LEVEL outLevel;
+	hr = D3D11CreateDevice(pCurrentAdapter.get_RefObj(),
+		D3D_DRIVER_TYPE_UNKNOWN,
+		nullptr,
+		dwFlags,
+		featureLevels,
+		ARRAYSIZE(featureLevels),
+		SDKVersion,
+		&Device,
+		&outLevel,
+		&DeviceContext);
+
+	if (FAILED(hr))
+	{
+		hr = D3D11CreateDevice(nullptr,
+			D3D_DRIVER_TYPE_WARP,
+			nullptr,
+			dwFlags,
+			featureLevels,
+			ARRAYSIZE(featureLevels),
+			SDKVersion,
+			&Device,
+			&outLevel,
+			&DeviceContext);
+
+		if (FAILED(hr))
+		{
+			return false;
+		}
+	}
+	UpdateContext = UpdateInternalContext;
+	if (UpdateInternalContext)
+	{
+		ccInitFilter(Device.get_RefObj(), DeviceContext.get_RefObj());
+	}
+	return true;
+}
+
+void DX11DynamicRHI::CopyResource(std::shared_ptr<CC3DTextureRHI> DstRHI, std::shared_ptr<CC3DTextureRHI> SrcRHI)
+{
+	DeviceContextPtr->CopyResource(RHIResourceCast(DstRHI.get())->GetNativeTex(), RHIResourceCast(SrcRHI.get())->GetNativeTex());
+}
+
+void DX11DynamicRHI::ResolveSubresource(std::shared_ptr<CC3DTextureRHI> DstRHI, std::shared_ptr<CC3DTextureRHI> SrcRHI)
+{
+	D3D11_TEXTURE2D_DESC desc{};
+	RHIResourceCast(SrcRHI.get())->GetNativeTex()->GetDesc(&desc);
+	unsigned int sub = D3D11CalcSubresource(0, 0, 1);
+	DeviceContextPtr->ResolveSubresource(
+		RHIResourceCast(DstRHI.get())->GetNativeTex(),
+		sub,
+		RHIResourceCast(SrcRHI.get())->GetNativeTex(),
+		sub,
+		desc.Format
+	);
+}
+
+void DX11DynamicRHI::SOSetTargets(uint32_t Number, std::shared_ptr<CC3DVertexBuffer> SOTarget, uint32_t offsets)
+{
+	if (SOTarget)
+	{
+		auto SOTargetRHI = RHIResourceCast(SOTarget.get());
+		auto NativeBuffer = SOTargetRHI->GetNativeBuffer();
+		DeviceContextPtr->SOSetTargets(1, &NativeBuffer, &offsets);
+	}
+	else
+	{
+		ID3D11Buffer* nullBuffer = nullptr;
+		DeviceContextPtr->SOSetTargets(0, &nullBuffer, nullptr);
+	}
+	
 }

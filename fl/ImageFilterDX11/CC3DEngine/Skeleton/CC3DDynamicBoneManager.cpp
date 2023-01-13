@@ -22,9 +22,9 @@ CC3DDyanmicBoneManager::~CC3DDyanmicBoneManager()
 	dynamicBoneNamesArray.clear();
 }
 
-void CC3DDyanmicBoneManager::InitParticle(CC3DTransformNode* transNode, int db_index)
+void CC3DDyanmicBoneManager::InitParticle(CC3DTransformNode* transNode, int db_index )
 {
-	if (transNode == nullptr || db_index == -1 || db_index >= dynamicBoneArray.size())
+	if (transNode == nullptr || db_index == -1 || db_index >= dynamicBoneArray.size() )
 	{
 		return;
 	}
@@ -92,6 +92,7 @@ void CC3DDyanmicBoneManager::DFSInitDynamicBoneNode(CC3DBoneNodeInfo* info, glm:
 			db_info._fRadius = cf_boneNameParam._fRadius;
 			db_info._fEndLength = cf_boneNameParam._fEndLength;
 			db_info._endOffset = cf_boneNameParam._endOffset;
+			db_info._gravity = cf_boneNameParam._gravity;
 			dmc_bone->Init(db_info);
 			info->bAttachToDynamic = true;
 
@@ -184,4 +185,136 @@ void CC3DDyanmicBoneManager::LateUpdate(int db_index /*= -1*/)
 	}
 
 	dynamicBoneArray[db_index]->Update(0.05f);
+}
+
+void CC3DDyanmicBoneManager::ResetDynamicBone()
+{
+	auto itr = transformMap.begin();
+	for (; itr != transformMap.end(); )
+	{
+		if (itr->second)
+			SAFE_DELETE(itr->second);
+		transformMap.erase(itr++);
+	}
+
+	for (auto itr : dynamicBoneArray)
+	{
+		itr.reset();
+	}
+
+	dynamicBoneArray.clear();
+}
+
+void CC3DDyanmicBoneManager::DeleteDynamicBone(const std::string& db_name)
+{
+	auto itr = transformMap.find(db_name);
+	if (itr != transformMap.end())
+	{
+		auto child_node = itr->second;
+		std::string childname;
+		if ( child_node->getFirstChild())
+		{
+			childname = child_node->getFirstChild()->getId();
+		}
+	 
+		SAFE_DELETE(itr->second);
+		itr = transformMap.erase(itr);
+
+		if (!childname.empty())
+		{
+			recuDeleteTransfromNode(childname);
+		}
+	}
+
+	for (auto itr = dynamicBoneArray.begin(); itr != dynamicBoneArray.end(); )
+	{
+		auto bone = *itr;
+		if (bone->GetID() == db_name)
+		{
+			bone.reset();
+			itr = dynamicBoneArray.erase(itr);
+
+		}
+		else
+		{
+			itr++;
+		}
+	}
+
+	for (auto itr = dynamicBoneNamesArray.begin(); itr != dynamicBoneNamesArray.end(); )
+	{
+		if ( (*itr).bone_name == db_name )
+		{
+			itr = dynamicBoneNamesArray.erase(itr);
+		}
+		else
+		{
+			itr++;
+		}
+	}
+}
+
+void CC3DDyanmicBoneManager::recuDeleteTransfromNode(const std::string& db_name)
+{
+	auto itr = transformMap.find(db_name);
+	if (itr != transformMap.end())
+	{
+		auto child_node = itr->second;
+		std::string childname;
+		if (child_node->getFirstChild())
+		{
+			childname = child_node->getFirstChild()->getId();
+		}
+
+		SAFE_DELETE(itr->second);
+		itr = transformMap.erase(itr);
+
+		if (!childname.empty())
+		{
+			recuDeleteTransfromNode(childname);
+		}
+	}
+}
+
+void CC3DDyanmicBoneManager::UpdateDynamicBoneParameter(const CC3DImageFilter::dynamicBoneParameter& cf_boneNameParam)
+{
+	for (auto item : dynamicBoneArray)
+	{
+		if (item->GetID() == cf_boneNameParam.bone_name)
+		{
+			DynamicBoneInfo db_info;
+			db_info._fDamping = cf_boneNameParam._fDamping;
+			db_info._fElasticity = cf_boneNameParam._fElasticity;
+			db_info._fStiffness = cf_boneNameParam._fStiffness;
+			db_info._fInert = cf_boneNameParam._fInert;
+			db_info._fRadius = cf_boneNameParam._fRadius;
+			db_info._fEndLength = cf_boneNameParam._fEndLength;
+			db_info._endOffset = cf_boneNameParam._endOffset;
+			db_info._gravity = cf_boneNameParam._gravity;
+			item->UpdateParticleParam(db_info);
+		}
+	}
+}
+
+bool CC3DDyanmicBoneManager::AddDynamicBoneCollider(std::string bone_name, DynamicBoneColliderBase::DynamicBoneColliderInfo dbc_info, CC3DTransformNode* trans_node)
+{
+	if (bone_name.empty())
+	{
+		return false;
+	}
+
+	for (auto db : dynamicBoneArray)
+	{
+		if (db->GetID() == bone_name)
+		{
+			DynamicBoneColliderBase* collider = new DynamicBoneCollider();
+			collider->Init(dbc_info, trans_node);
+			db->AddCollider(collider);
+
+			colliderArray.push_back(collider);
+			return true;
+		}
+	}
+
+	return false;
 }

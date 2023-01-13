@@ -21,9 +21,11 @@
 #include"EffectKernel/Sticker/CFilterWithMask.h"
 #include"EffectKernel/Sticker/CCopyTex.h"
 #include"EffectKernel/Sticker/CFaceEffect2DSticker.h"
+#include "EffectKernel/Sticker/CPurpleFire2DEffect.h"
 #include "EffectKernel/FaceEffect/CFaceSmoothIns.h"
 #include"EffectKernel/Filter/CLUTFIlter.h"
 #include "EffectKernel/Filter/CFoodieSharp.h"
+#include "EffectKernel/Filter/CBackGroundFilter.h"
 #include "EffectKernel/FaceEffect/CFaceShadowHighLight.h"
 #include "EffectKernel/FaceLift/CFaceBeauty.h"
 #include "EffectKernel/FaceLift/CBodyLift.h"
@@ -34,6 +36,8 @@
 #include "EffectKernel/FaceEffect/CFaceEffect3DRect.h"
 #include "EffectKernel/HandEffect/CHandEffectHeart.h"
 #include "EffectKernel/PBR/CFacePBRModel.h"
+#include "EffectKernel/Sticker/CBodyTrack2DEffect.h"
+#include "EffectKernel/Sticker/CBodyFGTrackEffect.h"
 #include "EffectKernel/PBR/CFaceBodyApartPBRModel.h"
 #include "EffectKernel/FaceEffect/CFaceRemovePouchFalin.h"
 #include "EffectKernel/LensEffect/CSoulBody.h"
@@ -48,11 +52,15 @@
 #include "ShaderProgramManager.h"
 #include "CC3DEngine/Common/CC3DEnvironmentConfig.h"
 #include "EffectKernel/FaceEffect/CFaceEffect3DNormal.h"
+#include "EffectKernel/ParticleEffect/CParticleEffect.h"
+#include "EffectKernel/ParticleEffect/CHandParticleEffect.h"
 #include "Toolbox/Render/TextureRHI.h"
 #include "Toolbox/DXUtils/DX11DynamicRHI.h"
 #include "Toolbox/RenderState/PiplelineState.h"
 #include "Toolbox/string_util.h"
 #include "EffectKernel/FaceLift/CBodyLift2.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "CC3DEngine/Material/CC3DMaterial.h"
 
 
 
@@ -73,6 +81,7 @@ CCEffectInterface::CCEffectInterface()
 	m_pTextureHairMask = NULL;
 	m_resourcePath = "./";
 	m_pHandRes = NULL;
+	m_pBodyRes = NULL;
 }
 
 
@@ -86,17 +95,21 @@ void CCEffectInterface::Realese()
 {
 	//m_resourceAsyn.Release(); //it was released by RealeseEffectPart();
 	SAFE_DELETE(m_rectDraw);
-	//SAFE_DELETE(m_DoubleBuffer) will release those 
-	SAFE_DELETE(m_pTargetTextureA);
-	SAFE_DELETE(m_pTargetTextureB);
-	SAFE_DELETE(m_DoubleBuffer);
 	SAFE_DELETE(m_renderParam);
-	SAFE_DELETE(m_pTextureMask);
-	SAFE_DELETE(m_pTextureHairMask);
+
+	m_DoubleBuffer.reset();
+	m_pTargetTextureA.reset();
+	m_pTargetTextureB.reset();
+	m_pTextureMask.reset();
+	m_pTextureHairMask.reset();
+
 	RealeseEffectPart(); 
+	RealeseCardId();
+	CC3DEnvironmentConfig::Release();
 	ShaderProgramManager::GetInstance()->Release();
 	ShaderProgramManager::ReleaseInstance();
-	CC3DEnvironmentConfig::Release();
+
+	ResourceManager::Instance().Release();
 
 }
 
@@ -108,6 +121,18 @@ void CCEffectInterface::RealeseEffectPart()
 		SAFE_DELETE(m_AllEffectPart[i]);
 	}
 	m_AllEffectPart.clear();
+}
+
+void  CCEffectInterface::RealeseCardId()
+{
+	std::map<AnchorType, long long>::iterator iter;
+	for (iter = m_CardMask.begin(); iter != m_CardMask.end(); ++iter)
+	{
+		if (iter->first != AnchorType::ANCHOR_UNKNOW)
+		{
+			ResourceManager::Instance().freeMaterial(iter->second);
+		}
+	}
 }
 
 
@@ -208,6 +233,25 @@ CEffectPart * GetPart(const char *szType)
 		pPart = new CBodyBGEffect();
 
 	}
+	else if (szType != NULL && !strcmp(szType, "BodyTrack2DEffect"))
+	{
+		pPart = new CBodyTrack2DEffect();
+
+	}
+	else if (szType != NULL && !strcmp(szType, "CBodyFGTrackEffect"))
+	{
+		pPart = new CBodyFGTrackEffect();
+
+	}
+	else if (szType != NULL && !strcmp(szType, "PurpleFire2DEffect"))
+	{
+		pPart = new CPurpleFire2DEffect();
+	}
+	else if (szType != NULL && !strcmp(szType, "BackGroundFilterEffect"))
+	{
+		pPart = new CBackGroundFilter();
+
+	}
 	else if (szType != NULL && !strcmp(szType, "FilterWithMask"))
 	{
 		pPart = new CFilterWithMask();
@@ -275,6 +319,15 @@ CEffectPart * GetPart(const char *szType)
 	{
 	    pPart = new CFacePBRModel();
 		pPart->m_MSAA = true;
+	}
+	else if (szType != nullptr && !strcmp(szType, "ParticleEffect"))
+	{
+		pPart = new CParticleEffect();
+		//pPart->m_MSAA = true;
+	}
+	else if (szType != nullptr && !strcmp(szType, "HandParticleEffect"))
+	{
+		pPart = new CHandParticleEffect();
 	}
 	else if (szType != nullptr && !strcmp(szType, "FaceBodyPBRModel"))
 	{
@@ -389,6 +442,7 @@ DWORD WINAPI ReadConfigThread(LPVOID pM)
 			XMLResults xResults;
 			XMLNode nodeModels = XMLNode::parseBuffer(pDataBuffer, ze.unc_size, "models", &xResults);
 			delete[]pDataBuffer;
+			ResourceManager::Instance().CurrentTestXMLInZip = nodeModels;
 			//Get version and Version control
 			const char *szVersion = nodeModels.getAttribute("version");
 			if (szVersion != NULL)
@@ -445,38 +499,34 @@ void CCEffectInterface::renderEffect(ID3D11ShaderResourceView * pInputTexture, i
 		}
 		return;
 	}
-	if (m_DoubleBuffer == NULL || m_DoubleBuffer->GetWidth() != width || m_DoubleBuffer->GetHeight() != height || m_pTargetTextureA == NULL || m_MSAA !=m_DoubleBuffer->m_Msaa)
+
+	if (m_DoubleBuffer == NULL || m_DoubleBuffer->GetWidth() != width || m_DoubleBuffer->GetHeight() != height || m_pTargetTextureA == NULL || m_MSAA !=m_DoubleBuffer->IsMsaa())
 	{
-		if (m_DoubleBuffer != NULL)
-		{
-			delete m_DoubleBuffer;
-		}
+		m_DoubleBuffer.reset();
 
-		//SAFE_DELETE(m_pTargetTextureA);
-		m_pTargetTextureA = new DX11Texture();
-		m_pTargetTextureA->initTexture(m_format, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET, width, height, NULL, 0, false, m_MSAA);
+		uint32_t format = CC3DTextureRHI::SFT_A8R8G8B8;
 
-		//SAFE_DELETE(m_pTargetTextureB);
-		m_pTargetTextureB = new DX11Texture();
-		m_pTargetTextureB->initTexture(m_format, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET, width, height, NULL, 0, false, m_MSAA);
+		m_pTargetTextureA = GetDynamicRHI()->CreateTexture(format, CC3DTextureRHI::OT_RENDER_TARGET, width, height, nullptr, 0, false, m_MSAA);
+		m_pTargetTextureB = GetDynamicRHI()->CreateTexture(format, CC3DTextureRHI::OT_RENDER_TARGET, width, height, nullptr, 0, false, m_MSAA);
 
-		m_DoubleBuffer = new DX11DoubleBuffer();
-		m_DoubleBuffer->m_Msaa = m_MSAA;
-		m_DoubleBuffer->InitDoubleBuffer(m_pTargetTextureA, m_pTargetTextureB, width, height);
+		m_DoubleBuffer = std::make_shared<DX11DoubleBuffer>();
+		m_DoubleBuffer->InitDoubleBuffer(m_pTargetTextureA, m_pTargetTextureB, width, height, m_MSAA);
 
 		SAFE_DELETE(m_renderParam);
 		m_renderParam = new BaseRenderParam();
 		m_renderParam->SetDoubleBuffer(m_DoubleBuffer);
 
 	}
-
-
+	m_renderParam->SetSplitScreenNum(m_SplitScreen);
+	m_renderParam->SetCardMaskID(m_CardMask);
 	if (m_rectDraw == NULL)
 	{
 		m_rectDraw = new RectDraw();
 		m_rectDraw->init(1, 1);
+		m_InputSRV = GetDynamicRHI()->CreateTexture();
 	}
-	m_rectDraw->setShaderTextureView(pInputTexture);
+	m_InputSRV->AttatchSRV(pInputTexture);
+	m_rectDraw->setShaderTextureView(m_InputSRV);
 	m_DoubleBuffer->BindFBOA();
 
 	if (needToClearBuffer)
@@ -531,8 +581,12 @@ void CCEffectInterface::renderEffect(ID3D11ShaderResourceView * pInputTexture, i
 	{
 		m_renderParam->SetHandInfo(m_pHandRes);
 	}
+	if (m_pBodyRes != NULL)
+	{
+		m_renderParam->SetBodyPoint(m_pBodyRes);
+	}
 
-	m_renderParam->SetSrcTex(pInputTexture);
+
 	for (int i = 0; i < m_AllEffectPart.size(); i++)
 	{
 		if (m_AllEffectPart[i]->m_bEnableReder)
@@ -613,7 +667,7 @@ void CCEffectInterface::touchThreadSource()
 
 }
 
-bool CCEffectInterface::loadEffectFromZipAsyn(const string & szZipFile, const string & xml, EffectCallback callback, void * lpParam)
+bool CCEffectInterface::loadEffectFromZipAsyn(const std::string& szZipFile, const std::string& xml, EffectCallback callback, void * lpParam)
 {
 
 	if (szZipFile.size() > 0)
@@ -635,7 +689,7 @@ bool CCEffectInterface::loadEffectFromZipAsyn(const string & szZipFile, const st
 	return true;
 }
 
-bool CCEffectInterface::loadEffectFromZipSync(const string & szZipFile, const string & xml, EffectCallback callback, void * lpParam)
+bool CCEffectInterface::loadEffectFromZipSync(const std::string& szZipFile, const std::string& xml, EffectCallback callback, void * lpParam)
 {
 	if (m_effectStatus == CES_LOADING)
 	{
@@ -663,7 +717,7 @@ bool CCEffectInterface::loadEffectFromZipSync(const string & szZipFile, const st
 	return true;
 }
 
-bool CCEffectInterface::AddEffectFromXML(const string & dir, const string & xml)
+bool CCEffectInterface::AddEffectFromXML(const std::string& dir, const std::string& xml)
 {
 	string szXml = dir + "/" + xml;
 	XMLResults xResults;
@@ -715,7 +769,7 @@ bool CCEffectInterface::renderEffectToTexture(ID3D11ShaderResourceView* pInputTe
 	DeviceContextPtr->ResolveSubresource(
 		pTargetTexture,
 		sub,
-		m_DoubleBuffer->GetFBOTextureA()->getTex(),
+		RHIResourceCast(m_DoubleBuffer->GetFBOTextureA().get())->GetNativeTex(),
 		sub,
 		m_format
 	);
@@ -740,12 +794,18 @@ ID3D11ShaderResourceView * CCEffectInterface::renderEffectToTexture(ID3D11Shader
 	}
 	renderEffect(pInputTexture, width, height, faceRes,true,false);
 
-	return m_DoubleBuffer->GetFBOTextureA()->getTexShaderView() ;
+	return RHIResourceCast(m_DoubleBuffer->GetFBOTextureA().get())->GetSRV() ;
 }
 
-
-void CCEffectInterface::SetMask(unsigned char * pMask, int nWidth, int nHeight,CCEffectType type)
+void CCEffectInterface::SetMask(unsigned char * pMask, int nWidth, int nHeight,CCEffectType type, AnchorType anchortype)
 {
+	//传主播的头像和ID
+	if (anchortype != ANCHOR_UNKNOW)
+	{
+		long long cardId = ResourceManager::Instance().loadImage(pMask, nWidth, nHeight);
+		m_CardMask[anchortype] = cardId;
+	}
+
 	if (type == LUT_FILTER_EFFECT)
 	{
 		int nPart = (int)m_AllEffectPart.size();
@@ -899,7 +959,7 @@ void CCEffectInterface::SetMask(unsigned char * pMask, int nWidth, int nHeight,C
 			if (m_AllEffectPart[i]->m_EffectPart == FACE_PBR_3D_MODEL)
 			{
 				CFacePBRModel *part = (CFacePBRModel*)(m_AllEffectPart[i]);
-				if (part->m_RenderUtils->m_3DScene != NULL && !part->m_RenderUtils->m_3DScene->m_hasLoadModel)
+				if (part->m_RenderUtils->m_3DScene != NULL && !part->m_RenderUtils->m_3DScene->HasLoadModel)
 				{
 					CC3DModel *pModel = part->m_RenderUtils->m_3DScene->m_Model[0];
 					int nMaterial = pModel->m_ModelMaterial.size();
@@ -907,7 +967,7 @@ void CCEffectInterface::SetMask(unsigned char * pMask, int nWidth, int nHeight,C
 					{
 						if (pModel->m_ModelMaterial[j]->MaterialName == part->m_RenderUtils->m_SwitchPalate)
 						{
-							pModel->m_ModelMaterial[j]->m_BaseColorTexture = GetDynamicRHI()->CreateTexture(CC3DDynamicRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, nWidth, nHeight, pMask, 4 * nWidth);
+							pModel->m_ModelMaterial[j]->m_BaseColorTexture = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, nWidth, nHeight, pMask, 4 * nWidth);
 							//pModel->m_ModelMaterial[j]->m_BaseColorTexture->LoadTexture(pMask, nWidth, nHeight);
 							break;
 						}
@@ -918,63 +978,56 @@ void CCEffectInterface::SetMask(unsigned char * pMask, int nWidth, int nHeight,C
 
 		}
 	}
-
-
-
 	else
 	{
-	    //临时处理下
-	    if ( (type == UNKNOW_EFFECT && m_AllEffectPart.size() == 1 && m_AllEffectPart[0]->m_EffectPart == FACE_PBR_3D_MODEL))
-	    {
-			int nPart = (int)m_AllEffectPart.size();
-			for (int i = 0; i < nPart; i++)
-			{
-				if (m_AllEffectPart[i]->m_EffectPart == FACE_PBR_3D_MODEL)
-				{
-					CFacePBRModel *part = (CFacePBRModel*)(m_AllEffectPart[i]);
-					if (part->m_RenderUtils->m_3DScene != NULL && !part->m_RenderUtils->m_3DScene->m_hasLoadModel)
-					{
-						CC3DModel *pModel = part->m_RenderUtils->m_3DScene->m_Model[0];
-						int nMaterial = pModel->m_ModelMaterial.size();
-						for (int j = 0; j < nMaterial; j++)
-						{
-							if (!pModel->m_ModelMaterial[j]->m_BaseColorTexture || (pModel->m_ModelMaterial[j]->MaterialName == part->m_RenderUtils->m_SwitchPalate &&pModel->m_ModelMaterial[j]->m_BaseColorTexture->GetWidth() != nWidth))
-							{
-								pModel->m_ModelMaterial[j]->m_BaseColorTexture = GetDynamicRHI()->CreateTexture(CC3DDynamicRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, nWidth, nHeight, pMask,4*nWidth);
-								//pModel->m_ModelMaterial[j]->m_BaseColorTexture->LoadTexture(pMask, nWidth, nHeight);
-								break;
-							}
-						}
-					}
-					break;
-				}
+	  //  //临时处理下
+	  //  if ( (type == UNKNOW_EFFECT && m_AllEffectPart.size() == 1 && m_AllEffectPart[0]->m_EffectPart == FACE_PBR_3D_MODEL))
+	  //  {
+			//int nPart = (int)m_AllEffectPart.size();
+			//for (int i = 0; i < nPart; i++)
+			//{
+			//	if (m_AllEffectPart[i]->m_EffectPart == FACE_PBR_3D_MODEL)
+			//	{
+			//		CFacePBRModel *part = (CFacePBRModel*)(m_AllEffectPart[i]);
+			//		if (part->m_RenderUtils->m_3DScene != NULL && !part->m_RenderUtils->m_3DScene->m_hasLoadModel)
+			//		{
+			//			CC3DModel *pModel = part->m_RenderUtils->m_3DScene->m_Model[0];
+			//			int nMaterial = pModel->m_ModelMaterial.size();
+			//			for (int j = 0; j < nMaterial; j++)
+			//			{
+			//				if (!pModel->m_ModelMaterial[j]->m_BaseColorTexture || (pModel->m_ModelMaterial[j]->MaterialName == part->m_RenderUtils->m_SwitchPalate &&pModel->m_ModelMaterial[j]->m_BaseColorTexture->GetWidth() != nWidth))
+			//				{
+			//					pModel->m_ModelMaterial[j]->m_BaseColorTexture = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, nWidth, nHeight, pMask,4*nWidth);
+			//					//pModel->m_ModelMaterial[j]->m_BaseColorTexture->LoadTexture(pMask, nWidth, nHeight);
+			//					break;
+			//				}
+			//			}
+			//		}
+			//		break;
+			//	}
 
-			}
-	    }
+			//}
+	  //  }
 		//临时处理下2
-		if ((type == UNKNOW_EFFECT && m_AllEffectPart.size() == 2 && m_AllEffectPart[1]->m_EffectPart == FACE_EFFECT_STICKER))
-		{
-			CFaceEffect2DSticker *part = (CFaceEffect2DSticker*)(m_AllEffectPart[1]);
-			ResourceManager::Instance().getAnimFrame(part->m_anim_id, 0)->tex->updateTextureInfo(pMask, nWidth * 4, nHeight);
-		}
+		//if ((type == UNKNOW_EFFECT && m_AllEffectPart.size() == 2 && m_AllEffectPart[1]->m_EffectPart == FACE_EFFECT_STICKER))
+		//{
+		//	CFaceEffect2DSticker *part = (CFaceEffect2DSticker*)(m_AllEffectPart[1]);
+		//	ResourceManager::Instance().getAnimFrame(part->m_anim_id, 0)->tex->updateTextureInfo(pMask, nWidth * 4, nHeight);
+		//}
 
-
-		//��������
 		int maskW = nWidth;
 		int maskH = nHeight;
-		if (m_pTextureMask == NULL)
+		if (!m_pTextureMask)
 		{
-			m_pTextureMask = new DX11Texture();
-			m_pTextureMask->initTexture(DXGI_FORMAT_R8_UNORM, D3D11_BIND_SHADER_RESOURCE, maskW, maskH, pMask, maskW, false);
+			m_pTextureMask = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_R8, CC3DTextureRHI::OT_NONE, maskW, maskH, pMask, maskW, false);
 		}
-		else if (m_pTextureMask->width() == maskW && m_pTextureMask->height() == maskH)
+		else if (m_pTextureMask->GetWidth() == maskW && m_pTextureMask->GetHeight() == maskH)
 		{
 			m_pTextureMask->updateTextureInfo(pMask, maskW, maskH);
 		}
 		else
 		{
-			m_pTextureMask->destory();
-			m_pTextureMask->initTexture(DXGI_FORMAT_R8_UNORM, D3D11_BIND_SHADER_RESOURCE, maskW, maskH, pMask, maskW, false);
+			m_pTextureMask = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_R8, CC3DTextureRHI::OT_NONE, maskW, maskH, pMask, maskW, false);
 		}
 	}
 
@@ -989,25 +1042,34 @@ void CCEffectInterface::SetHairMask(unsigned char * pMask, int nWidth, int nHeig
 	int maskH = nHeight;
 	if (m_pTextureHairMask == NULL)
 	{
-		m_pTextureHairMask = new DX11Texture();
-		m_pTextureHairMask->initTexture(DXGI_FORMAT_R8_UNORM, D3D11_BIND_SHADER_RESOURCE, maskW, maskH, pMask, maskW, false);
+		m_pTextureHairMask = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_R8, CC3DTextureRHI::OT_NONE, maskW, maskH, pMask, maskW, false);
+		//m_pTextureHairMask->initTexture(DXGI_FORMAT_R8_UNORM, D3D11_BIND_SHADER_RESOURCE, maskW, maskH, pMask, maskW, false);
 	}
-	else if (m_pTextureHairMask->width() == maskW && m_pTextureHairMask->height() == maskH)
+	else if (m_pTextureHairMask->GetWidth() == maskW && m_pTextureHairMask->GetHeight() == maskH)
 	{
 		m_pTextureHairMask->updateTextureInfo(pMask, maskW, maskH);
 	}
 	else
 	{
-		m_pTextureHairMask->destory();
-		m_pTextureHairMask->initTexture(DXGI_FORMAT_R8_UNORM, D3D11_BIND_SHADER_RESOURCE, maskW, maskH, pMask, maskW, false);
+		m_pTextureHairMask = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_R8, CC3DTextureRHI::OT_NONE, maskW, maskH, pMask, maskW, false);
+		//m_pTextureHairMask->destory();
+		//m_pTextureHairMask->initTexture(DXGI_FORMAT_R8_UNORM, D3D11_BIND_SHADER_RESOURCE, maskW, maskH, pMask, maskW, false);
 	}
 }
 
-void CCEffectInterface::SetHand(ccHGHandRes * handRes)
+void CCEffectInterface::SetHand(ccHandRes* handRes)
 {
 	if (handRes != NULL)
 	{
 		m_pHandRes = handRes;
+	}
+}
+
+void CCEffectInterface::SetBodyPoint(ccBodyRes * bodyRes)
+{
+	if (bodyRes != NULL)
+	{
+		m_pBodyRes = bodyRes;
 	}
 }
 
@@ -1064,7 +1126,7 @@ void CCEffectInterface::setAlpha(float Alpha, CCEffectType type)
 		}
 	}
 
-	if (type == SMOOTH_EFFECT)
+	if (type == LUT_FILTER_EFFECT)
 	{
 		for (int i = 0; i < nPart; i++) {
 			if (m_AllEffectPart[i]->m_EffectPart == LUT_FILTER_EFFECT)
@@ -1138,11 +1200,16 @@ void CCEffectInterface::setAlpha(float Alpha, CCEffectType type)
 	}
 }
 
+void CCEffectInterface::SetSplitScreen(int SplitScreen, CCEffectType type)
+{
+	m_SplitScreen = SplitScreen;
+}
+
 void CCEffectInterface::SetBlendShapeParam(float * pBlendShapeParam)
 {
 }
 
-void CCEffectInterface::SetResourcePath(char *path)
+void CCEffectInterface::SetResourcePath(const char *path)
 {
 	m_resourcePath = path;
 	CC3DEnvironmentConfig::getInstance()->resourth_path = m_resourcePath;
@@ -1171,6 +1238,15 @@ void CCEffectInterface::zipAllResource(std::string &zipPath, std::string &tempPa
 	//removeFolder(tempPath);
 }
 
+void CCEffectInterface::ZipAllResourceOnly(const std::string& ZipPath, const std::string& ContanFolder)
+{
+
+	HZIP dst = CreateZip(ZipPath.c_str(), nullptr);
+	zipFolder(dst, ContanFolder);
+
+	CloseZip(dst);
+}
+
 void CCEffectInterface::writeAllResource(std::string &tempPath, const char* version)
 {
 
@@ -1185,6 +1261,22 @@ void CCEffectInterface::writeAllResource(std::string &tempPath, const char* vers
 		}	
 	}
 	std::string xml_file_name = tempPath + "/" + "test.xml";
+	root.writeToFile(xml_file_name.c_str());
+}
+
+void CCEffectInterface::WriteAllXMLConfig(const std::string& Path, const std::string& Name, const std::string& Version /*= "1.2"*/)
+{
+	XMLNode root = XMLNode::createXMLTopNode("models");
+	root.addAttribute("version", Version.c_str());
+
+	for (int i = 0; i < m_AllEffectPart.size(); i++)
+	{
+		if (m_AllEffectPart[i]->m_bEnableWrite && m_AllEffectPart[i]->m_bEnableReder)
+		{
+			m_AllEffectPart[i]->WriteConfig(const_cast<std::string&>(Path), root);
+		}
+	}
+	std::string xml_file_name = Path + Name;
 	root.writeToFile(xml_file_name.c_str());
 }
 
@@ -1412,4 +1504,37 @@ void CCEffectInterface::SetMakeUpZip(const string & szZipFile)
 		}
 	}
 	CloseZip(hZip);
+}
+
+void CCEffectInterface::UpdateTestXmlWithNewAttr(XMLNode& TestXMLNode)
+{
+	TestXMLNode = ResourceManager::Instance().CurrentTestXMLInZip;
+	int i = -1;
+	XMLNode nodeEffect;
+	while (!(nodeEffect = TestXMLNode.getChildNode("typeeffect", ++i)).isEmpty())
+	{
+		XMLNode nodeanidrawable = nodeEffect.getChildNode("anidrawable");
+		if (nodeanidrawable.isEmpty())continue;
+		const char* szShowname = nodeEffect.getAttribute("showname");
+		const char* szAlpha = nodeanidrawable.getAttribute("alpha");
+		if (szAlpha != NULL && szShowname != NULL)
+		{
+			CEffectPart* pEffect = nullptr;
+			for (int i = 0; i < m_AllEffectPart.size(); i++)
+			{
+				if (m_AllEffectPart[i]->m_showname == std::string(szShowname))
+				{
+					pEffect = m_AllEffectPart[i];
+					break;
+				}
+			}
+			if (pEffect)
+			{
+				char AttrStr[128] = {};
+				sprintf(AttrStr, "%f", pEffect->m_alpha);
+				nodeanidrawable.deleteAttribute("alpha");
+				nodeanidrawable.addAttribute("alpha", AttrStr);
+			}
+		}
+	}
 }

@@ -33,8 +33,8 @@ VS_OUTPUT VS( VS_INPUT input)
 
 	output.uv01.xy = output.Tex - mainTex_texelSize * offset;
 	output.uv01.zw = output.Tex + mainTex_texelSize * offset;
-	output.uv23.xy = output.Tex - float2( mainTex_texelSize.x, -mainTex_texelSize.y ) * offset;
-	output.uv23.zw = output.Tex + float2( mainTex_texelSize.x, -mainTex_texelSize.y ) * offset;
+	output.uv23.xy = output.Tex + float2( mainTex_texelSize.x, -mainTex_texelSize.y ) * offset;
+	output.uv23.zw = output.Tex + float2( -mainTex_texelSize.x, mainTex_texelSize.y ) * offset;
     return output;  
 }  
 

@@ -15,12 +15,13 @@ struct VS_OUTPUT
 
 cbuffer ConstantBuffer1 : register(b0)
 {
-    float4x4 world;
-    float4x4 meshMat;
     float4x4 lightSpaceMatrix;
+    float4x4 meshMat;
     float4x4 meshMatInverse;
+    float4x4 model;
     int AnimationEnable;
-    float3 pad;
+    float alpha;
+    float2 pad;
 }
 
 static const int MAX_MATRICES = 200;
@@ -33,28 +34,25 @@ VS_OUTPUT VS(VS_INPUT input)
 {
 	VS_OUTPUT output = (VS_OUTPUT)0;
 
-    float4x4 ModeltoWorld ={
-							1.0, 0.0, 0.0, 0.0,
+	matrix ModeltoWorld = { 1.0, 0.0, 0.0, 0.0,
 							0.0, 1.0, 0.0, 0.0,
 							0.0, 0.0, 1.0, 0.0,
 							0.0, 0.0, 0.0, 1.0 };
-    if (AnimationEnable == 1)
-    {
-        int i0 = int(input.BlendIndices.x);
-        int i1 = int(input.BlendIndices.y);
-        int i2 = int(input.BlendIndices.z);
-        int i3 = int(input.BlendIndices.w);
-        matrix BoneTransform = BoneMat[i0] * input.BlendWeights.x;
-        BoneTransform += BoneMat[i1] * input.BlendWeights.y;
-        BoneTransform += BoneMat[i2] * input.BlendWeights.z;
-        BoneTransform += BoneMat[i3] * input.BlendWeights.w;
+	if (AnimationEnable == 1)
+	{
+		int i0 = int(input.BlendIndices.x);
+		int i1 = int(input.BlendIndices.y);
+		int i2 = int(input.BlendIndices.z);
+		int i3 = int(input.BlendIndices.w);
+		matrix BoneTransform = BoneMat[i0] * input.BlendWeights.x;
+		BoneTransform += BoneMat[i1] * input.BlendWeights.y;
+		BoneTransform += BoneMat[i2] * input.BlendWeights.z;
+		BoneTransform += BoneMat[i3] * input.BlendWeights.w;
 
-        ModeltoWorld = mul(meshMatInverse, BoneTransform);
-    }
-	
-    ModeltoWorld = mul(meshMat, ModeltoWorld);
-   // ModeltoWorld = mul(ModeltoWorld, world);
+		ModeltoWorld = mul(meshMatInverse, BoneTransform);
+	}
 
+	ModeltoWorld = mul(meshMat, ModeltoWorld);
 
 	float4 PosL = mul(float4(input.Pos, 1.0), ModeltoWorld);
     output.Pos = mul(PosL, lightSpaceMatrix);
@@ -63,8 +61,8 @@ VS_OUTPUT VS(VS_INPUT input)
 	return output;
 };
 
-float2 PS(VS_OUTPUT input) : SV_Target
+float4 PS(VS_OUTPUT input) : SV_Target
 {             
-	 float depth = input.Pos.z/input.Pos.w;
-    return float2(depth, depth * depth);
+	float depth = input.Pos.z/input.Pos.w;
+    return float4(depth, depth * depth, alpha, 1.0f);
 }

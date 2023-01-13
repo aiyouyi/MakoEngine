@@ -3,8 +3,12 @@
 #include "BaseDefine/Define.h"
 #include "BaseDefine/Vectors.h"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
+#include "EffectKernel/VideoAnimation.h"
+#include "BaseDefine/commonFunc.h"
 
 CFaceEffect2DSticker::CFaceEffect2DSticker()
 {
@@ -88,7 +92,18 @@ bool CFaceEffect2DSticker::Prepare()
 	m_pShader = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path, pAttribute, 3);
 	
 	//������
+	if (b_FarModel)
+	{
+		m_ModelWidth = 948;
+		m_ModelHeight = 533;
+	}
 	m_nVerts = g_TextureCoordinate.size() / 2;
+
+	if (vdoAnimation)
+	{
+		vdoAnimation->Init(m_resourcePath, m_MaskVideoWidth, m_MaskVideoHeight);
+	}
+
 	return true;
 }
 
@@ -108,7 +123,19 @@ void CFaceEffect2DSticker::Render(BaseRenderParam &RenderParam)
 		return;
 	}
 	//printf("runtime %d\n", runTime);
-
+	if (vdoAnimation && m_EnableMaskJson)
+	{
+		std::map<AnchorType, long long> mCardId = RenderParam.GetCardMaskID();
+		for (int index = 0; index < m_AnchorType.size(); index++)
+		{
+			auto iter = mCardId.find(m_AnchorType[index]);
+			if (iter != mCardId.end())
+			{
+				vdoAnimation->SetTexture(index, iter->second);
+			}
+		}
+		m_EnableMaskJson = false;
+	}
 
 	Resize(RenderParam.GetWidth(), RenderParam.GetHeight());
 
@@ -119,6 +146,7 @@ void CFaceEffect2DSticker::Render(BaseRenderParam &RenderParam)
 	float pParam[4];
 	pParam[0] = m_alpha;
 	pParam[1] = GetBlendParm(m_BlendType);
+	if (m_EnableMp4Alpha)pParam[2] = 1.0; else pParam[2] = 0.0;
 
 
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
@@ -153,10 +181,30 @@ void CFaceEffect2DSticker::Render(BaseRenderParam &RenderParam)
 				top = (std::min)(top, y);
 				bottom = (std::max)(bottom, y);
 			}
+
 			m_DstPoint[0] = Vector2(left, top);
 			m_DstPoint[1] = Vector2(left, bottom);
 			m_DstPoint[2] = Vector2(right, bottom);
-			warpMat = CMathUtils::getAffineTransform(m_SrcPointRect, m_DstPoint);
+
+	
+			if (b_FarModel)
+			{
+				float ratio = (m_FarModelSrcPoint[1].y - m_FarModelSrcPoint[0].y)/(m_FarModelSrcPoint[2].x - m_FarModelSrcPoint[1].x);
+				float y_offset = (right - left) * ratio;
+				m_DstPoint[1].y = m_DstPoint[0].y + y_offset;
+				m_DstPoint[2].y = m_DstPoint[1].y;
+
+				warpMat = CMathUtils::getAffineTransform(m_FarModelSrcPoint, m_DstPoint);;
+			}
+			else
+			{
+				float ratio = (m_SrcPointRect[1].y - m_SrcPointRect[0].y) / (m_SrcPointRect[2].x - m_SrcPointRect[1].x);
+				float y_offset = (right - left) * ratio;
+				m_DstPoint[1].y = m_DstPoint[0].y + y_offset;
+				m_DstPoint[2].y = m_DstPoint[1].y;
+				warpMat = CMathUtils::getAffineTransform(m_SrcPointRect, m_DstPoint);
+			}
+			
 		}
 		else
 		{
@@ -166,22 +214,65 @@ void CFaceEffect2DSticker::Render(BaseRenderParam &RenderParam)
 
 			warpMat = CMathUtils::getAffineTransform(m_SrcPoint, m_DstPoint);
 		}
-
 		//��÷���任��������任��2*3����
 
 		for (int i = 0; i < 4; i++)
 		{
-			m_SrcAbsRect[i].x = m_SrcRect[i].x * 930.f;
-			m_SrcAbsRect[i].y = m_SrcRect[i].y * 1240.f;
+			m_SrcAbsRect[i].x = m_SrcRect[i].x * m_ModelWidth;
+			m_SrcAbsRect[i].y = m_SrcRect[i].y * m_ModelHeight;
 		}
-		CMathUtils::transform((Vector2 *)m_SrcAbsRect, (Vector2 *)m_Vertices, m_nVerts, warpMat);
+
+		CMathUtils::transform((Vector2*)m_SrcAbsRect, (Vector2*)m_Vertices, m_nVerts, warpMat);
 		
 		MergeVertex((float*)m_Vertices, &g_TextureCoordinate[0], m_nVerts);
 		pDoubleBuffer->SyncAToBRegion(m_pMergeVertex, m_nVerts, 5, 1);
 		//printf("anim size %d\n", anim->images.size());
-		Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, float(runTime));
-		auto pMaterialView = img->tex->getTexShaderView();
-		auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+		ID3D11ShaderResourceView* pMaterialView = 0;
+		if (AllVedioItems.size()>0)
+		{
+			if (CurrentVedioIndex<0)
+			{
+				CurrentVedioIndex= GetVideoIndex(RenderParam, runTime);
+			}
+			if (CurrentVedioIndex>=0 && (AllVedioItems[CurrentVedioIndex].StartTime>= runTime || AllVedioItems[CurrentVedioIndex].EndTime<=runTime))
+			{
+				CurrentVedioIndex = GetVideoIndex(RenderParam, runTime);
+			}
+			if (CurrentVedioIndex<0)
+			{
+				return;
+			}
+			if (vdoAnimation)
+			{
+				auto videoMaskFrame = ResourceManager::Instance().getMaskedVideo(AllVedioItems[CurrentVedioIndex].ID, double(runTime - AllVedioItems[CurrentVedioIndex].StartTime), vdoAnimation);
+				if (videoMaskFrame == NULL)
+				{
+					return;
+				}
+				m_pShader->useShader();
+				pDoubleBuffer->BindFBOA();
+				pMaterialView = RHIResourceCast(videoMaskFrame.get())->GetSRV();
+			}
+			else
+			{
+				auto videoFrame = ResourceManager::Instance().getImageCommon(AllVedioItems[CurrentVedioIndex].ID, double(runTime- AllVedioItems[CurrentVedioIndex].StartTime));
+				if (videoFrame == NULL)
+				{
+					return;
+				}
+				pMaterialView = RHIResourceCast(videoFrame->tex.get())->GetSRV();
+			}
+		}
+		else
+		{
+			Image* img = ResourceManager::Instance().getImageCommon(m_anim_id, float(runTime));
+			if (img == NULL)
+			{
+				return;
+			}
+			pMaterialView = RHIResourceCast(img->tex.get())->GetSRV();
+		}
+		auto pSrcShaderView = RHIResourceCast(RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB().get())->GetSRV();
 		DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
 		DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
@@ -265,6 +356,12 @@ void CFaceEffect2DSticker::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFi
 			if (szShape != NULL)
 			{
 				m_KeepShape = atoi(szShape);
+			}
+
+			const char* szFarModel = nodePoint.getAttribute("EnableFarModel");
+			if (szFarModel != NULL && !strcmp(szFarModel, "true"))
+			{
+				b_FarModel = true;
 			}
 
 		}
@@ -432,8 +529,120 @@ void CFaceEffect2DSticker::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFi
 
 			//m_drawable = drawable;
 		}
-	}
 
+		nodeDrawable = childNode.getChildNode("webpdrawable", 0);
+		if (!nodeDrawable.isEmpty())
+		{
+			const char* szBlendType = nodeDrawable.getAttribute("blendType");
+			m_BlendType = GetBlendType(szBlendType);
+
+			const char* szAlpha = nodeDrawable.getAttribute("alpha");
+			if (szAlpha != NULL)
+			{
+				m_alpha = atof(szAlpha);
+			}
+			const char* szDrawableName = nodeDrawable.getAttribute("Material");
+			if (szDrawableName != NULL)
+			{
+				if (hZip == 0)
+				{
+					//To do
+
+				}
+				else
+				{
+					WebpAnimInfo webp_info;
+					webp_info.webp_dir = path;
+					webp_info.webp_relative_filepath = szDrawableName;
+					m_anim_id = ResourceManager::Instance().loadWebpFromZip(webp_info, hZip);
+				}
+
+			}
+		}
+
+		int VideoIndex = 0;
+		XMLNode nodeVideo = childNode.getChildNode("video", VideoIndex);
+		while (!nodeVideo.isEmpty())
+		{
+			const char* szBlendType = nodeVideo.getAttribute("blendType");
+			m_BlendType = GetBlendType(szBlendType);
+
+			const char* szAlpha = nodeVideo.getAttribute("alpha");
+			if (szAlpha != NULL)
+			{
+				m_alpha = atof(szAlpha);
+			}
+
+			StickerVedioInfo Vinfo;
+			const char* TempChar= nodeVideo.getAttribute("Material");
+			if (TempChar != NULL)
+			{
+				Vinfo.Path = TempChar;
+			}
+			
+
+			TempChar = nodeVideo.getAttribute("start");
+			if (TempChar != NULL)
+			{
+				sscanf(TempChar, "%d", &Vinfo.StartFrameTime);
+			}
+			
+
+			TempChar = nodeVideo.getAttribute("end");
+			if (TempChar != NULL)
+			{
+				sscanf(TempChar, "%d", &Vinfo.EndFrameTime);
+			}
+			TempChar = nodeVideo.getAttribute("condition");
+			if (TempChar != NULL)
+			{
+				sscanf(TempChar, "%d", &Vinfo.Condition);
+			}
+
+			if (hZip)
+			{
+				Vinfo.Info.fps = 0;
+				Vinfo.Info.dir = path;
+				Vinfo.Info.relative_filepath= Vinfo.Path;
+				Vinfo.ID = ResourceManager::Instance().loadVideoFromZip(Vinfo.Info, hZip);
+
+				m_MaskVideoWidth = Vinfo.Info.width*0.5;
+				m_MaskVideoHeight = Vinfo.Info.height;
+
+				Vinfo.StartTime = Vinfo.StartFrameTime * 1000.0 / Vinfo.Info.fps;
+				Vinfo.EndTime = Vinfo.EndFrameTime * 1000.0 / Vinfo.Info.fps;
+				AllVedioItems.push_back(Vinfo);
+
+			}
+
+			const char* maskJson = nodeVideo.getAttribute("maskJson");
+			if (maskJson != NULL)
+			{
+				m_EnableMaskJson = true;
+				vdoAnimation = std::make_shared<VideoAnimation>();
+				std::string jsonName("a.json");
+				vdoAnimation->ReadJsonFromZip(jsonName, hZip);
+			}
+			const char* szMasktype = nodeVideo.getAttribute("maskType");
+			if (szMasktype != NULL)
+			{
+				std::vector<std::string> str;
+				StringSplit(szMasktype, ',', str);
+				m_AnchorType.resize(str.size());
+				for (int i = 0; i < str.size(); i++)
+				{
+					m_AnchorType[i] = AnchorType(atoi(str[i].c_str()));
+				}
+			}
+			const char* szEnableMp4Alpha = nodeVideo.getAttribute("EnableMp4Alpha");
+			if (szEnableMp4Alpha != NULL && !strcmp(szEnableMp4Alpha, "true"))
+			{
+				m_EnableMp4Alpha = true;
+			}
+
+			nodeVideo = childNode.getChildNode("video", ++VideoIndex);
+		}
+	}
 }
 
 bool CFaceEffect2DSticker::WriteConfig(std::string &tempPath, XMLNode &root, HZIP dst, HZIP src)
@@ -518,4 +727,39 @@ void CFaceEffect2DSticker::MergeVertex(float * pVertex, float * pUV,int nVertex)
 		m_pMergeVertex[i * 5 + 3] = pUV[i * 2];
 		m_pMergeVertex[i * 5 + 4] = 1.0 - pUV[i * 2 + 1];
 	}
+}
+
+int CFaceEffect2DSticker::GetVideoIndex(BaseRenderParam& RenderParam, long Rumtime)
+{
+	FacePosInfo* FaceInfo = RenderParam.GetFaceInfo(0);
+	for (int Index = 0; Index < AllVedioItems.size(); Index++)
+	{
+		if (AllVedioItems[Index].StartTime<= Rumtime&& AllVedioItems[Index].EndTime>=Rumtime)
+		{
+			if (FaceConditionMatch(AllVedioItems[Index].Condition, FaceInfo))
+			{
+				return Index;
+			}
+		}
+	}
+	return -1;
+}
+
+bool CFaceEffect2DSticker::FaceConditionMatch(FaceBodyCondition Condition, FacePosInfo* FaceInfo)
+{
+	if (FaceInfo)
+	{
+		switch (Condition)
+		{
+		case None:
+			return true;
+		case MouthOpen:
+			return FaceInfo->pFaceExp ? FaceInfo->pFaceExp->openMouse : false;
+		case MouthClose:
+			return FaceInfo->pFaceExp ? (!FaceInfo->pFaceExp->openMouse) : false;
+		default:
+			break;
+		}
+	}
+	return false;
 }

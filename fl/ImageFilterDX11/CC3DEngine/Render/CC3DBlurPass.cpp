@@ -3,7 +3,7 @@
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "Toolbox/RenderState/PiplelineState.h"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CC3DBlurPass::CC3DBlurPass()
 {
@@ -12,15 +12,13 @@ CC3DBlurPass::CC3DBlurPass()
 
 CC3DBlurPass::~CC3DBlurPass()
 {
-
 	for (auto it : mDoubleBuffer)
 	{
 		it.reset();
 	}
-
 }
 
-void CC3DBlurPass::Init(int nWidth, int nHeight)
+void CC3DBlurPass::Init(int nWidth, int nHeight, uint32_t format)
 {
 	if (mbInit)
 	{
@@ -38,11 +36,10 @@ void CC3DBlurPass::Init(int nWidth, int nHeight)
 	
 	mVertexBuffer = GetDynamicRHI()->CreateVertexBuffer((float*)arrCoords, _countof(arrCoords), 3);
 	mIndexBuffer = GetDynamicRHI()->CreateIndexBuffer(index, 2);
-	mContanstBuffer = GetDynamicRHI()->CreateConstantBuffer(sizeof(int)*4);
 
 	for (auto &it : mDoubleBuffer)
 	{
-		it = GetDynamicRHI()->CreateRenderTarget(nWidth, nHeight, false, nullptr, CC3DDynamicRHI::SFT_R32G32F);
+		it = GetDynamicRHI()->CreateRenderTarget(nWidth, nHeight, false, nullptr, format);
 	}
 	mbInit = true;
 }
@@ -54,15 +51,23 @@ void CC3DBlurPass::SetShaderResource(const std::string& path)
 		return;
 	}
 
-	CCVetexAttribute pAttribute[] =
+	mShader = GetDynamicRHI()->CreateShaderRHI();
+	if (GetDynamicRHI()->API == CC3DDynamicRHI::DX11)
 	{
-		{VERTEX_ATTRIB_POSITION, FLOAT_C3},
-	};
+		CCVetexAttribute pAttribute[] =
+		{
+			{VERTEX_ATTRIB_POSITION, FLOAT_C3},
+		};
 
-	if (mShader == nullptr)
-	{
 		std::string fsPath = path + "/Shader/3D/Gaussianblur.fx";
-		mShader = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(fsPath, pAttribute, 1);
+		mShader->InitShader(fsPath, pAttribute, 1,false);
+	}
+	else
+	{
+		std::string vsPath = path + "/Shader/3D/Gaussianblur.vs";
+		std::string psPath = path + "/Shader/3D/Gaussianblur.fs";
+		mShader->InitShader(vsPath.c_str(), psPath.c_str());
+		GET_SHADER_STRUCT_MEMBER(Gaussianblur).Shader_ = mShader->GetGLProgram();
 	}
 
 }
@@ -80,17 +85,15 @@ void CC3DBlurPass::Process(std::shared_ptr<CC3DRenderTargetRHI> input)
 	
 	for (unsigned int i = 0; i < amount; i++)
 	{
-		std::shared_ptr<CC3DRenderTargetRHI> FameBuffer = mDoubleBuffer[horizontal];
-		FameBuffer->Bind();
+		std::shared_ptr<CC3DRenderTargetRHI> FrameBuffer = mDoubleBuffer[horizontal];
+		FrameBuffer->Bind();
+		mShader->UseShader();
 
-		mShader->useShader();
-
-		GetDynamicRHI()->SetPSShaderResource(0, first_iteration ? input : mDoubleBuffer[!horizontal]);
 		GetDynamicRHI()->SetSamplerState(CC3DPiplelineState::ClampLinerSampler);
 
-		GetDynamicRHI()->UpdateConstantBuffer(mContanstBuffer, &horizontal);
-		GetDynamicRHI()->SetVSConstantBuffer(0, mContanstBuffer);
-		GetDynamicRHI()->SetPSConstantBuffer(0, mContanstBuffer);
+		GET_SHADER_STRUCT_MEMBER(Gaussianblur).SetParameter("horizontal", horizontal);
+		GET_SHADER_STRUCT_MEMBER(Gaussianblur).SetTexture("image", first_iteration ? input : mDoubleBuffer[!horizontal]);
+		GET_SHADER_STRUCT_MEMBER(Gaussianblur).ApplyToAllBuffer();
 
 		GetDynamicRHI()->DrawPrimitive(mVertexBuffer, mIndexBuffer);
 
@@ -98,7 +101,7 @@ void CC3DBlurPass::Process(std::shared_ptr<CC3DRenderTargetRHI> input)
 		if (first_iteration)
 			first_iteration = false;
 
-		FameBuffer->UnBind();
+		FrameBuffer->UnBind();
 	}
 }
 

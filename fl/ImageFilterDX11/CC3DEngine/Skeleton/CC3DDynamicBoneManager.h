@@ -1,27 +1,22 @@
 #ifndef _CC_DYNAMIC_BONE_MANAGER_H_
 #define _CC_DYNAMIC_BONE_MANAGER_H_
 
-#include <unordered_map>
-#include <string>
-#include <vector>
-#include <memory>
-
-#include "glm/matrix.hpp"
+#include "CC3DSkeleton.h"
 
 #include "CC3DTransformNode.h"
 #include "CC3DDynamicBone.h"
-using std::string;
+#include "CC3DDynamicBoneCollider.h"
 
 
 struct CC3DBoneNodeInfo;
-struct dynamicBoneParameter;
+
 
 class CC3DDyanmicBoneManager
 {
 public:
 	CC3DDyanmicBoneManager();
 	~CC3DDyanmicBoneManager();
-public:
+public:	
 	/*
 	  @初始化动态骨骼所持有的transfrom接口，记录位置信息与转换矩阵
 	  @param: db_index  动态骨骼索引，为-1时表示没有动态骨骼
@@ -48,13 +43,25 @@ public:
 	*/
 	void LateUpdate(int db_index = -1);
 
+	void ResetDynamicBone();
+
+	void DeleteDynamicBone(const std::string& db_name);
+
+	void recuDeleteTransfromNode(const std::string& db_name);
+
+	void UpdateDynamicBoneParameter(const CC3DImageFilter::dynamicBoneParameter& param);
+
+	bool AddDynamicBoneCollider(std::string bone_name, DynamicBoneColliderBase::DynamicBoneColliderInfo dbc_info, CC3DTransformNode* trans_node);
+
 public:
 	//动态骨骼各个particle的transform接口
-	std::unordered_map<string, CC3DTransformNode*>		transformMap;
+	std::unordered_map<std::string, CC3DTransformNode*>		transformMap;
 	//动态骨骼配置项参数
-	std::vector<dynamicBoneParameter>					dynamicBoneNamesArray;
+	std::vector<CC3DImageFilter::dynamicBoneParameter>					dynamicBoneNamesArray;
 	//动态骨骼列表
 	std::vector<std::shared_ptr<DynamicBone>>			dynamicBoneArray;
+	//动态骨骼碰撞体
+	std::vector<DynamicBoneColliderBase*>				colliderArray;
 };
 
 #endif

@@ -4,10 +4,11 @@
 #include "EffectKernel/CEffectPart.h"
 #include "Toolbox/DXUtils/DX11Context.h"
 #include "Toolbox/RectDraw.h"
+#include "EffectKernel/DXBasicSample.h"
 
 constexpr int const_record_fbo_num = 6;
 
-class CDeNoiseFilterEffect : public CEffectPart
+class CDeNoiseFilterEffect : public CEffectPart, protected DXBaicSample
 {
 public:
 	CDeNoiseFilterEffect();

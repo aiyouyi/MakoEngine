@@ -2,7 +2,11 @@
 #define CFoodieSharp_H
 
 #include "EffectKernel/CEffectPart.h"
-class CFoodieSharp: public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class DX11FBO;
+
+class CFoodieSharp: public CEffectPart, protected DXBaicSample
 {
 public:
     CFoodieSharp();
@@ -24,7 +28,6 @@ private:
 	bool WriteConfig(std::string &tempPath, XMLNode &root, HZIP dst, HZIP src);
 	DX11Shader *m_pShaderSharp;
 	DX11FBO *m_pFBO;
-
 
 	ID3D11Buffer *m_rectVerticeBuffer;
 	ID3D11Buffer *m_rectIndexBuffer;

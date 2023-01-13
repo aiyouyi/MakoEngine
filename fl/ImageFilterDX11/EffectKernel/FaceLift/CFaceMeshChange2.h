@@ -5,14 +5,14 @@
 #include "Algorithm/InterFacePointDeform.h"
 #include "Algorithm/Face2DMesh/MTFace2DInterFace.h"
 #include "Toolbox/Drawable.hpp"
-
+#include "EffectKernel/DXBasicSample.h"
 
 struct FaceChangeFramne2
 {
 	int key;
 	float alpha;
 };
-class CFaceMeshChange2 :public CEffectPart
+class CFaceMeshChange2 :public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceMeshChange2();
@@ -38,7 +38,7 @@ private:
 	int m_nAllFrame;
 	int m_nKeyFrame;
 	int m_nFPS;
-	vector<FaceChangeFramne2>m_keyValue;
+	std::vector<FaceChangeFramne2>m_keyValue;
 
 	float m_changelpha = 1.5f;
 

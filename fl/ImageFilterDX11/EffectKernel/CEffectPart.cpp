@@ -4,14 +4,10 @@
 #include "Toolbox/RenderState/PiplelineState.h"
 #include "ResourceManager.h"
 #include "FileManager.h"
+#include "..\3rdparty\SplitScreenDetectSDK\include\SplitScreenDetectDef.h"
 
 CEffectPart::CEffectPart()
 {
-	m_pSamplerLinear = NULL;
-	m_pBlendStateNormal = NULL;
-	m_pShader = NULL;
-	m_pSamplerLinear = DXUtils::SetSampler();
-	m_pBlendStateNormal = DXUtils::CreateBlendState();
 }
 
 
@@ -108,6 +104,11 @@ bool CEffectPart::Prepare()
 
 void CEffectPart::Render(BaseRenderParam &RenderParam)
 {
+}
+
+void CEffectPart::SetAlpha(float Alpha)
+{
+	m_alpha = Alpha;
 }
 
 void CEffectPart::Release()

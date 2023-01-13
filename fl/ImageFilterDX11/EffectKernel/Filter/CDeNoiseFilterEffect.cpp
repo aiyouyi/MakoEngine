@@ -3,6 +3,9 @@
 #include <string.h>
 #include "Toolbox/Helper.h"
 #include "EffectKernel/ShaderProgramManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
+#include "Toolbox/RectConstBuffer.h"
 
 CDeNoiseFilterEffect::CDeNoiseFilterEffect() {
 	m_bInit = false;
@@ -120,16 +123,14 @@ bool CDeNoiseFilterEffect::Prepare() {
 		indexInitData.pSysMem = index;
 		DevicePtr->CreateBuffer(&indexBufferDesc, &indexInitData, &m_rectIndexBuffer);
 
-
-
 		//创建shader
-		string path = m_resourcePath + "/Shader/Denoise.fx";
+		std::string path = m_resourcePath + "/Shader/Denoise.fx";
 		m_denoiseProgram = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path, nullptr, 0);
 
-		string path1 = m_resourcePath + "/Shader/BGR2RGB.fx";
+		std::string path1 = m_resourcePath + "/Shader/BGR2RGB.fx";
 		m_greyProgram = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path1, nullptr, 0);
 
-		string path2 = m_resourcePath + "/Shader/KGAndCov.fx";
+		std::string path2 = m_resourcePath + "/Shader/KGAndCov.fx";
 		m_kgAndResCovProgram = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path2, nullptr, 0);
 
 		//创建constbuffer 参数
@@ -166,8 +167,9 @@ void CDeNoiseFilterEffect::GreyRender(BaseRenderParam &RenderParam) {
 		DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 
 		//设置纹理以及纹理采样
-		ID3D11ShaderResourceView *pMyShaderResourceView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
-		DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+		//ID3D11ShaderResourceView *pMyShaderResourceView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
+		//DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+		GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA());
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
 		//设置顶点数据
@@ -260,7 +262,7 @@ void CDeNoiseFilterEffect::DenoiseRender(BaseRenderParam &RenderParam) {
 		pDoubleBuffer->BindFBOB();
 
 		float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f }; // rgba  
-		DeviceContextPtr->ClearRenderTargetView(pDoubleBuffer->GetFBOB()->getRenderTargetView(), ClearColor);
+		DeviceContextPtr->ClearRenderTargetView(RHIResourceCast(pDoubleBuffer.get())->GetFBOB()->getRenderTargetView(), ClearColor);
 
 		//设置矩阵变换
 		RectConstantBuffer mWVP;
@@ -269,9 +271,11 @@ void CDeNoiseFilterEffect::DenoiseRender(BaseRenderParam &RenderParam) {
 		DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 
 		//设置纹理以及纹理采样
-		ID3D11ShaderResourceView *pMyShaderResourceView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();;
-		DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
-		pMyShaderResourceView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();;
+		//ID3D11ShaderResourceView *pMyShaderResourceView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();;
+		//DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+		GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA());
+		
+		auto pMyShaderResourceView = RHIResourceCast(RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA().get())->GetSRV();;
 		if (m_lastFilterRes != NULL)
 		{
 			pMyShaderResourceView = m_lastFilterRes->getTexture()->getTexShaderView();
@@ -301,7 +305,7 @@ void CDeNoiseFilterEffect::DenoiseRender(BaseRenderParam &RenderParam) {
 	DeviceContextPtr->ResolveSubresource(
 		fbFilterRes->getTexture()->getTex(),
 		sub,
-		pDoubleBuffer->GetFBOTextureB()->getTex(),
+		RHIResourceCast(RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB().get())->GetNativeTex(),
 		sub,
 		DXGI_FORMAT_R8G8B8A8_UNORM
 	);

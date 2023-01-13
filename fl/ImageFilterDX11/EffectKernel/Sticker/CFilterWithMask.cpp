@@ -3,6 +3,9 @@
 #include <xnamath.h>
 #include<BaseDefine/Vectors.h>
 #include "EffectKernel/ShaderProgramManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
+
 struct RectConstantFilterMask
 {
 	XMMATRIX mWVP; //»ìºÏ¾ØÕó
@@ -81,8 +84,8 @@ void CFilterWithMask::Render(BaseRenderParam & RenderParam)
 	pDoubleBuffer->BindFBOA();
 
 	m_pShader->useShader();
-	auto pMaskView = BodyTexture->getTexShaderView();
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	auto pMaskView = RHIResourceCast(BodyTexture.get())->GetSRV();
+	auto pSrcShaderView = RHIResourceCast(RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB().get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pMaskView);
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);

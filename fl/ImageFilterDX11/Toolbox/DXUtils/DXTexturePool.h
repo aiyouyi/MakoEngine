@@ -1,11 +1,10 @@
-#pragma once
+﻿#pragma once
 #include <list>
 #include <map>
 #include <string>
-#include "DX11Texture.h"
 #include <mutex>
 
-
+class DX11Texture;
 class DXTexturePool
 {
 public:

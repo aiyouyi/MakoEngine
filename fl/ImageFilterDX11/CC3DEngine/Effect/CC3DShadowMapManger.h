@@ -3,40 +3,43 @@
 
 #include <vector>
 #include "BaseDefine/Define.h"
-using namespace std;
 
-constexpr size_t CONFIG_MAX_SHADOW_CASCADES = 4;
-
-class CC3DSceneManage;
-class ShadowMap;
-
-class ShadowMapManager
+namespace CC3DImageFilter
 {
-public:
-	explicit ShadowMapManager(){}
+	constexpr size_t CONFIG_MAX_SHADOW_CASCADES = 4;
 
-	~ShadowMapManager()
+	class CC3DSceneManage;
+	class ShadowMap;
+
+	class ShadowMapManager
 	{
-		for (int ni = 0; ni < cascadeShadowMaps.size(); ni++ )
+	public:
+		explicit ShadowMapManager() {}
+
+		~ShadowMapManager()
 		{
-			if (cascadeShadowMaps[ni])
+			for (int ni = 0; ni < cascadeShadowMaps.size(); ni++)
 			{
-				SAFE_DELETE(cascadeShadowMaps[ni]);
+				if (cascadeShadowMaps[ni])
+				{
+					SAFE_DELETE(cascadeShadowMaps[ni]);
+				}
 			}
 		}
-	}
 
-	//只允许调用一次
-	void setShadowCascades(size_t cascades) noexcept;
+		//只允许调用一次
+		void setShadowCascades(size_t cascades) noexcept;
 
-	void update(CC3DSceneManage& manager);
+		void update(CC3DSceneManage& manager);
 
-	ShadowMap* getShadowMap(int index);
+		ShadowMap* getShadowMap(int index);
 
-private:
-	void updateCascadeShadowMaps(CC3DSceneManage& manager);
-	vector<ShadowMap*> cascadeShadowMaps;
-};
+	private:
+		void updateCascadeShadowMaps(CC3DSceneManage& manager);
+		std::vector<ShadowMap*> cascadeShadowMaps;
+	};
+}
+
 
 
 #endif

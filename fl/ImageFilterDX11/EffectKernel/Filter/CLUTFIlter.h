@@ -2,7 +2,11 @@
 #define CLUTFIlter_H
 
 #include "EffectKernel/CEffectPart.h"
-class CLUTFIlter: public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class DX11FBO;
+
+class CLUTFIlter: public CEffectPart, protected DXBaicSample
 {
 public:
     CLUTFIlter();

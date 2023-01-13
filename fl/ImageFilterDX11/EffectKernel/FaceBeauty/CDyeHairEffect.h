@@ -2,7 +2,9 @@
 #define CDyeHair_H____
 
 #include "EffectKernel/CEffectPart.h"
-class MAGICSTUDIO_EXPORTS_CLASS CDyeHairEffect: public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class MAGICSTUDIO_EXPORTS_CLASS CDyeHairEffect: public CEffectPart, protected DXBaicSample
 {
 public:
 	CDyeHairEffect();

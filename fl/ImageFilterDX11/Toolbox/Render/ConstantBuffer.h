@@ -1,7 +1,7 @@
 #ifndef CC3D_ConstantBuffer
 #define CC3D_ConstantBuffer
 
-#include "CC3DEngine/Common/CC3DUtils.h"
+#include "Toolbox/inc.h"
 
 class CC3DConstantBuffer
 {

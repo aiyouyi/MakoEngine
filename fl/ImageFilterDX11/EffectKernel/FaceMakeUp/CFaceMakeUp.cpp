@@ -157,12 +157,15 @@ void CFaceMakeUp::Render(BaseRenderParam &RenderParam)
 		{
 			continue;
 		}
-		auto pMaterialView = m_vMeshType[t].m_drawable->GetSRV(runTime);
+		
 		DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 		DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 		DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
-		DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
+		//auto pMaterialView = m_vMeshType[t].m_drawable->GetSRV(runTime);
+		//DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
+		auto pMaterialView = m_vMeshType[t].m_drawable->GetTex(runTime);
+		pMaterialView->Bind(0);
 
 		int nFaceCount = RenderParam.GetFaceCount();
 		for (int faceIndex = 0; faceIndex < nFaceCount; faceIndex++)
@@ -256,12 +259,12 @@ void CFaceMakeUp::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFilePath, c
 				if (hZip == 0)
 				{
 					std::string szFullFile = path + "/" + szDrawableName;
-					auto TexRHI = GetDynamicRHI()->CreateTextureFromFileCPUAcess(szFullFile);
+					auto TexRHI = GetDynamicRHI()->CreateAsynTextureFromFile(szFullFile);
 					mInfo.m_drawable = new BitmapDrawable(TexRHI);
 				}
 				else
 				{
-					auto TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szDrawableName, false);
+					auto TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szDrawableName, false);
 					mInfo.m_drawable = new BitmapDrawable(TexRHI);
 				}
 
@@ -403,12 +406,7 @@ void CFaceMakeUp::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFilePath, c
 						{
 							sprintf(szFullFile, "%s/%s", path.c_str(), szImagePath);
 
-							std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, false);
-							if (TexRHI == nullptr)
-							{
-								TexRHI = GetDynamicRHI()->CreateTextureFromFileCPUAcess(szFullFile);
-								GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-							}
+							std::shared_ptr< MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureFromFile(szFullFile);
 
 							long during = nDuring;
 
@@ -417,12 +415,7 @@ void CFaceMakeUp::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFilePath, c
 						else 
 						{
 							sprintf(szFullFile, "%s/%s", pFilePath, szImagePath);
-							std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-							if (TexRHI == nullptr)
-							{
-								TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-								GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-							}
+							std::shared_ptr< MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
 
 							long during = nDuring;
 

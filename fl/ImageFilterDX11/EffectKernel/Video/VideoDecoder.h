@@ -19,7 +19,10 @@ extern "C" {
 }
 #endif
 
-class CVideoDecoder
+#include "DX11ImageFilterDef.h"
+#include "Toolbox/cslock.h"
+
+class DX11IMAGEFILTER_EXPORTS_CLASS CVideoDecoder
 {
 public:
 	CVideoDecoder();
@@ -31,12 +34,17 @@ public:
 	int Height();
 	int GetRotate();
 	unsigned char* GetNextFrame();
-	unsigned char* GetFrameByTimeStamp(double timeStamp);
+	unsigned char* GetFrameByTimeStamp(double ms);
 	AVFrame* GetYuvFrame();
 	double GetTimeStamp();
 	double GetFps() noexcept;
 	double GetDuration() noexcept;
 	int Close();
+
+private:
+	unsigned char* _GetFrameByTimeStamp(double ms);
+	static uint32_t _stdcall DecodeThread(void* param);
+	uint32_t InnerDecodeThread();
 private:
 	AVFormatContext* m_pFormatContext;
 	AVStream *m_pVideoStream;
@@ -48,7 +56,10 @@ private:
 	//
 	AVFrame* m_pRotateYuvFrame;
 	//for save rgba frame
-	AVFrame* m_pRGBFrame;
+	//AVFrame* m_pRGBFrame;
+
+	AVFrame* m_RGBFrameArray[2];
+
 	AVFrame* m_ReturnRefYUV;
 	//for save frame.
 	struct SwsContext* rgb_sws_ctx;
@@ -67,6 +78,13 @@ private:
 	//rotate;
 	int m_Rotate;
 	double m_TimeStamp;
+	SYSTEMSTATUS::CSLock m_csDecode;
+	uint8_t* m_CurrentFrame = nullptr;
+	uint32_t m_CurentIndex = 0;
+	HANDLE m_DecodeThread = nullptr;
+	bool m_Leave = false;
+	HANDLE m_hDecodeEvent = nullptr;
+	double m_GetFrameMs = 0.f;
 };
 
 #endif

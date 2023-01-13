@@ -12,7 +12,7 @@ CC3DSamplerState::CC3DSamplerState()
 	m_uiCoordV = CM_WRAP;
 	m_uiCoordW = CM_WRAP;
 	m_BorderColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-	m_MipLODBias = 0.0f;
+	m_MipLODBias = 0.f;
 }
 
 CC3DSamplerState::~CC3DSamplerState()

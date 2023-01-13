@@ -4,7 +4,8 @@
 #include <algorithm>
 #include <iostream>
 #include "EffectKernel/ShaderProgramManager.h"
-
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 
 CFaceBeauty::CFaceBeauty()
@@ -412,8 +413,9 @@ void CFaceBeauty::Render(BaseRenderParam & RenderParam)
 			pSrcpoint442[i].y = pSrcpoint442[i].y / m_nHeight;
 		}
 		pDoubleBuffer->SyncAToBRegion((float*)pSrcpoint442, 442);
-		auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-		DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+		//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 
 		MergeVertex((float*)pSrcpoint442, (float*)pScaleValue442, (float*)m_InterFM->m_StandDstPoint, 442);
 		if (m_IndexBuffer == NULL)

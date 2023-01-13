@@ -226,4 +226,42 @@ namespace core
         }
         return str;
     }
+
+	class MessageBuffer
+	{
+	public:
+		MessageBuffer(size_t len) :
+			m_dynamic(len > STATIC_LEN ? len : 0),
+			m_ptr(len > STATIC_LEN ? m_dynamic.data() : m_static)
+		{
+		}
+		char* Data() { return m_ptr; }
+
+	private:
+		static const size_t STATIC_LEN = 256;
+		char m_static[STATIC_LEN];
+		std::vector<char> m_dynamic;
+		char* m_ptr;
+	};
+
+
+	std::string format_printf(const char* format, ...)
+	{
+		va_list args;
+		va_start(args, format);
+#ifndef _MSC_VER
+		size_t size = std::snprintf(nullptr, 0, format, args) + 1; // Extra space for '\0'
+		MessageBuffer buf(size);
+		std::vsnprintf(buf.Data(), size, format, args);
+		va_end(args);
+		return std::string(buf.Data(), buf.Data() + size - 1); // We don't want the '\0' inside
+#else
+		const size_t size = (size_t)_vscprintf(format, args) + 1;
+		MessageBuffer buf(size);
+		vsnprintf_s(buf.Data(), size, _TRUNCATE, format, args);
+		va_end(args);
+		return std::string(buf.Data(), buf.Data() + size - 1);
+#endif
+	}
+
 }

@@ -34,6 +34,6 @@ CC3DEnvironmentConfig::~CC3DEnvironmentConfig()
 
 CC3DEnvironmentConfig::CC3DEnvironmentConfig()
 {
-
+	MapEffectConfig.insert( {"Empty",std::make_shared<CC3DImageFilter::EffectConfig>()} );
 }
 

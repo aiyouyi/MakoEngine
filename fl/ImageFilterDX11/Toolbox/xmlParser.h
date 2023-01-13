@@ -87,6 +87,8 @@
 #define __INCLUDE_XML_NODE__
 
 #include <stdlib.h>
+#include "BaseDefine/Vectors.h"
+#include "DX11ImageFilterDef.h"
 
 #ifdef _UNICODE
 // If you comment the next "define" line then the library will never "switch to" _UNICODE (wchar_t*) mode (16/32 bits per characters).
@@ -226,7 +228,7 @@ struct XMLNodeContents;
  *    <li> XMLNode::openFileHelper </li>
  *    <li> XMLNode::createXMLTopNode (or XMLNode::createXMLTopNode_WOSD)</li>
  * </ul> */
-typedef struct XMLDLLENTRY XMLNode
+typedef struct DX11IMAGEFILTER_EXPORTS_CLASS XMLNode
 {
   private:
 
@@ -338,6 +340,10 @@ typedef struct XMLDLLENTRY XMLNode
     char  isAttributeSet(XMLCSTR name) const;                      ///< test if an attribute with a specific name is given
     XMLCSTR getAttribute(XMLCSTR name, int i) const;               ///< return ith attribute content with specific name (return a NULL if failing)
     XMLCSTR getAttribute(XMLCSTR name, int *i=NULL) const;         ///< return next attribute content with specific name (return a NULL if failing)
+    bool getAttributeFloatValue(XMLCSTR name,float &value) const;
+    bool getAttributeIntValue(XMLCSTR name,int& value) const;
+    bool getAttributeVectorValue(XMLCSTR name, Vector3& value) const;
+    bool getAttributeVectorValue(XMLCSTR name, float& value1, float& value2, float& value3, float& value4) const;
     int nAttribute() const;                                        ///< nbr of attribute
     XMLClear getClear(int i=0) const;                              ///< return ith clear field (comments)
     int nClear() const;                                            ///< nbr of clear field

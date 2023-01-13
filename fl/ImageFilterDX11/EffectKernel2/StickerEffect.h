@@ -158,6 +158,9 @@ private:
 
 	void render2DEffect(int width, int height, long during, LayerRenderFunc fRender);
 	void render3DSEffect(int width, int height, long during, LayerRenderFunc fRender, const ccFDFaceRes *faceRes, void *pExtInfo=NULL);
+
+	ID3D11ShaderResourceView* GetSRV(std::shared_ptr<CC3DTextureRHI> TexRHI);
+
 private:
 	DX11FBO *m_pFBO;
 	RectDraw *m_rectDraw;
@@ -214,5 +217,7 @@ private:
 	__int64 m_nStartTime;
 	__int64 m_nLoopStartTime;
 	__int64 m_nLastTime;
+
+	std::shared_ptr<class CC3DTextureRHI> m_InputSRV;
 };
 

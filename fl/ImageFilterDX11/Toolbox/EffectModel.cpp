@@ -657,10 +657,12 @@ void Effect2DRect::render(int width, int height, float during)
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 
 	//设置纹理以及纹理采样
-	ID3D11ShaderResourceView *pMyShaderResourceView = m_drawable->GetSRV(during);
+	//ID3D11ShaderResourceView *pMyShaderResourceView = m_drawable->GetSRV(during);
+	auto pMyShaderResourceView = m_drawable->GetTex(during);
 	if (pMyShaderResourceView != NULL)
 	{
-		DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+		//GetDynamicRHI()->SetPSShaderResource(0, pMyShaderResourceView);
+		pMyShaderResourceView->Bind(0);
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
 		//设置顶点数据

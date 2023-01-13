@@ -4,11 +4,13 @@
 //#include "EffectModel.hpp"
 #include "Toolbox/DXUtils/DXUtils.h"
 #include <vector>
-class CBGDraw :public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class CBGDraw :public CEffectPart, protected DXBaicSample
 {
 public:
 	CBGDraw();
-	~CBGDraw();
+	virtual ~CBGDraw();
 	virtual void* Clone() override;
 	virtual bool ReadConfig(XMLNode& childNode, HZIP hZip = 0, char* pFilePath = NULL) override;
 	virtual bool Prepare() override;

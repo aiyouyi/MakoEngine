@@ -4,6 +4,7 @@
 #include <memory>
 #include "EffectKernel/Video/VideoDecoder.h"
 
+
 class VideoCaptureMapper
 {
 public:
@@ -23,7 +24,9 @@ public:
 	virtual int Close() = 0;
 };
 
+
 #ifndef _WIN64
+
 class VideoCaptureFFmpeg : public VideoCaptureMapper
 {
 public:

@@ -5,6 +5,7 @@
 #include <xnamath.h>
 #include <vector>
 #include "Toolbox\EffectModel.hpp"
+#include "EffectKernel/DXBasicSample.h"
 
 class cocos2d::Mat4;
 class AnimationDrawable;
@@ -15,7 +16,8 @@ struct PicTextureBlendConstantBuffer {
 };
 
 
-class MAGICSTUDIO_EXPORTS_CLASS C2DPicTextureBlendEffect : public CEffectPart {
+class MAGICSTUDIO_EXPORTS_CLASS C2DPicTextureBlendEffect : public CEffectPart, protected DXBaicSample 
+{
 public:
 	C2DPicTextureBlendEffect();
 	virtual ~C2DPicTextureBlendEffect();

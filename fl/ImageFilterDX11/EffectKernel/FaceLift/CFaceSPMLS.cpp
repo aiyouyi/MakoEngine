@@ -4,7 +4,8 @@
 #include <algorithm>
 #include <iostream>
 #include "EffectKernel/ShaderProgramManager.h"
-
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CFaceSPMLS::CFaceSPMLS()
 {
@@ -267,12 +268,9 @@ void CFaceSPMLS::Render(BaseRenderParam & RenderParam)
 
 	auto pDoubleBuffer = RenderParam.GetDoubleBuffer();
 
-
-
 	int nFaceCount = RenderParam.GetFaceCount();
 	for (int faceIndex = 0; faceIndex < nFaceCount; faceIndex++)
 	{
-
 
 		Vector2 pSrcpoint118[118];
 		RunFace106To118(RenderParam.GetFacePoint(faceIndex, FACE_POINT_106),pSrcpoint118);
@@ -320,8 +318,9 @@ void CFaceSPMLS::Render(BaseRenderParam & RenderParam)
 		pDoubleBuffer->BindFBOA();
 		pDoubleBuffer->SyncAToBRegion((float*)pSrcpoint442, 442);
 		auto pMaterialView = m_pBigoffestTexture->getTexShaderView();
-		auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-		DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+		//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 		DeviceContextPtr->PSSetShaderResources(1, 1, &pMaterialView);
 		DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pTransformMatrix, 0, 0);

@@ -1,11 +1,20 @@
 ﻿#include "ResourceManager.h"
 #include "../Toolbox/stb_image.h"
 #include "DDS/DDSTextureLoader.h"
-#ifdef _WIN32
+#include "BaseDefine/Define.h"
+#include "Toolbox/Render/DynamicRHI.h"
+
+#ifdef PLATFORM_WINDOWS
+#ifndef _WIN64
+#include "webp/decode.h"
+#include "webp/demux.h"
+#endif
 #include "windows.h"
 #endif
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "VideoAnimation.h"
 
-
+//std::recursive_mutex g_ResourceMutex;
 ResourceManager::ResourceManager()
 {
 
@@ -13,11 +22,25 @@ ResourceManager::ResourceManager()
 
 ResourceManager::~ResourceManager()
 {
+	//std::lock_guard< std::recursive_mutex> lock(g_ResourceMutex);
 	SAFE_DELETE(m_texpool);
+	SAFE_DELETE_ARRAY(m_NewBuffer);
+	SAFE_DELETE_ARRAY(m_MaskBuffer);
+}
+
+void ResourceManager::Release()
+{
+	//std::lock_guard< std::recursive_mutex> lock(g_ResourceMutex);
+	SAFE_DELETE(m_texpool);
+	SAFE_DELETE_ARRAY(m_NewBuffer);
+	SAFE_DELETE_ARRAY(m_MaskBuffer);
+	m_nFrameWidth = 0;
+	m_nFrameHeight = 0;
 }
 
 int ResourceManager::Init()
 {
+	//std::lock_guard< std::recursive_mutex> lock(g_ResourceMutex);
 	if (!m_texpool)	m_texpool = new DXTexturePool;
 	return 1;
 }
@@ -28,13 +51,35 @@ long long ResourceManager::generateID()
 	return m_id;
 }
 
+long long ResourceManager::loadImage(unsigned char* data,int width,int height) {
+	
+	Image* image = new Image;
+
+	//DX11Texture* tex = m_texpool->fetchDXTexture2D((char*)data, width, height);
+
+	std::shared_ptr<CC3DTextureRHI> tex = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, width, height, data, width * 4, false);
+
+	image->tex = tex;
+
+	image->info.width = width;
+	image->info.height = height;
+	image->info.channel = 4;
+
+	long long id = generateID();
+	image->id = id;
+
+	m_images[id] = image;
+	return id;
+}
+
 long long ResourceManager::loadImage(ImageInfo& info) {
 	Image* image = new Image;
 	image->info = info;
 
 	int width, height, channel;
 	unsigned char* data = stbi_load((info.dir + std::string("/") + info.relative_filepath).c_str(), &width, &height, &channel, STBI_rgb_alpha);
-	DX11Texture* tex = m_texpool->fetchDXTexture2D((char*)data, width, height);
+	//DX11Texture* tex = m_texpool->fetchDXTexture2D((char*)data, width, height);
+	std::shared_ptr<CC3DTextureRHI> tex = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, width, height, data, width * 4);
 	stbi_image_free(data);
 	image->tex = tex;
 
@@ -66,25 +111,35 @@ long long ResourceManager::loadImageFromZip(ImageInfo& info, HZIP hZip)
 			const char *str = info.relative_filepath.c_str();
 			if (strcmp(str + strlen(str) - 4, ".dds") == 0)
 			{
-				DX11Texture* tex = new DX11Texture();
 
-				SDDSInfo ddsInfo;
-				CreateDDSTextureFromBuffer(DevicePtr, (BYTE*)pDataBuffer, ze.unc_size, &tex->m_texShaderView, &ddsInfo);
+				if (GetDynamicRHI()->API == CC3DDynamicRHI::DX11)
+				{
+					DX11Texture* tex = new DX11Texture();
 
-				tex->m_nWidth = ddsInfo.iWidth;
-				tex->m_nHeight = ddsInfo.iHeight;
-				tex->m_bGenMipmap = ddsInfo.iMipCount > 1;
+					SDDSInfo ddsInfo;
+					CreateDDSTextureFromBuffer(DevicePtr, (BYTE*)pDataBuffer, ze.unc_size, &tex->m_texShaderView, &ddsInfo);
 
-				image->info.width = ddsInfo.iWidth;
-				image->info.height = ddsInfo.iHeight;
-				image->info.channel = ddsInfo.iMipCount;
+					tex->m_nWidth = ddsInfo.iWidth;
+					tex->m_nHeight = ddsInfo.iHeight;
+					tex->m_bGenMipmap = ddsInfo.iMipCount > 1;
 
-				id = generateID();
-				image->id = id;
+					image->info.width = ddsInfo.iWidth;
+					image->info.height = ddsInfo.iHeight;
+					image->info.channel = ddsInfo.iMipCount;
 
-				m_images[id] = image;
+					id = generateID();
+					image->id = id;
 
-				image->tex = tex;
+					m_images[id] = image;
+					std::shared_ptr<CC3DTextureRHI> TexRHI = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, tex->m_nWidth, tex->m_nHeight, nullptr, tex->m_nWidth * 4);
+					RHIResourceCast(TexRHI.get())->Attatch(tex);
+
+					image->tex = TexRHI;
+				}
+				else
+				{
+					
+				}
 			}
 			else
 			{
@@ -121,7 +176,8 @@ long long ResourceManager::loadImageFromZip(ImageInfo& info, HZIP hZip)
 								pImageDestTemp += 4;
 							}
 						}
-						DX11Texture* tex = m_texpool->fetchDXTexture2D((char*)pImageDataDest, texW, texH);
+						//DX11Texture* tex = m_texpool->fetchDXTexture2D((char*)pImageDataDest, texW, texH);
+						std::shared_ptr<CC3DTextureRHI> tex = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, texW, texH, (char*)pImageDataDest, texW * 4);
 						stbi_image_free(pImageDataSrc);
 						delete[]pImageDataDest;
 
@@ -129,7 +185,8 @@ long long ResourceManager::loadImageFromZip(ImageInfo& info, HZIP hZip)
 					}
 					else
 					{
-						DX11Texture* tex = m_texpool->fetchDXTexture2D((char*)pImageDataSrc, texW, texH);
+						//DX11Texture* tex = m_texpool->fetchDXTexture2D((char*)pImageDataSrc, texW, texH);
+						std::shared_ptr<CC3DTextureRHI> tex = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, texW, texH, (char*)pImageDataSrc, texW * 4);
 						stbi_image_free(pImageDataSrc);
 						image->tex = tex;
 					}
@@ -163,8 +220,9 @@ void ResourceManager::freeImage(long long image_id)
 		{
 			if (NULL != image->tex)
 			{
-				m_texpool->returnAndRemoveDXTexture2D(image->tex);
-				delete image->tex;
+				//m_texpool->returnAndRemoveDXTexture2D(image->tex);
+				//delete image->tex;
+				image->tex.reset();
 			}
 			delete image;
 		}
@@ -318,10 +376,90 @@ void ResourceManager::freeAnim(long long anim_id)
 	}
 }
 
+void ResourceManager::freeWebpAnim(long long anim_id)
+{
+	auto anim_iter = m_webps.find(anim_id);
+	if (anim_iter != m_webps.end())
+	{
+		WebpAnim* anim = anim_iter->second;
+		for (auto image : anim->images)
+		{
+			freeImage(image);
+		}
+		delete anim;
+		m_webps.erase(anim_iter);
+	}
+}
+
+Image* ResourceManager::getWebpAnimFrame(long long anim_id, float time)
+{
+	auto anim_iter = m_webps.find(anim_id);
+	if (anim_iter != m_webps.end())
+	{
+		WebpAnim* anim = anim_iter->second;
+		// image
+		float during = 0.0;
+		int frame_index = 0;
+		// anim
+		if (anim->info.fps > 0.00005)
+		{
+			during = anim->info.duration;
+			frame_index = int(time / during);
+		}
+
+		int total_frame_num = anim->images.size();
+		return getImage(anim->images[frame_index%total_frame_num]);
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
 
 long long ResourceManager::loadVideo(VideoInfo& info)
 {
+	long long video_id = -1;
 
+	std::string videoPath = info.dir + "/" + info.relative_filepath;
+	std::ifstream inStream(videoPath, ios_base::in | ios_base::binary);
+	if (!inStream.is_open())
+	{
+		return -1;
+	}
+	std::stringstream buffer;
+	buffer << inStream.rdbuf();
+	std::string contents(buffer.str());
+	inStream.close();
+
+	char* pDataBuffer = (char*)contents.data();
+
+
+	Video* vdo = new Video();
+
+	std::shared_ptr<VideoCaptureMapper> video_mapper = std::make_shared<VideoCaptureFFmpeg>();
+	if (video_mapper->OpenFromMemory(pDataBuffer, contents.length()) != -1)
+	{
+		vdo->video_mapper = video_mapper;
+		video_id = generateID();
+		vdo->id = video_id;
+		m_videos[video_id] = vdo;
+		info.width = video_mapper->Width();
+		info.height = video_mapper->Height();
+		info.fps = video_mapper->GetFps();
+		info.duration = video_mapper->GetDuration();
+
+		Image* curFrame = new Image();
+		//curFrame->tex = new DX11Texture();
+		//curFrame->tex->initTexture(DXGI_FORMAT_B8G8R8A8_UNORM, D3D11_BIND_SHADER_RESOURCE, info.width * 0.5, info.height);
+		curFrame->tex = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8B8G8R8, CC3DTextureRHI::OT_NONE, info.width * 0.5, info.height, nullptr, info.width * 0.5 * 4);
+		vdo->current_frame = curFrame;
+		vdo->info = info;
+		vdo->video_mapper->Start();
+	}
+	
+
+	return video_id;
 }
 
 long long ResourceManager::loadVideoFromZip(VideoInfo& info, HZIP hZip)
@@ -351,8 +489,9 @@ long long ResourceManager::loadVideoFromZip(VideoInfo& info, HZIP hZip)
 				info.duration = video_mapper->GetDuration();
 
 				Image* curFrame = new Image();
-				curFrame->tex = new DX11Texture();
-				curFrame->tex->initTexture(DXGI_FORMAT_B8G8R8A8_UNORM, D3D11_BIND_SHADER_RESOURCE, info.width * 0.5, info.height);
+				//curFrame->tex = new DX11Texture();
+				//curFrame->tex->initTexture(DXGI_FORMAT_B8G8R8A8_UNORM, D3D11_BIND_SHADER_RESOURCE, info.width * 0.5, info.height);
+				curFrame->tex = GetDynamicRHI()->CreateTexture( CC3DTextureRHI::SFT_A8B8G8R8, CC3DTextureRHI::OT_NONE, info.width * 0.5, info.height, nullptr, info.width * 0.5 * 4 );
 				vdo->current_frame = curFrame;
 				vdo->info = info;
 				vdo->video_mapper->Start();
@@ -365,19 +504,327 @@ long long ResourceManager::loadVideoFromZip(VideoInfo& info, HZIP hZip)
 	return video_id;
 }
 
+long long ResourceManager::loadWebpFromFile(WebpAnimInfo& info)
+{
+#ifndef _WIN64 && PLATFORM_WINDOWS
+
+	WebpAnim* anim = new WebpAnim;
+	anim->info = info;
+
+	long long img_id = -1;
+
+	std::string webpPath = info.webp_dir + "/" + info.webp_relative_filepath;
+	std::ifstream inStream(webpPath, ios_base::in | ios_base::binary);
+	if (!inStream.is_open())
+	{
+		return -1;
+	}
+	std::stringstream buffer;
+	buffer << inStream.rdbuf();
+	std::string contents(buffer.str());
+	inStream.close();
+
+	uint8_t* pDataBuffer = (uint8_t*)contents.data();
+	WebPData webp_data = { pDataBuffer, contents.length() };
+	WebPDemuxer* demux = WebPDemux(&webp_data);
+
+	//uint32_t width = WebPDemuxGetI(demux, WEBP_FF_CANVAS_WIDTH);
+	//uint32_t height = WebPDemuxGetI(demux, WEBP_FF_CANVAS_HEIGHT);
+	//uint32_t flags = WebPDemuxGetI(demux, WEBP_FF_FORMAT_FLAGS);
+
+	WebPIterator iter;
+	int texW, texH, nChannel = 0;
+	if (WebPDemuxGetFrame(demux, 1, &iter))
+	{
+		anim->info.fps = 1000.0 / iter.duration;
+		anim->info.duration = iter.duration;
+		do {
+			uint8_t* decode_data = WebPDecodeRGBA(iter.fragment.bytes, iter.fragment.size, &texW, &texH);
+
+			Image* image = new Image;
+
+			if (decode_data != NULL && texW * texH > 0)
+			{
+				image->info.width = texW;
+				image->info.height = texH;
+				image->info.channel = 4;
+
+				img_id = generateID();
+				image->id = img_id;
+
+				m_images[img_id] = image;
+
+				//DX11Texture* tex = m_texpool->fetchDXTexture2D((char*)decode_data, texW, texH);
+				std::shared_ptr<CC3DTextureRHI> tex = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, texW, texH, (char*)decode_data, texW * 4);
+
+				WebPFree(decode_data);
+				image->tex = tex;
+			}
+			anim->images.push_back(img_id);
+
+		} while (WebPDemuxNextFrame(&iter));
+	}
+	WebPDemuxReleaseIterator(&iter);
+	WebPDemuxDelete(demux);
+
+	long long id = generateID();
+	anim->id = id;
+	m_webps[id] = anim;
+	return anim->id;
+#else
+	return 0;
+#endif
+
+}
+
+long long ResourceManager::loadWebpFromZip(WebpAnimInfo& info, HZIP hZip)
+{
+#ifndef _WIN64 && PLATFORM_WINDOWS
+	int index;
+	ZIPENTRY ze;
+	
+	WebpAnim* anim = new WebpAnim;
+	anim->info = info;
+
+	long long img_id = -1;
+	if (FindZipItem(hZip, info.webp_relative_filepath.c_str(), true, &index, &ze) == ZR_OK)
+	{
+		uint8_t *pDataBuffer = new uint8_t[ze.unc_size];
+		ZRESULT res = UnzipItem(hZip, index, pDataBuffer, ze.unc_size);
+		if (res == ZR_OK)
+		{
+			WebPData webp_data = {pDataBuffer, ze.unc_size };
+			WebPDemuxer* demux = WebPDemux(&webp_data);
+
+			//uint32_t width = WebPDemuxGetI(demux, WEBP_FF_CANVAS_WIDTH);
+			//uint32_t height = WebPDemuxGetI(demux, WEBP_FF_CANVAS_HEIGHT);
+			//uint32_t flags = WebPDemuxGetI(demux, WEBP_FF_FORMAT_FLAGS);
+
+			WebPIterator iter;
+			int texW, texH, nChannel = 0;
+			if (WebPDemuxGetFrame(demux, 1, &iter))
+			{
+				anim->info.fps = 1000.0 / iter.duration;
+				anim->info.duration = iter.duration;
+				do {
+					uint8_t * decode_data = WebPDecodeRGBA(iter.fragment.bytes, iter.fragment.size, &texW, &texH);
+
+					Image* image = new Image;
+
+					if (decode_data != NULL && texW*texH > 0)
+					{
+						image->info.width = texW;
+						image->info.height = texH;
+						image->info.channel = 4;
+
+						img_id = generateID();
+						image->id = img_id;
+
+						m_images[img_id] = image;
+
+						//DX11Texture* tex = m_texpool->fetchDXTexture2D((char*)decode_data, texW, texH);
+						std::shared_ptr<CC3DTextureRHI> tex = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, texW, texH, (char*)decode_data, texW * 4);
+
+						WebPFree(decode_data);
+						image->tex = tex;
+					}
+					anim->images.push_back(img_id);
+				
+				} while (WebPDemuxNextFrame(&iter));
+			}
+			WebPDemuxReleaseIterator(&iter);
+			WebPDemuxDelete(demux);
+		}
+
+		delete[]pDataBuffer;
+
+	}
+	
+	long long id = generateID();
+	anim->id = id;
+	m_webps[id] = anim;
+	return anim->id;
+#else
+	return 0;
+#endif
+}
+
 Image* ResourceManager::getVideoFrame(long long video_id, double time)
 {
+	//std::chrono::high_resolution_clock::time_point m_Start, m_End;
+	
 	auto video_itr = m_videos.find(video_id);
 	if (video_itr != m_videos.end())
 	{
 		Video* vdo = video_itr->second;
+		//if (vdo->bRestart)
+		//{
+		//	vdo->video_mapper->Start();
+		//	vdo->bRestart = false;
+		//	vdo->cur_frame_idx = 0;
+		//	return vdo->current_frame;
+		//}
+
+		float during = 0.0;
+		int frame_index = 0;
+		during = 1000.0 / vdo->info.fps;
+		frame_index = floor((time / during) + 0.5f);
+		frame_index = frame_index % (int)(vdo->info.fps * vdo->info.duration / 1000);
+
+		//std::cout << "frame_idex==================>:" << frame_index << endl;
+		//m_Start = std::chrono::high_resolution_clock::now();
+		bool ReStart = frame_index < vdo->cur_frame_idx;
+		if (ReStart)
+		{
+			vdo->bRestart = ReStart;
+		}
+		unsigned char* pData = nullptr;
+		if (time == 0.0)
+		{
+			pData = vdo->video_mapper->GetNextFrame();
+		}
+		else
+		{
+			for (int ni = vdo->cur_frame_idx; ni < frame_index; ni++)
+			{
+				pData = vdo->video_mapper->GetNextFrame();
+			}
+		}
+
 		if (vdo->bRestart)
 		{
 			vdo->video_mapper->Start();
 			vdo->bRestart = false;
-			vdo->cur_frame_idx = 0;
+			if (frame_index == 0)
+			{
+				pData = vdo->video_mapper->GetNextFrame();
+			}
+			else
+			{
+				for (int ni = 0; ni < frame_index; ni++)
+				{
+					pData = vdo->video_mapper->GetNextFrame();
+				}
+			}
+		}
+		//m_End = std::chrono::high_resolution_clock::now();
+		//float Delta = std::chrono::duration<float, std::milli>(m_End - m_Start).count();
+		//std::cout << Delta << "ms" << std::endl;
+		vdo->cur_frame_idx = frame_index;
+
+		int width = vdo->video_mapper->Width();
+		int height = vdo->video_mapper->Height();
+
+		//std::lock_guard< std::recursive_mutex> lock(g_ResourceMutex);
+		if (pData && (width*height > 0))
+		{
+			//ccSavePng("D:/abb.png", pData, width, height, 4);
+			if (m_nFrameWidth != width || m_nFrameHeight != height)
+			{
+				SAFE_DELETE_ARRAY(m_NewBuffer);
+				m_nFrameWidth = width;
+				m_nFrameHeight = height;
+				m_NewBuffer = new unsigned char[m_nFrameWidth * 0.5 * m_nFrameHeight * 4];
+			}
+			
+			int new_width = m_nFrameWidth * 0.5 * 4;
+			int new_height = m_nFrameHeight;
+
+			unsigned char* src_ptr = pData;
+			unsigned char* src_half_ptr = pData + new_width;
+			unsigned char* dest = m_NewBuffer;
+
+			for (int i = 0; i < new_height; i++)
+			{
+				for (int j = 0; j < new_width; j+=4)
+				{
+					*dest++ = *src_ptr++;
+					*dest++ = *src_ptr++;
+					*dest++ = *src_ptr++;
+					*dest++ = *(src_half_ptr+2);
+					src_ptr++;
+					src_half_ptr = src_half_ptr + 4;
+	
+				}
+				src_half_ptr = src_half_ptr + new_width;
+				src_ptr = src_ptr + new_width;
+			}
+
+			if (vdo->current_frame != NULL && m_NewBuffer != NULL)
+			{
+				vdo->current_frame->tex->updateTextureInfo(m_NewBuffer, new_width, new_height);
+			}
+			
+
+			//if(new_buffer)delete[]new_buffer;
+			//new_buffer = nullptr;
+
+
 			return vdo->current_frame;
 		}
+		else
+		{
+			return vdo->current_frame;
+		}
+
+
+	}
+	return nullptr;
+}
+
+void ResourceManager::freeVideo(long long video_id)
+{
+	auto video_itr = m_videos.find(video_id);
+	if (video_itr != m_videos.end())
+	{
+		auto vdo = video_itr->second;
+		//SAFE_DELETE(vdo->current_frame->tex);
+		vdo->current_frame->tex.reset();
+		SAFE_DELETE(vdo->current_frame);
+		SAFE_DELETE(video_itr->second);
+		m_videos.erase(video_itr);
+	}
+}
+
+Image* ResourceManager::getImageCommon(long long id, float time)
+{
+	Image* img_ret = nullptr;
+
+	if ((img_ret = getImage(id)) != nullptr)
+	{
+		return img_ret;
+	}
+
+	if ((img_ret = getAnimFrame(id, time)) != nullptr)
+	{
+		return img_ret;
+	}
+
+	if ((img_ret = getVideoFrame(id, time)) != nullptr)
+	{
+		return img_ret;
+	}
+	if ((img_ret = getWebpAnimFrame(id, time)) != nullptr)
+	{
+		return img_ret;
+	}
+	
+	return img_ret;
+}
+
+Video* ResourceManager::getVideoInfo(long long id, float time, std::shared_ptr<CC3DTextureRHI> maskTexture)
+{
+	auto video_itr = m_videos.find(id);
+	if (video_itr != m_videos.end())
+	{
+		Video* vdo = video_itr->second;
+		//if (vdo->bRestart)
+		//{
+		//	vdo->video_mapper->Start();
+		//	vdo->bRestart = false;
+		//	vdo->cur_frame_idx = 0;
+		//	return vdo;
+		//}
 
 		float during = 0.0;
 		int frame_index = 0;
@@ -403,6 +850,23 @@ Image* ResourceManager::getVideoFrame(long long video_id, double time)
 			}
 		}
 
+		if (vdo->bRestart)
+		{
+			vdo->video_mapper->Start();
+			vdo->bRestart = false;
+			if (frame_index == 0)
+			{
+				pData = vdo->video_mapper->GetNextFrame();
+			}
+			else
+			{
+				for (int ni = 0; ni < frame_index; ni++)
+				{
+					pData = vdo->video_mapper->GetNextFrame();
+				}
+			}
+		}
+
 		vdo->cur_frame_idx = frame_index;
 		if (pData)
 		{
@@ -411,38 +875,64 @@ Image* ResourceManager::getVideoFrame(long long video_id, double time)
 
 			//ccSavePng("D:/abb.png", pData, width, height, 4);
 			unsigned char* new_buffer = (unsigned char*)malloc(sizeof(unsigned char) * width * 0.5 * height * 4);
+			unsigned char* mask_buffer = (unsigned char*)malloc(sizeof(unsigned char) * width * 0.5 * height * 4);
 			int new_width = width * 0.5 * 4;
 			int new_height = height;
 
 			unsigned char* src_ptr = pData;
 			unsigned char* src_half_ptr = pData + new_width;
 			unsigned char* dest = new_buffer;
+			unsigned char* maskDest = mask_buffer;
 
 			for (int i = 0; i < height; i++)
 			{
-				for (int j = 0; j < new_width; j+=4)
+				for (int j = 0; j < new_width; j += 4)
 				{
-					*dest++ = *src_ptr++;
-					*dest++ = *src_ptr++;
-					*dest++ = *src_ptr++;
-					*dest++ = *src_half_ptr;
+					//B
+					*dest = *src_ptr;
+					*maskDest = *src_ptr;
+					dest++;
+					maskDest++;
+					src_ptr++;
+					//G
+					*dest = *src_ptr;
+					*maskDest = *src_ptr;
+					dest++;
+					maskDest++;
+					src_ptr++;	
+					//R
+					*dest = *src_ptr;
+					*maskDest = *src_ptr;
+					dest++;
+					maskDest++;
+					src_ptr++;
+					//A
+					*dest++ = *(src_half_ptr + 2);
+					*maskDest++ = *(src_half_ptr + 1);
+
 					src_ptr++;
 					src_half_ptr = src_half_ptr + 4;
-	
+
 				}
 				src_half_ptr = src_half_ptr + new_width;
 				src_ptr = src_ptr + new_width;
 			}
 
 			vdo->current_frame->tex->updateTextureInfo(new_buffer, new_width, height);
-			delete[] new_buffer;
+			if (maskTexture)
+			{
+				maskTexture->updateTextureInfo(mask_buffer, new_width, new_height);
+			}
+			free(new_buffer);
 			new_buffer = nullptr;
+			free(mask_buffer);
+			mask_buffer = nullptr;
 
-			return vdo->current_frame;
+			return vdo;
 		}
 		else
 		{
-			return vdo->current_frame;
+			return vdo;
 		}
 
 
@@ -450,39 +940,138 @@ Image* ResourceManager::getVideoFrame(long long video_id, double time)
 	return nullptr;
 }
 
-void ResourceManager::freeVideo(long long video_id)
+std::shared_ptr<CC3DRenderTargetRHI> ResourceManager::getMaskedVideo(long long id, float time, std::shared_ptr<VideoAnimation> vdoAnimation)
 {
-	auto video_itr = m_videos.find(video_id);
+	auto video_itr = m_videos.find(id);
 	if (video_itr != m_videos.end())
 	{
-		auto vdo = video_itr->second;
-		SAFE_DELETE(vdo->current_frame->tex);
-		SAFE_DELETE(vdo->current_frame);
-		SAFE_DELETE(video_itr->second);
-		m_videos.erase(video_itr);
+		Video* vdo = video_itr->second;
+		//if (vdo->bRestart)
+		//{
+		//	vdo->video_mapper->Start();
+		//	vdo->bRestart = false;
+		//	vdo->cur_frame_idx = 0;
+		//	return  vdoAnimation->Render(vdo);
+		//}
+
+		float during = 0.0;
+		int frame_index = 0;
+		during = 1000.0 / vdo->info.fps;
+		frame_index = floor((time / during) + 0.5f);
+		frame_index = frame_index % (int)(vdo->info.fps * vdo->info.duration / 1000);
+
+		bool ReStart = frame_index < vdo->cur_frame_idx;
+		if (ReStart)
+		{
+			vdo->bRestart = ReStart;
+		}
+		unsigned char* pData = nullptr;
+		if (time == 0.0)
+		{
+			pData = vdo->video_mapper->GetNextFrame();
+		}
+		else
+		{
+			for (int ni = vdo->cur_frame_idx; ni < frame_index; ni++)
+			{
+				pData = vdo->video_mapper->GetNextFrame();
+			}
+		}
+
+		if (vdo->bRestart)
+		{
+			vdo->video_mapper->Start();
+			vdo->bRestart = false;
+			if (frame_index == 0)
+			{
+				pData = vdo->video_mapper->GetNextFrame();
+			}
+			else
+			{
+				for (int ni = 0; ni < frame_index; ni++)
+				{
+					pData = vdo->video_mapper->GetNextFrame();
+				}
+			}
+		}
+
+		vdo->cur_frame_idx = frame_index;
+		int width = vdo->video_mapper->Width();
+		int height = vdo->video_mapper->Height();
+		if (pData && (width * height > 0))
+		{
+			if (m_nFrameWidth != width || m_nFrameHeight != height)
+			{
+				SAFE_DELETE_ARRAY(m_NewBuffer);
+				SAFE_DELETE_ARRAY(m_MaskBuffer);
+				m_nFrameWidth = width;
+				m_nFrameHeight = height;
+				
+				m_NewBuffer = new unsigned char[m_nFrameWidth * 0.5 * m_nFrameHeight * 4];
+				m_MaskBuffer = new unsigned char[m_nFrameWidth * 0.5 * m_nFrameHeight * 4];
+			}
+
+			int new_width = width * 0.5 * 4;
+			int new_height = height;
+
+			unsigned char* src_ptr = pData;
+			unsigned char* src_half_ptr = pData + new_width;
+			unsigned char* dest = m_NewBuffer;
+			unsigned char* maskDest = m_MaskBuffer;
+
+			for (int i = 0; i < new_height; i++)
+			{
+				for (int j = 0; j < new_width; j += 4)
+				{
+					//B
+					*dest = *src_ptr;
+					*maskDest = *src_ptr;
+					dest++;
+					maskDest++;
+					src_ptr++;
+					//G
+					*dest = *src_ptr;
+					*maskDest = *src_ptr;
+					dest++;
+					maskDest++;
+					src_ptr++;
+					//R
+					*dest = *src_ptr;
+					*maskDest = *src_ptr;
+					dest++;
+					maskDest++;
+					src_ptr++;
+					//A
+					*dest++ = *(src_half_ptr + 2);
+					*maskDest++ = *(src_half_ptr + 1);
+
+					src_ptr++;
+					src_half_ptr = src_half_ptr + 4;
+
+				}
+				src_half_ptr = src_half_ptr + new_width;
+				src_ptr = src_ptr + new_width;
+			}
+			if (vdo->current_frame != NULL && m_NewBuffer != NULL)
+			{
+				vdo->current_frame->tex->updateTextureInfo(m_NewBuffer, new_width, new_height);
+			}
+			if (vdoAnimation && m_MaskBuffer!= NULL)
+			{
+				//RHIResourceCast( vdoAnimation->GetMaskFbo().get() )->GetTexture()->updateTextureInfo(mask_buffer, new_width, new_height);
+				vdoAnimation->GetMaskTex()->updateTextureInfo(m_MaskBuffer, new_width, new_height);
+			}
+
+			return vdoAnimation->Render(vdo);
+		}
+		else
+		{
+			return vdoAnimation->Render(vdo);
+		}
+
+
 	}
-}
-
-Image* ResourceManager::getImageCommon(long long id, float time)
-{
-	Image* img_ret = nullptr;
-
-	if ((img_ret = getImage(id)) != nullptr)
-	{
-		return img_ret;
-	}
-
-	if ((img_ret = getAnimFrame(id, time)) != nullptr)
-	{
-		return img_ret;
-	}
-
-	if ((img_ret = getVideoFrame(id, time)) != nullptr)
-	{
-		return img_ret;
-	}
-
-	return img_ret;
+	return nullptr;
 }
 
 void ResourceManager::freeMaterial(long long id)
@@ -490,6 +1079,7 @@ void ResourceManager::freeMaterial(long long id)
 	freeImage(id);
 	freeAnim(id);
 	freeVideo(id);
+	freeWebpAnim(id);
 }
 
 DX11Texture* ResourceManager::GetTexFromFile(std::string abs_filename)

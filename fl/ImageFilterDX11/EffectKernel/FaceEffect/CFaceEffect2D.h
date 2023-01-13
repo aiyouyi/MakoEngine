@@ -3,6 +3,7 @@
 #include "EffectKernel/CEffectPart.h"
 #include "Algorithm/Face2DMesh/MTFace2DInterFace.h"
 #include "Toolbox/Drawable.hpp"
+#include "EffectKernel/DXBasicSample.h"
 
 enum MixType
 {
@@ -18,7 +19,7 @@ enum MixType
 //	
 //};
 
-class CFaceEffect2D : public CEffectPart
+class CFaceEffect2D : public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceEffect2D();

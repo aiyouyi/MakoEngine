@@ -3,18 +3,11 @@
 #include "EffectKernel/CEffectPart.h"
 #include "Toolbox/Render/CC3DShaderDef.h"
 #include "Algorithm/Face2DMesh/MTFace2DInterFace.h"
+#include "EffectKernel/DXBasicSample.h"
 
-
-class CFaceEffectFlipSplit : public CEffectPart
+class CFaceEffectFlipSplit : public CEffectPart, protected DXBaicSample
 {
 public:
-
-	struct Vertex
-	{
-		XMFLOAT3 Pos;
-		XMFLOAT2 UV;
-	};
-
 
 	CFaceEffectFlipSplit();
 	virtual ~CFaceEffectFlipSplit();

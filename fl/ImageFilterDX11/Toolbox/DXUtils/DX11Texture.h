@@ -1,4 +1,7 @@
 #pragma once
+#ifndef __DX11TEXTURE_H__
+#define __DX11TEXTURE_H__
+
 #include <d3d11.h>
 #include <string>
 #include "Toolbox/zip/unzip.h"
@@ -37,3 +40,4 @@ private:
 
 };
 
+#endif

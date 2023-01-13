@@ -2,6 +2,7 @@
 
 #include "inc.h"
 #include <tchar.h>
+#include "DX11ImageFilterDef.h"
 
 namespace core
 {
@@ -15,19 +16,19 @@ namespace core
 	std::wstring & rtrim(std::wstring & str, const std::wstring & chars = L"\t\n\v\f\r ");
 	std::wstring & trim(std::wstring & str, const std::wstring & chars = L"\t\n\v\f\r ");
 
-    std::string ansi_u8(const char * text, int32_t length);
-    std::string u8_ansi(const char * text, int32_t length);
-    std::string ucs2_u8(const wchar_t * text, int32_t length);
-    std::string ucs2_ansi(const wchar_t * text, int32_t length);
-    std::wstring u8_ucs2(const char * text, int32_t length);
-    std::wstring ansi_ucs2(const char * text, int32_t length);
+     std::string ansi_u8(const char * text, int32_t length);
+     std::string u8_ansi(const char * text, int32_t length);
+     std::string ucs2_u8(const wchar_t * text, int32_t length);
+     std::string ucs2_ansi(const wchar_t * text, int32_t length);
+     std::wstring u8_ucs2(const char * text, int32_t length);
+     std::wstring ansi_ucs2(const char * text, int32_t length);
 
-    std::string ansi_u8(std::string str);
-    std::string u8_ansi(std::string str);
-    std::string usc2_u8(std::wstring str);
-    std::string usc2_ansi(std::wstring str);
-    std::wstring u8_ucs2(std::string str);
-    std::string ucs2_u8(std::wstring str);
+    DX11IMAGEFILTER_EXPORTS_API std::string ansi_u8(std::string str);
+    DX11IMAGEFILTER_EXPORTS_API std::string u8_ansi(std::string str);
+    DX11IMAGEFILTER_EXPORTS_API std::string usc2_u8(std::wstring str);
+    DX11IMAGEFILTER_EXPORTS_API std::string usc2_ansi(std::wstring str);
+    DX11IMAGEFILTER_EXPORTS_API std::wstring u8_ucs2(std::string str);
+    DX11IMAGEFILTER_EXPORTS_API  std::string ucs2_u8(std::wstring str);
 
 	/** Returns Char value of Nibble */
 	TCHAR NibbleToTChar(uint8_t Num);
@@ -201,4 +202,6 @@ namespace core
     }
 
     std::string from_bytes(std::shared_ptr<byte_t> bytes, int32_t nbytes);
+
+    std::string format_printf(const char* format, ...);
 }

@@ -100,6 +100,7 @@ private:
 
 	bool m_FirstReconstruct = true;
 
-	string m_resourcePath;
+	std::string m_resourcePath;
+	std::shared_ptr<CC3DTextureRHI> m_InputSRV;
 
 };

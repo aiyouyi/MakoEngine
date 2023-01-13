@@ -3,13 +3,15 @@
 #include <xnamath.h>
 #include<BaseDefine/Vectors.h>
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 struct RectConstantMask
 {
-	XMMATRIX mWVP; //»ìºÏ¾ØÕó
-	XMFLOAT4 mClip;//±³¾°²Ã¼ôÇøÓò
+	XMMATRIX mWVP; //ï¿½ï¿½Ï¾ï¿½ï¿½ï¿½
+	XMFLOAT4 mClip;//ï¿½ï¿½ï¿½ï¿½ï¿½Ã¼ï¿½ï¿½ï¿½ï¿½ï¿½
 };
 
 CBodyBGEffect::CBodyBGEffect()
@@ -193,6 +195,10 @@ void CBodyBGEffect::Render(BaseRenderParam & RenderParam)
 	float arrClip[] = { 0,0,1,1 };
 
 	Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, float(runTime));
+	if (img == NULL)
+	{
+		return;
+	}
 	int dw = img->info.width;
 	int dh = img->info.height;
 
@@ -222,8 +228,8 @@ void CBodyBGEffect::Render(BaseRenderParam & RenderParam)
 	pDoubleBuffer->BindFBOA();
 
 	m_pShader->useShader();
-	auto pMaterialView = img->tex->getTexShaderView();
-	auto pMaskView = BodyTexture->getTexShaderView();
+	auto pMaterialView = RHIResourceCast(img->tex.get())->GetSRV();
+	auto pMaskView = RHIResourceCast(BodyTexture.get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pMaskView);
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
@@ -238,7 +244,7 @@ void CBodyBGEffect::Render(BaseRenderParam & RenderParam)
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBufferMask);
 
 
-	//ÉèÖÃ¶¥µãÊý¾Ý
+	//ï¿½ï¿½ï¿½Ã¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	unsigned int nStride = 5 * sizeof(float);
 	unsigned int nOffset = 0;
 	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer, &nStride, &nOffset);
@@ -260,6 +266,10 @@ bool CBodyBGEffect::WriteConfig(std::string &tempPath, XMLNode &root, HZIP dst, 
 	//copy image or animation
 	FileManager::Instance().SetSaveFolder(tempPath);
 	Anim* anim = ResourceManager::Instance().getAnim(m_anim_id);
+	if (!anim)
+	{
+		return true;
+	}
 	AnimInfo animInfo = anim->info;
 	AnimInfo renamed_info = FileManager::Instance().AddAnim(anim->info);
 	animInfo.relative_filename_list = renamed_info.relative_filename_list;
@@ -267,7 +277,7 @@ bool CBodyBGEffect::WriteConfig(std::string &tempPath, XMLNode &root, HZIP dst, 
 	XMLNode nodeEffect = root.addChild("typeeffect");
 	nodeEffect.addAttribute("type", "BodyBGEffect");
 	nodeEffect.addAttribute("showname", m_showname.c_str());
-	////Ê±¼ä¿ØÖÆ
+	////Ê±ï¿½ï¿½ï¿½ï¿½ï¿½
 	//XMLNode time = nodeEffect.addChild("time");
 
 

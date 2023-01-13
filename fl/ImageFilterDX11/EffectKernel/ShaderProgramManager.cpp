@@ -3,21 +3,17 @@
 #include "Toolbox/DXUtils/DX11Shader.h"
 #include "Toolbox/DXUtils/DXUtils.h"
 
-std::mutex g_shader_mutex;
 ShaderProgramManager* ShaderProgramManager::_instance = nullptr;
+
+std::recursive_mutex g_mutex;
 
 ShaderProgramManager* ShaderProgramManager::GetInstance()
 {
+	std::lock_guard< std::recursive_mutex> lock(g_mutex);
 	if (_instance == nullptr)
 	{
-		g_shader_mutex.lock();
-		if (_instance == nullptr)
-		{
-			_instance = new ShaderProgramManager();
-			g_shader_mutex.unlock();
-			return _instance;
-		}
-		g_shader_mutex.unlock();
+		_instance = new ShaderProgramManager();
+		return _instance;
 	}
 
 	return _instance;
@@ -25,6 +21,7 @@ ShaderProgramManager* ShaderProgramManager::GetInstance()
 
 ShaderProgramManager::~ShaderProgramManager()
 {
+	std::lock_guard< std::recursive_mutex> lock(g_mutex);
 	auto itr = shaderMap.begin();
 	for (; itr != shaderMap.end(); )
 	{
@@ -36,6 +33,7 @@ ShaderProgramManager::~ShaderProgramManager()
 
 void ShaderProgramManager::Release()
 {
+	std::lock_guard< std::recursive_mutex> lock(g_mutex);
 	auto itr = shaderMap.begin();
 	for (; itr != shaderMap.end(); )
 	{
@@ -47,11 +45,13 @@ void ShaderProgramManager::Release()
 
 void ShaderProgramManager::ReleaseInstance()
 {
+	std::lock_guard< std::recursive_mutex> lock(g_mutex);
 	SAFE_DELETE(_instance);
 }
 
 DX11Shader* ShaderProgramManager::GetOrCreateShaderByPathAndAttribs(const std::string& str_path, CCVetexAttribute* pAttribs, int nAttri, bool separate /* = false */)
 {
+	std::lock_guard< std::recursive_mutex> lock(g_mutex);
 	if (str_path.empty())
 		return nullptr;
 
@@ -63,7 +63,7 @@ DX11Shader* ShaderProgramManager::GetOrCreateShaderByPathAndAttribs(const std::s
 	else
 	{
 		DX11Shader* pShader = new DX11Shader();
-		pShader->m_Separate = separate;
+		pShader->SetSeparate(separate);
 		DXUtils::CompileShaderWithFile(pShader, (char*)str_path.c_str(), pAttribs, nAttri);
 		shaderMap[str_path] = pShader;
 		return pShader;
@@ -73,6 +73,7 @@ DX11Shader* ShaderProgramManager::GetOrCreateShaderByPathAndAttribs(const std::s
 
 bool ShaderProgramManager::RemoveShader(const std::string& str_path)
 {
+	std::lock_guard< std::recursive_mutex> lock(g_mutex);
 	bool ret_value = false;
 	auto itr = shaderMap.begin();
 	for (; itr != shaderMap.end(); )
@@ -95,6 +96,7 @@ bool ShaderProgramManager::RemoveShader(const std::string& str_path)
 
 bool ShaderProgramManager::RemoveShader(DX11Shader* rmv_shader)
 {
+	std::lock_guard< std::recursive_mutex> lock(g_mutex);
 	bool ret_value = false;
 	auto itr = shaderMap.begin();
 	for (; itr != shaderMap.end(); )

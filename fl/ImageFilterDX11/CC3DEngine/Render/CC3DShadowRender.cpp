@@ -5,17 +5,14 @@
 #include "Effect/CC3DShadowMap.h"
 #include "Effect/CC3DShadowMapManger.h"
 #include "CC3DBlurPass.h"
-#include "Toolbox/DXUtils/DX11FBO.h"
-#include "Toolbox/DXUtils/DX11Shader.h"
 #include "Toolbox/RenderState/PiplelineState.h"
 #include "EffectKernel/ShaderProgramManager.h"
 #include "Toolbox/Render/DynamicRHI.h"
-#include "Toolbox/DXUtils/DX11Resource.h"
+
 
 CC3DShadowRender::CC3DShadowRender()
 {
 	mBlurPass = std::make_shared<CC3DBlurPass>();
-	
 }
 
 CC3DShadowRender::~CC3DShadowRender()
@@ -24,7 +21,7 @@ CC3DShadowRender::~CC3DShadowRender()
 	mDepthRenderBuffer.reset();
 }
 
-void CC3DShadowRender::Bind(CC3DSceneManage& scene_manager, ShadowMapManager& shadowManager)
+void CC3DShadowRender::Bind(CC3DImageFilter::CC3DSceneManage& scene_manager, CC3DImageFilter::ShadowMapManager& shadowManager)
 {
 	setModelMatrix(scene_manager.m_ModelControl.GetModelMatrix());
 
@@ -33,14 +30,20 @@ void CC3DShadowRender::Bind(CC3DSceneManage& scene_manager, ShadowMapManager& sh
 	{
 		mLightDir = pLight->m_LightDirection;
 		mLightDir = glm::normalize(mLightDir);
-		mLightDir.z = -mLightDir.z;
+		
 	}
 	
-
 	mLightLookAt = glm::vec3(0.0f); //此处没有考虑相机平移的情况
 	
 	mLightUp = glm::vec3(0.0f, 1.0, 0.0f);
-	mLightPos = mLightLookAt + (-mLightDir * LIGHT_DISTANCE);
+	if (GetDynamicRHI()->API == CC3DDynamicRHI::DX11)
+	{
+		mLightPos = mLightLookAt + (mLightDir * LIGHT_DISTANCE);
+	}
+	else
+	{
+		mLightPos = mLightLookAt + (-mLightDir * LIGHT_DISTANCE);
+	}
 
 	glm::vec3 z_axis = glm::normalize(mLightLookAt - mLightPos);
 	if (abs(glm::dot( z_axis, mLightUp )) > 0.999)
@@ -95,54 +98,46 @@ void CC3DShadowRender::Bind(CC3DSceneManage& scene_manager, ShadowMapManager& sh
 			maxPoint.z = (std::max)(maxPoint.z, vTargetPoint.z);
 		}
 	}
-// 
+
 	float l = minPoint.x;
 	float b = minPoint.y;
 	float n = minPoint.z;
 	float r = maxPoint.x;
 	float t = maxPoint.y;
 	float f = maxPoint.z;
-// 	float offest = 0.2*(r - l);
-// 	l = l - offest;
-// 	r = r + offest;
-// 	t = t + offest;
-// 	b = b - offest;
-
-	glm::vec4 spherecenter_ls = lightView * mModel_matrix * glm::vec4(mLightLookAt, 0.0f);
-	spherecenter_ls.z = (mLightPos - mLightLookAt).length();
-
 
 	glm::mat4 lightProjection;
 
-	ShadowMap& shadow_map = *shadowManager.getShadowMap(0);
-	mNearAndFar = glm::vec2(shadow_map.lsNear, shadow_map.lsFar);
+	auto& shadow_map = *shadowManager.getShadowMap(0);
+	mNearAndFar = glm::vec2(shadow_map.lsNear-0.1f, shadow_map.lsFar+0.1f);
 	lightProjection = glm::ortho(l, r, b, t, (float)mNearAndFar.x, (float)mNearAndFar.y);
 
 
-	mLightSpaceMatrix = lightProjection * lightView*mModel_matrix;
-	mShadowMapCBData.lightSpaceMatrix = glm::transpose(mLightSpaceMatrix);
+	mLightSpaceMatrix = lightProjection * lightView * mModel_matrix;
 
-	mShadowMapCBData.world = glm::transpose(mModel_matrix);
 	mDepthRenderBuffer->Bind();
 	mDepthRenderBuffer->Clear(0, 0, 0, 0);
-	mShader->useShader();
+	mShader->UseShader();
+
+	GET_SHADER_STRUCT_MEMBER(ShadowMapConst1).SetParameter("lightSpaceMatrix", mLightSpaceMatrix);
+	GET_SHADER_STRUCT_MEMBER(ShadowMapConst1).SetParameter("model", mModel_matrix);
+
 }
 
-void CC3DShadowRender::RenderMesh(const CC3DMesh& pMesh, bool withAnimation)
+void CC3DShadowRender::RenderMesh(const CC3DMesh& pMesh, int withAnimation)
 {
-	mShadowMapCBData.meshMat = glm::transpose(pMesh.m_MeshMat);
-	mShadowMapCBData.meshMatInverse = glm::transpose(glm::inverse(pMesh.m_MeshMat));
-	mShadowMapCBData.AnimationEnable = withAnimation;
+	GET_SHADER_STRUCT_MEMBER(ShadowMapConst1).SetParameter("meshMat", pMesh.m_MeshMat);
+	GET_SHADER_STRUCT_MEMBER(ShadowMapConst1).SetParameter("meshMatInverse", glm::inverse(pMesh.m_MeshMat));
+	GET_SHADER_STRUCT_MEMBER(ShadowMapConst1).SetParameter("AnimationEnable", withAnimation);
+	GET_SHADER_STRUCT_MEMBER(ShadowMapConst1).SetParameter("alpha", ProjectShadow);
 
 	GetDynamicRHI()->SetSamplerState(CC3DPiplelineState::ShadowSampler);
 	GetDynamicRHI()->SetDepthStencilState(CC3DPiplelineState::DepthStateEnable);
 	float blendFactor[] = { 0.f,0.f,0.f,0.f };
 	GetDynamicRHI()->SetBlendState(CC3DPiplelineState::BlendDisable, blendFactor, 0xffffffff);
 	
-	GetDynamicRHI()->UpdateConstantBuffer(mShadowMapCB, &mShadowMapCBData);
-	GetDynamicRHI()->SetVSConstantBuffer(0, mShadowMapCB);
-	GetDynamicRHI()->UpdateConstantBuffer(mShadowMapSkinMatCB, &mShadowMapSkinMatCBData);
-	GetDynamicRHI()->SetVSConstantBuffer(1, mShadowMapSkinMatCB);
+	GET_SHADER_STRUCT_MEMBER(ShadowMapConst1).ApplyToAllBuffer();
+	GET_SHADER_STRUCT_MEMBER(ShadowMapConst2).ApplyToVSBuffer();
 
 	GetDynamicRHI()->DrawPrimitive(pMesh.m_pGPUBuffer->VerticeBuffer, pMesh.m_pGPUBuffer->AtrributeCount, pMesh.m_pGPUBuffer->IndexBuffer);
 
@@ -155,18 +150,36 @@ void CC3DShadowRender::UnBind()
 
 void CC3DShadowRender::SetShaderResource(const std::string& path)
 {
-
-	CCVetexAttribute pAttribute2[] =
+	if (mShader)
 	{
-		{VERTEX_ATTRIB_POSITION, FLOAT_C3},
-		{VERTEX_ATTRIB_NORMAL, FLOAT_C3},
-		{VERTEX_ATTRIB_TEX_COORD, FLOAT_C2},
-		{VERTEX_ATTRIB_BLEND_INDEX, FLOAT_C4},
-		{VERTEX_ATTRIB_BLEND_WEIGHT, FLOAT_C4}
-	};
+		return;
+	}
 
-	std::string path2 = path + "/Shader/3D/shadow_map_depth.fx";
-	mShader = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path2, pAttribute2, 5, true);
+	mShader = GetDynamicRHI()->CreateShaderRHI();
+
+	if (GetDynamicRHI()->API == CC3DDynamicRHI::DX11)
+	{
+		CCVetexAttribute pAttribute2[] =
+		{
+			{VERTEX_ATTRIB_POSITION, FLOAT_C3},
+			{VERTEX_ATTRIB_NORMAL, FLOAT_C3},
+			{VERTEX_ATTRIB_TEX_COORD, FLOAT_C2},
+			{VERTEX_ATTRIB_TANGENT,FLOAT_C4},
+			{VERTEX_ATTRIB_BLEND_INDEX, FLOAT_C4},
+			{VERTEX_ATTRIB_BLEND_WEIGHT, FLOAT_C4},
+		};
+
+		std::string fsPath = path + "/Shader/3D/shadow_map_depth.fx";
+		mShader->InitShader(fsPath, pAttribute2, 6, true);
+	}
+	else
+	{
+		std::string vs_depth = path + "/Shader/3D/shadow_map_depth.vs";
+		std::string fs_depth = path + "/Shader/3D/shadow_map_depth.fs";
+		mShader->InitShader(vs_depth.c_str(), fs_depth.c_str());
+		GET_SHADER_STRUCT_MEMBER(ShadowMapConst1).Shader_ = mShader->GetGLProgram();
+		GET_SHADER_STRUCT_MEMBER(ShadowMapConst2).Shader_ = mShader->GetGLProgram();
+	}
 
 	if (mBlurPass)
 	{
@@ -174,14 +187,18 @@ void CC3DShadowRender::SetShaderResource(const std::string& path)
 	}
 
 	const int32_t SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-
-	mBlurPass->Init(SHADOW_WIDTH, SHADOW_HEIGHT);
-
-	mDepthRenderBuffer = GetDynamicRHI()->CreateRenderTarget(SHADOW_WIDTH, SHADOW_HEIGHT, true, false, CC3DDynamicRHI::SFT_R32G32F);
-
-	mShadowMapCB = GetDynamicRHI()->CreateConstantBuffer(sizeof(ShadowMapConstantBuffer));
-	mShadowMapSkinMatCB = GetDynamicRHI()->CreateConstantBuffer(sizeof(ShadowMapSkinMatConstantBuffer));
-
+	
+	if (GetDynamicRHI()->API == CC3DDynamicRHI::DX11)
+	{
+		mDepthRenderBuffer = GetDynamicRHI()->CreateRenderTarget(SHADOW_WIDTH, SHADOW_HEIGHT, true, nullptr, CC3DTextureRHI::SFT_A32R32G32B32F);
+		mBlurPass->Init(SHADOW_WIDTH, SHADOW_HEIGHT, CC3DTextureRHI::SFT_A32R32G32B32F);
+	}
+	else
+	{
+		mDepthRenderBuffer = GetDynamicRHI()->CreateRenderTarget(SHADOW_WIDTH, SHADOW_HEIGHT, true, nullptr, CC3DTextureRHI::SFT_R32G32B32F);
+		mBlurPass->Init(SHADOW_WIDTH, SHADOW_HEIGHT, CC3DTextureRHI::SFT_R32G32B32F);
+	}
+	
 }
 
 void CC3DShadowRender::SetDirectionalLight(glm::vec3& dirLight)
@@ -189,18 +206,32 @@ void CC3DShadowRender::SetDirectionalLight(glm::vec3& dirLight)
 
 }
 
-void CC3DShadowRender::SetAnimation(CC3DSceneManage& scene, CC3DMesh* pMesh, int nModel)
+void CC3DShadowRender::SetAnimation(CC3DImageFilter::CC3DSceneManage& scene, CC3DMesh* pMesh, int nModel)
 {
 	int skinID = pMesh->m_nSkinID;
 	auto& Bone = scene.m_Skeleton[nModel]->m_BoneNodeArray[skinID];
 
+	//
 	for (uint32 k = 0; k < Bone.size(); k++)
 	{
-		char strUniformName[100];
-		strUniformName[0] = '\0';
-		sprintf(strUniformName, "gBonesMatrix[%d]", k);
-		mShadowMapSkinMatCBData.BoneMat[k] = glm::transpose(Bone[k].FinalMat);
+		GET_SHADER_STRUCT_MEMBER(ShadowMapConst2).SetArraySingleElementParamter("gBonesMatrix", Bone[k].FinalMat,k);
 	}
+
+	//for (uint32 k = 0; k < Bone.size(); k++)
+	//{
+	//	char strUniformName[100];
+	//	strUniformName[0] = '\0';
+	//	sprintf(strUniformName, "gBonesMatrix[%d]", k);
+	//	if (GetDynamicRHI()->API == CC3DDynamicRHI::DX11)
+	//	{
+	//		GET_CONSTBUFFER(ShadowMapConst2).BoneMat[k] = glm::transpose(Bone[k].FinalMat);
+	//	}
+	//	else
+	//	{
+	//		GET_SHADER_STRUCT_MEMBER(ShadowMapConst2).SetMatrix4Parameter(strUniformName, &Bone[k].FinalMat[0][0], false, 1);
+	//	}
+	//	
+	//}
 }
 
 void CC3DShadowRender::ProcessBlur()

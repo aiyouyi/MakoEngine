@@ -1,13 +1,10 @@
 ﻿
 #include "CC3DModel.h"
-#include "Material/CC3DPbrMaterial.h"
-#include "Material/CC3DFurMaterial.h"
+#include "MaterialCreator.h"
+#include "GLMaterialCreator.h"
 #include "CC3DEngine/Common/CC3DEnvironmentConfig.h"
 #include "Toolbox/Render/TextureRHI.h"
-// #include <opencv2/core/core.hpp>
-// #include <opencv2/highgui/highgui.hpp>
-// #include <opencv2/imgproc/imgproc.hpp>
-
+#include "Toolbox/Render/MaterialTexRHI.h"
 
 CC3DModel::CC3DModel()
 {
@@ -23,9 +20,6 @@ void CC3DModel::LoadModelInfo()
 {
 	ReleaseModel();
 	LoadNode();
-	LoadTexture();
-	LoadMaterial();
-	LoadMesh();
 	
 }
 
@@ -56,6 +50,13 @@ void CC3DModel::UpdateNode()
 		m_ModelNode->UpdateNodeParent(m_ModelNode->m_Node[m_ModelMesh[i]->m_nNodeID]);
 		m_ModelMesh[i]->m_MeshMat = m_ModelNode->m_Node[m_ModelMesh[i]->m_nNodeID]->FinalMeshMat;
 	}
+}
+
+void CC3DModel::LoadResource(CC3DImageFilter::EffectConfig* EffectConfig)
+{
+	LoadTexture();
+	LoadMaterial(EffectConfig);
+	LoadMesh();
 }
 
 void CC3DModel::TransformBoundingBox(glm::mat4 & TransformMat)
@@ -104,56 +105,23 @@ void CC3DModel::LoadTexture()
 		auto& ModelImage = m_Model->images[i];
 
 		uint8* pData = (uint8*)ModelImage.image.data();
-		std::shared_ptr<CC3DTextureRHI> TextureRHI = GetDynamicRHI()->CreateTexture(CC3DDynamicRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, ModelImage.width, ModelImage.height, pData, ModelImage.width * 4);
-
+		std::shared_ptr<CC3DTextureRHI> TextureRHI = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A8R8G8B8, CC3DTextureRHI::OT_NONE, ModelImage.width, ModelImage.height, pData, ModelImage.width * 4,true);
 		m_ModelTexture.push_back(TextureRHI);
 	}
 	m_Model->images.clear();
 }
 
-void CC3DModel::LoadMaterial()
+void CC3DModel::LoadMaterial(CC3DImageFilter::EffectConfig* EffectConfig)
 {
-	for (int i=0;i<m_Model->materials.size();i++)
+	if (GetDynamicRHI()->API == CC3DDynamicRHI::DX11)
 	{
-
-		if (m_Model->materials[i].name == CC3DEnvironmentConfig::getInstance()->fur_material_name)
-		{
-			CC3DMaterial *pMaterial = new CC3DFurMaterial();
-			pMaterial->initModel(m_Model);
-			pMaterial->InitMaterial(i, m_ModelTexture);
-			pMaterial->alphaMode = "BLEND";
-			pMaterial->InitShaderProgram(CC3DEnvironmentConfig::getInstance()->resourth_path);
-			m_ModelMaterial.push_back(pMaterial);
-		}
-		else
-		{
-			auto& MaterialName = m_Model->materials[i].name;
-			CC3DPBRMaterial*pMaterial = new CC3DPBRMaterial();
-			pMaterial->initModel(m_Model);
-			pMaterial->InitMaterial(i, m_ModelTexture);
-			pMaterial->InitShaderProgram(CC3DEnvironmentConfig::getInstance()->resourth_path);
-
-			if (MaterialName.find("FN") != std::string::npos)
-			{
-				pMaterial->SetFlattenNormal(true);
-			}
-
-			if (MaterialName.find("Kajiya") != std::string::npos)
-			{
-				pMaterial->SetEnableKajiya(true);
-			}
-
-			m_ModelMaterial.push_back(pMaterial);
-		}
-
+		MaterialCreator::CreateMaterial(m_Model, m_ModelTexture, m_ModelMaterial,EffectConfig);
 	}
-	if (m_ModelMaterial.size()==0)
+	else if (GetDynamicRHI()->API == CC3DDynamicRHI::OPENGL)
 	{
-		CC3DMaterial *pMaterial = new CC3DPBRMaterial();
-		pMaterial->initModel(m_Model);
-		pMaterial->CreateDefault();
-		pMaterial->InitShaderProgram("");
-		m_ModelMaterial.push_back(pMaterial);
+#ifndef _WIN64
+		GLMaterialCreate::CreateMaterial(m_Model, m_ModelTexture, m_ModelMaterial,EffectConfig);
+#endif
 	}
 }
 

@@ -1,8 +1,10 @@
 ﻿#include "CLightWave.h"
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CLightWave::CLightWave()
 {
@@ -63,6 +65,9 @@ bool CLightWave::Prepare()
 
 	path = m_resourcePath + "/Shader/LensEffect/LightWave.fx";
 	m_pShader = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path, pAttribute, 1);
+
+	path = m_resourcePath + "/Shader/splitScreen.fx";
+	m_pShaderSplit = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path, pAttribute, 1);
 	//SAFE_RELEASE_BUFFER(m_pBlendStateNormal);
 	//m_pBlendStateNormal = DXUtils::CloseBlendState();
 
@@ -143,8 +148,9 @@ void CLightWave::Render(BaseRenderParam &RenderParam)
 	m_pShaderBlur->useShader();
 	pParam[0] = 0.0;
 	pParam[1] = 1.f / nHeight*0.4;
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
@@ -159,8 +165,9 @@ void CLightWave::Render(BaseRenderParam &RenderParam)
 	m_pShaderBlur->useShader();
 	pParam[0] = 1.f / nWidth*0.4;
 	pParam[1] = 0.0;
-	pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
@@ -177,8 +184,8 @@ void CLightWave::Render(BaseRenderParam &RenderParam)
 	pParam[1] = 1.f / nHeight * m_alpha;
 	pParam[2] = alpha * 0.2 + 0.5;
 
-	pSrcShaderView = m_pFBO->getTexture()->getTexShaderView();
-	auto pMaskView = BodyTexture->getTexShaderView();
+	auto pSrcShaderView = m_pFBO->getTexture()->getTexShaderView();
+	auto pMaskView = RHIResourceCast(BodyTexture.get())->GetSRV();
 
 	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pMaskView);
@@ -212,8 +219,8 @@ void CLightWave::Render(BaseRenderParam &RenderParam)
 	m_pShader->useShader();
 
 	Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, float(runTime1));
-	auto pMaterialView = img->tex->getTexShaderView();
-	pMaskView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	auto pMaterialView = RHIResourceCast(img->tex.get())->GetSRV();
+	pMaskView = RHIResourceCast(RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB().get())->GetSRV();
 
 	DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pMaskView);
@@ -226,6 +233,35 @@ void CLightWave::Render(BaseRenderParam &RenderParam)
 	DeviceContextPtr->DrawIndexed(2 * 3, 0, 0);
 
 	DeviceContextPtr->OMSetBlendState(m_pBlendStateNormal, blendFactor, 0xffffffff);
+
+
+	pDoubleBuffer->BindFBOB();
+	RHIResourceCast(pDoubleBuffer.get())->GetFBOB()->clear(0, 0, 0, 0);
+
+	bool bMirror;
+	int splitNum = RenderParam.GetSplitScreenNum(bMirror);
+	for (int i = 0; i < splitNum; i++)
+	{
+
+		pParam[0] = i;
+		pParam[1] = splitNum;
+
+		pDoubleBuffer->BindFBOB();
+		m_pShaderSplit->useShader();
+
+		//GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA());
+		pSrcShaderView = RHIResourceCast(RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA().get())->GetSRV();
+		DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
+
+		DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
+		DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBuffer);
+		DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer, &nStride, &nOffset);
+		DeviceContextPtr->IASetIndexBuffer(m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+		DeviceContextPtr->DrawIndexed(2 * 3, 0, 0);
+
+	}
+	pDoubleBuffer->SwapFBO();
 
 }
 

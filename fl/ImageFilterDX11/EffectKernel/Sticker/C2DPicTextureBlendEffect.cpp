@@ -12,6 +12,8 @@
 #include "EffectKernel/ShaderProgramManager.h"
 #include "Toolbox/Render/DynamicRHI.h"
 #include "Toolbox/Render/TextureRHI.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 C2DPicTextureBlendEffect::C2DPicTextureBlendEffect()
 {
@@ -206,10 +208,12 @@ void C2DPicTextureBlendEffect::Render(BaseRenderParam& RenderParam) {
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 
 	//设置纹理以及纹理采样
-	ID3D11ShaderResourceView* pMyShaderResourceView = m_v2DEffectModel.m_drawable->GetSRV(runTime);
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
-	auto pMaskView = BodyTexture->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+	//ID3D11ShaderResourceView* pMyShaderResourceView = m_v2DEffectModel.m_drawable->GetSRV(runTime);
+	auto pMyShaderResourceView = m_v2DEffectModel.m_drawable->GetTex(runTime);
+	auto pSrcShaderView = RHIResourceCast(RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA().get())->GetSRV();
+	auto pMaskView = RHIResourceCast(BodyTexture.get())->GetSRV();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+	pMyShaderResourceView->Bind(0);
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
 	DeviceContextPtr->PSSetShaderResources(2, 1, &pMaskView);
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
@@ -238,7 +242,7 @@ void C2DPicTextureBlendEffect::resetAnidrawable(const std::vector<std::string> &
 
 	for (auto file : file_list) {
 
-		auto TexRHI = GetDynamicRHI()->CreateTextureFromFileCPUAcess(file);
+		auto TexRHI = GetDynamicRHI()->CreateAsynTextureFromFile(file);
 		drawable->appandTex(84, TexRHI);
 	}
 
@@ -289,19 +293,11 @@ AnimationDrawable* C2DPicTextureBlendEffect::readAnidrawable(XMLNode& childNode,
 			sscanf(szItemInfo, "%d,%d,%d,%d", &iStart, &nCount, &nDuring, &nStep);
 			if (nCount > 0 && nDuring > 0)
 			{
-				char szFullFile[256];
 				for (; iStart <= nCount; iStart += nStep)
 				{
 					sprintf(szImagePath, szItems, iStart);
 
-					sprintf(szFullFile, "%s/%s", pFilePath, szImagePath);
-
-					std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-					if (TexRHI == nullptr)
-					{
-						TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-						GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-					}
+					std::shared_ptr<MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
 
 					long during = nDuring;
 
@@ -313,17 +309,10 @@ AnimationDrawable* C2DPicTextureBlendEffect::readAnidrawable(XMLNode& childNode,
 		//解析动画信息
 		int j = -1;
 		XMLNode nodeItem = nodeDrawable.getChildNode("item", ++j);
-		while (!nodeItem.isEmpty()) {
-			char szFullFile[256];
+		while (!nodeItem.isEmpty()) 
+		{
 			const char* szImagePath = nodeItem.getAttribute("image");
-			sprintf(szFullFile, "%s/%s", pFilePath, szImagePath);
-
-			std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-			if (TexRHI == nullptr)
-			{
-				TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-				GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-			}
+			std::shared_ptr<MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
 
 			const char* szDuring = nodeItem.getAttribute("duration");
 			long during = atol(szDuring);

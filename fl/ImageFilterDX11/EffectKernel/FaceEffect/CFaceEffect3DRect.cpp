@@ -3,7 +3,7 @@
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "Toolbox\fileSystem.h"
 #include "EffectKernel/ShaderProgramManager.h"
-
+#include "Toolbox/DXUtils/DX11Resource.h"
 
 struct EffectConstantBuffer2
 {
@@ -254,7 +254,7 @@ void CFaceEffect3DRect::Render(BaseRenderParam & RenderParam)
 	vp.TopLeftY = pFaceInfo->pFaceRect.y;
 	DeviceContextPtr->RSSetViewports(1, &vp);
 
-	DeviceContextPtr->ClearDepthStencilView(pDoubleBuffer->GetFBOA()->getDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+	DeviceContextPtr->ClearDepthStencilView(RHIResourceCast(pDoubleBuffer.get())->GetFBOA()->getDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	DeviceContextPtr->OMSetDepthStencilState(m_pDepthStateEnable, 0);
 	m_pShader->useShader();
 
@@ -277,9 +277,11 @@ void CFaceEffect3DRect::Render(BaseRenderParam & RenderParam)
 	//���þ����任
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, &matWVP, 0, 0);
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
-	pSrcShaderView = m_material->getTexShaderView();
+	//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
+
+	auto pSrcShaderView = m_material->getTexShaderView();
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 

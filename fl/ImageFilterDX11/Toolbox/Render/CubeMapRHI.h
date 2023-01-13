@@ -15,6 +15,7 @@ public:
 	virtual void ClearDepthBuffer() = 0;
 	virtual void ClearRenderTarget(float fRed, float fGreen, float fBlue, float fAlpha) = 0;
 	virtual void Destory() = 0;
+	virtual void UnBindRenderTarget() {}
 };
 
 #endif

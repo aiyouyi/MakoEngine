@@ -4,6 +4,7 @@
 #include "EffectKernel/ShaderProgramManager.h"
 #include "../ResourceManager.h"
 #include "../FileManager.h"
+#include "DXUtils/DX11Resource.h"
 
 CHandEffectHeart::CHandEffectHeart()
 {
@@ -173,44 +174,44 @@ void CHandEffectHeart::Render(BaseRenderParam &RenderParam)
 
 
 	Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, float(runTime));
-	auto pMaterialView = img->tex->getTexShaderView();
+	auto pMaterialView = RHIResourceCast(img->tex.get())->GetSRV();
 		
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 	DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
 		
-	//Render fire
-	std::vector<HandInfo> nHeartGesture;
-	nHeartGesture = RenderParam.GetHeartGestureInfo();
-	if (nHeartGesture.size() > 0)
-	{
-		for (int index = 0; index < nHeartGesture.size(); index++)
-		{
-			Vector2 *pHandPoint = nHeartGesture[index].handPoint;
-			//生成比心框并判断是否和固定炮仗框有相交
-			auto HandBox = GenerateHandBox(pHandPoint, m_BoxRate, 0);
+	////Render fire
+	//std::vector<HandInfo> nHeartGesture;
+	//nHeartGesture = RenderParam.GetHeartGestureInfo();
+	//if (nHeartGesture.size() > 0)
+	//{
+	//	for (int index = 0; index < nHeartGesture.size(); index++)
+	//	{
+	//		Vector2 *pHandPoint = nHeartGesture[index].handPoint;
+	//		//生成比心框并判断是否和固定炮仗框有相交
+	//		auto HandBox = GenerateHandBox(pHandPoint, m_BoxRate, 0);
 
-			MergeVertex((float*)HandBox->m_pVertices, (float*)HandBox->m_pUV, HandBox->m_nVerts);
+	//		MergeVertex((float*)HandBox->m_pVertices, (float*)HandBox->m_pUV, HandBox->m_nVerts);
 
-			if (m_IndexBuffer == NULL)
-			{
-				m_IndexBuffer = DXUtils::CreateIndexBuffer(HandBox->m_pTriangle, HandBox->m_nTriangle);
-			}
-			if (m_VerticeBuffer[index] == NULL)
-			{
-				m_VerticeBuffer[index] = DXUtils::CreateVertexBuffer(m_pMergeVertex, HandBox->m_nVerts, 5);
-			}
-			else
-			{
-				DXUtils::UpdateVertexBuffer(m_VerticeBuffer[index], m_pMergeVertex, HandBox->m_nVerts, 5 * sizeof(float), 5 * sizeof(float));
-			}
-			unsigned int nStride = (3 + 2) * sizeof(float);
-			unsigned int nOffset = 0;
+	//		if (m_IndexBuffer == NULL)
+	//		{
+	//			m_IndexBuffer = DXUtils::CreateIndexBuffer(HandBox->m_pTriangle, HandBox->m_nTriangle);
+	//		}
+	//		if (m_VerticeBuffer[index] == NULL)
+	//		{
+	//			m_VerticeBuffer[index] = DXUtils::CreateVertexBuffer(m_pMergeVertex, HandBox->m_nVerts, 5);
+	//		}
+	//		else
+	//		{
+	//			DXUtils::UpdateVertexBuffer(m_VerticeBuffer[index], m_pMergeVertex, HandBox->m_nVerts, 5 * sizeof(float), 5 * sizeof(float));
+	//		}
+	//		unsigned int nStride = (3 + 2) * sizeof(float);
+	//		unsigned int nOffset = 0;
 
-			DeviceContextPtr->IASetVertexBuffers(0, 1, &m_VerticeBuffer[index], &nStride, &nOffset);
-			DeviceContextPtr->IASetIndexBuffer(m_IndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-			DeviceContextPtr->DrawIndexed(HandBox->m_nTriangle * 3, 0, 0);
-		}
-	}
+	//		DeviceContextPtr->IASetVertexBuffers(0, 1, &m_VerticeBuffer[index], &nStride, &nOffset);
+	//		DeviceContextPtr->IASetIndexBuffer(m_IndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	//		DeviceContextPtr->DrawIndexed(HandBox->m_nTriangle * 3, 0, 0);
+	//	}
+	//}
 	
 }
 

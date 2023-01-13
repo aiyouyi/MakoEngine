@@ -2,7 +2,9 @@
 #define CSoulBody_H____
 
 #include "EffectKernel/CEffectPart.h"
-class MAGICSTUDIO_EXPORTS_CLASS CSoulBody: public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class MAGICSTUDIO_EXPORTS_CLASS CSoulBody: public CEffectPart, protected DXBaicSample
 {
 public:
 	CSoulBody();

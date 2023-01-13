@@ -1,8 +1,10 @@
 #include "CRhythm.h"
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CRhythm::CRhythm()
 {
@@ -122,19 +124,17 @@ void CRhythm::Render(BaseRenderParam &RenderParam)
 		m_RealCenterPoint.y = 1 - Radius;
 	}
 
-	float pParam[4];
-	pParam[0] =1/m_RealScale;
-	pParam[1] = m_RealCenterPoint.x;
-	pParam[2] = m_RealCenterPoint.y;
-
-
+	Vector4 Param;
+	Param[0] =1/m_RealScale;
+	Param[1] = m_RealCenterPoint.x;
+	Param[2] = m_RealCenterPoint.y;
 
 	auto pDoubleBuffer = RenderParam.GetDoubleBuffer();
 	pDoubleBuffer->SwapFBO();
 	pDoubleBuffer->BindFBOA();
 	m_pShader->useShader();
-	SetParameter("param", pParam, 0, sizeof(Vector4));
-	pDoubleBuffer->SetBShaderResource(0);
+	SetParameter("param", Param);
+	RHIResourceCast(pDoubleBuffer.get())->SetBShaderResource(0);
 	GET_SHADER_STRUCT_MEMBER(ConstantBufferVec4).ApplyToAllBuffer();
 	GetDynamicRHI()->DrawPrimitive(mVertexBuffer, mIndexBuffer);
 }

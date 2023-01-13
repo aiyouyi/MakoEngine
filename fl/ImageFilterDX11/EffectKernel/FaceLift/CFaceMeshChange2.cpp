@@ -137,10 +137,7 @@ void CFaceMeshChange2::RenderMaterial(int nIndex,Vector2 *pFacePoint)
 		DXUtils::UpdateVertexBuffer(m_rectVerticeBuffer[nIndex], (float*)pVertLeft, 4, 4 * sizeof(float), 4 * sizeof(float));
 	}
 
-
 	m_pShaderMat->useShader();
-
-
 
 	float blendFactor[] = { 0.f,0.f,0.f,0.f };
 	DeviceContextPtr->OMSetBlendState(m_pBlendStateNormal, blendFactor, 0xffffffff);
@@ -149,8 +146,14 @@ void CFaceMeshChange2::RenderMaterial(int nIndex,Vector2 *pFacePoint)
 	unsigned int nOffset = 0;
 
 
-	auto pMaterialView = m_2DAnimation[0]->GetSRV(m_runTime);
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
+	//auto pMaterialView = m_2DAnimation[0]->GetSRV(m_runTime);
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
+	auto pMaterialView = m_2DAnimation[0]->GetTex(m_runTime);
+	if (pMaterialView)
+	{
+		pMaterialView->Bind(0);
+	}
+
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
 	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer[nIndex], &nStride, &nOffset);
@@ -215,12 +218,7 @@ bool CFaceMeshChange2::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFilePa
 
 							sprintf(szFullFile, "%s/%s", pFilePath, szImagePath);
 
-							std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-							if (TexRHI == nullptr)
-							{
-								TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-								GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-							}
+							std::shared_ptr< MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
 
 							long during = nDuring;
 

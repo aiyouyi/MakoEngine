@@ -892,7 +892,7 @@ namespace cvSolvePNP {
 			(qtrue[3] + qest[3]) * (qtrue[3] + qest[3])) /
 			sqrt(qtrue[0] * qtrue[0] + qtrue[1] * qtrue[1] + qtrue[2] * qtrue[2] + qtrue[3] * qtrue[3]);
 
-		rot_err = std::min(rot_err1, rot_err2);
+		rot_err = (std::min)(rot_err1, rot_err2);
 
 		transl_err =
 			sqrt((ttrue[0] - test[0]) * (ttrue[0] - test[0]) +

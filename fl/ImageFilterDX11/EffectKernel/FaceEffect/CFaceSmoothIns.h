@@ -3,7 +3,13 @@
 
 #include "EffectKernel/CEffectPart.h"
 #include "Algorithm/Face2DMesh/MTFace2DInterFace.h"
-class CFaceSmoothIns: public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class DX11Texture;
+class DX11DoubleBuffer;
+class DX11FBO;
+
+class CFaceSmoothIns: public CEffectPart ,protected DXBaicSample
 {
 public:
     CFaceSmoothIns();
@@ -22,7 +28,7 @@ public:
 	bool WriteConfig(std::string &tempPath, XMLNode &root, HZIP dst, HZIP src);
 private:
 
-    void FilterToSkinFBO(DX11Texture *tex,int nWidth, int nHeight);
+    void FilterToSkinFBO(std::shared_ptr<CC3DTextureRHI> tex,int nWidth, int nHeight);
 
     void FilterToFaceFBO(BaseRenderParam &RenderParam,int nWidth, int nHeight);
 

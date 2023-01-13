@@ -1,11 +1,11 @@
-#pragma once
-#include "DX11Texture.h"
+ï»¿#pragma once
+
 #include "DX11FBOCache.h"
 #include "DX11Shader.h"
 #include <d3d11.h>
 #include <map>
-using namespace std;
 
+class DX11Texture;
 #define DeviceContextPtr (DX11Context::shareInst()->getDeviceContext())
 #define DevicePtr (DX11Context::shareInst()->getDevice())
 #define ContextInst (DX11Context::shareInst())
@@ -28,21 +28,21 @@ public:
 
 	DX11FBOCache *getFBOCache();
 
-	DX11Texture *fetchTexture(const string &szTexture, bool bGenMipmap=false);
+	DX11Texture *fetchTexture(const std::string &szTexture, bool bGenMipmap=false);
 
-	DX11Shader *fetchShader(const string &szShader, bool defaultCreate=false);
+	DX11Shader *fetchShader(const std::string &szShader, bool defaultCreate=false);
 
-	//Íâ²¿×Ô¼ºÊÖ¶¯´´½¨µÄÎÆÀíÒ²¿ÉÒÔ½øĞĞ¼ÇÂ¼£¬¹©ÆäËûÒıÓÃ
-	void recordTexture(const string &szTexture, DX11Texture *pTexture);
+	//å¤–éƒ¨è‡ªå·±æ‰‹åŠ¨åˆ›å»ºçš„çº¹ç†ä¹Ÿå¯ä»¥è¿›è¡Œè®°å½•ï¼Œä¾›å…¶ä»–å¼•ç”¨
+	void recordTexture(const std::string &szTexture, DX11Texture *pTexture);
 
-	//Íâ²¿×Ô¼ºÊÖ¶¯´´½¨µÄÎÆÀíÒ²¿ÉÒÔ½øĞĞ¼ÇÂ¼£¬¹©ÆäËûÒıÓÃ
-	void recordShader(const string &szShader, DX11Shader *pShader);
+	//å¤–éƒ¨è‡ªå·±æ‰‹åŠ¨åˆ›å»ºçš„çº¹ç†ä¹Ÿå¯ä»¥è¿›è¡Œè®°å½•ï¼Œä¾›å…¶ä»–å¼•ç”¨
+	void recordShader(const std::string &szShader, DX11Shader *pShader);
 
 	void clearUnrefResource();
 
 	ID3D11DepthStencilState *fetchDepthStencilState(bool enableDepthTest, bool enableDepthWrite);
 
-	ID3D11BlendState *fetchBlendState(bool bBlend, bool bBlendAlpha, bool writeBuffer);
+	ID3D11BlendState *fetchBlendState(bool bBlend, bool bBlendAlpha, bool writeBuffer, bool maskRGB = false);
 
 	ID3D11RasterizerState *fetchRasterizerState(D3D11_CULL_MODE cullMode);
 
@@ -52,15 +52,15 @@ private:
 	ID3D11Device *m_pDevice;
 	ID3D11DeviceContext *m_pContext;
 
-	typedef map<string, DX11Texture *> GLTextureMap_;
+	typedef std::map<std::string, DX11Texture *> GLTextureMap_;
 
-	typedef map<string, DX11Shader *> GLShaderMap_;
+	typedef std::map<std::string, DX11Shader *> GLShaderMap_;
 
-	typedef map<unsigned int, ID3D11DepthStencilState *> DepthStencilStateMap_;
+	typedef std::map<unsigned int, ID3D11DepthStencilState *> DepthStencilStateMap_;
 
-	typedef map<unsigned int, ID3D11BlendState *> BlendStateMap_;
+	typedef std::map<unsigned int, ID3D11BlendState *> BlendStateMap_;
 
-	typedef map<unsigned int, ID3D11RasterizerState *> RasterizerStateMap_;
+	typedef std::map<unsigned int, ID3D11RasterizerState *> RasterizerStateMap_;
 
 	CRITICAL_SECTION m_cs;
 

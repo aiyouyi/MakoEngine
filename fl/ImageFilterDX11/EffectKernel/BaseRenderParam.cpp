@@ -1,5 +1,5 @@
 ﻿#include "BaseRenderParam.h"
-
+#include "..\3rdparty\SplitScreenDetectSDK\include\SplitScreenDetectDef.h"
 
 BaseRenderParam::BaseRenderParam()
 {
@@ -28,36 +28,42 @@ void BaseRenderParam::SetFacePoint130(Vector2 * pPoint130,int nFaceIndex, int nW
 	m_bHasTranslate106[nFaceIndex] = false;
 }
 
-void BaseRenderParam::SetHandInfo(ccHGHandRes * handRes)
+void BaseRenderParam::SetHandInfo(ccHandRes* handRes)
 {
-	m_nHandCount = handRes->numHand;
-	if (m_nHandCount > MAX_SUPPORT_HAND)
+	int m_nCount = handRes->numHand;
+	if (m_nCount > MAX_SUPPORT_HAND)
 	{
-		m_nHandCount = MAX_SUPPORT_HAND;
+		m_nCount = MAX_SUPPORT_HAND;
 	}
-	m_HeartGesture.clear();
-	for (int n = 0; n < m_nHandCount; n++)
+	m_nHandCount = 0;
+	for (int n = 0; n < m_nCount; n++)
 	{
-		int gestureType = handRes->handInfo[n].gestureType;
-		if (gestureType == 7)
+		int gestureType = handRes->arrHand[n].gestureType;
+		if (gestureType > -1 )
 		{
 			HandInfo m_HandInfo;
-			m_HandInfo.handType = handRes->handInfo[n].handType;
-			m_HandInfo.gestureType = handRes->handInfo[n].gestureType;
-			m_HandInfo.handRect.x = handRes->handInfo[n].handRect.left;
-			m_HandInfo.handRect.y = handRes->handInfo[n].handRect.top;
-			m_HandInfo.handRect.z = handRes->handInfo[n].handRect.right;
-			m_HandInfo.handRect.w = handRes->handInfo[n].handRect.bottom;
-			memcpy(m_HandInfo.handPoint, (Vector2*)handRes->handInfo[n].keyPointArr, sizeof(Vector2) * 21);
+			m_HandInfo.handType = handRes->arrHand[n].handType;
+			m_HandInfo.gestureType = handRes->arrHand[n].gestureType;
+			m_HandInfo.handRect.x = handRes->arrHand[n].handRect.left;
+			m_HandInfo.handRect.y = handRes->arrHand[n].handRect.top;
+			m_HandInfo.handRect.z = handRes->arrHand[n].handRect.right;
+			m_HandInfo.handRect.w = handRes->arrHand[n].handRect.bottom;
+			memcpy(m_HandInfo.handPoint, (Vector4*)handRes->arrHand[n].keyPointArr, sizeof(Vector4) * 21);
 
-			m_HeartGesture.push_back(m_HandInfo);
+			m_HeartGesture[m_nHandCount] = m_HandInfo;
+			m_nHandCount += 1;
 		}
 	}
 }
 
-std::vector<HandInfo>& BaseRenderParam::GetHeartGestureInfo()
+HandInfo* BaseRenderParam::GetGestureInfo(int nIndex)
 {
-	return m_HeartGesture;
+	return m_HeartGesture + nIndex;
+}
+
+int BaseRenderParam::GetHandCount()
+{
+	return m_nHandCount;
 }
 
 void BaseRenderParam::SetFaceNum(int nFaceCount)
@@ -69,7 +75,41 @@ void BaseRenderParam::SetFaceNum(int nFaceCount)
 	}
 }
 
-void BaseRenderParam::SetDoubleBuffer(DX11DoubleBuffer *pDoubleBuffer)
+void BaseRenderParam::SetSize(int width, int height)
+{
+	m_nWidth = width;
+	m_nHeight = height;
+}
+
+void BaseRenderParam::SetBodyPoint(ccBodyRes * bodyRes)
+{
+	m_nBodyCount = bodyRes->numBody;
+	if (m_nBodyCount > MAX_SUPPORT_PEOPLE)
+	{
+		m_nBodyCount = MAX_SUPPORT_PEOPLE;
+	}
+
+	for (int n = 0; n < m_nBodyCount; n++)
+	{
+		Vector2 bodyPont[16];
+		for (int j = 0; j < 16; j++)
+		{
+			bodyPont[j].x = bodyRes->arrBody[n].keyPointArr[j].x;
+			bodyPont[j].y = bodyRes->arrBody[n].keyPointArr[j].y;
+		}
+
+		memcpy(m_pBodyPoint16[n], bodyPont, sizeof(Vector2) * 16);
+
+		m_BodyPosInfo[n].left = bodyRes->arrBody[n].bodyRect.left;
+		m_BodyPosInfo[n].right = bodyRes->arrBody[n].bodyRect.right;
+		m_BodyPosInfo[n].bottom = bodyRes->arrBody[n].bodyRect.bottom;
+		m_BodyPosInfo[n].top = bodyRes->arrBody[n].bodyRect.top;
+		m_BodyPosInfo[n].score = bodyRes->arrBody[n].bodyRect.score;
+	}
+
+}
+
+void BaseRenderParam::SetDoubleBuffer(std::shared_ptr<DoubleBufferRHI> pDoubleBuffer)
 {
 	m_pDoubleBuffer = pDoubleBuffer;
 }
@@ -92,21 +132,88 @@ void BaseRenderParam::SetFacePosInfo(FacePosInfo * pFacePosInfo, int nFaceIndex)
 
 	m_FacePosInfo[nFaceIndex].pFaceRect = pFacePosInfo->pFaceRect;
 	m_FacePosInfo[nFaceIndex].pFaceExp = pFacePosInfo->pFaceExp;
+	m_FacePosInfo[nFaceIndex].pCameraRect = pFacePosInfo->pCameraRect;
 }
 
-void BaseRenderParam::SetBodyMaskTexture(DX11Texture * pTex)
+void BaseRenderParam::SetBodyMaskTexture(std::shared_ptr<CC3DTextureRHI> pTex)
 {
 	m_pBodyMask = pTex;
 }
 
-void BaseRenderParam::SetHairMaskTexture(DX11Texture * pTex)
+void BaseRenderParam::SetHairMaskTexture(std::shared_ptr<CC3DTextureRHI> pTex)
 {
 	m_pHairMask = pTex;
 }
 
-void BaseRenderParam::SetSrcTex(ID3D11ShaderResourceView * tex)
+void BaseRenderParam::SetSrcTex(std::shared_ptr<CC3DTextureRHI> tex)
 {
 	m_SrcTex = tex;
+}
+
+void BaseRenderParam::SetCardMaskID(std::map<AnchorType, long long>& cardId)
+{
+	m_CardMask = cardId;
+}
+
+void BaseRenderParam::SetSplitScreenNum(int SplitType)
+{
+	switch (SplitType)
+	{
+	case SSD_SCREEN_TYPE_FULL:
+		m_SplitScreenNum = 1.0;
+		b_SplitMirror = false;
+		break;
+	case SSD_SCREEN_TYPE_TWO_REPLICATE:
+		m_SplitScreenNum = 2.0;
+		b_SplitMirror = false;
+		break;
+	case SSD_SCREEN_TYPE_TWO_MIRROR:
+		b_SplitMirror = true;
+		m_SplitScreenNum = 2.0;
+		break;
+	case SSD_SCREEN_TYPE_THREE_REPLICATE:
+		m_SplitScreenNum = 3.0;
+		b_SplitMirror = false;
+		break;
+	default:
+		break;
+	}
+}
+
+int BaseRenderParam::GetSplitScreenNum(bool& bMirror)
+{
+	bMirror = b_SplitMirror;
+	return m_SplitScreenNum;
+}
+
+std::map<AnchorType, long long>& BaseRenderParam::GetCardMaskID()
+{
+	return m_CardMask;
+}
+
+void BaseRenderParam::SetExpressionCoffes(std::vector<float>& coffes)
+{
+	m_Coffes = coffes;
+}
+
+std::vector<float>& BaseRenderParam::GetExpressionCoffes()
+{
+	return m_Coffes;
+}
+
+Vector2 * BaseRenderParam::GetBodyPoint(int nBodyIndex)
+{
+	if (nBodyIndex > m_nBodyCount)
+	{
+		return NULL;
+	}
+
+	return m_pBodyPoint16[nBodyIndex];
+}
+
+BodyPosInfo * BaseRenderParam::GetBodyPosInfo(int nBodyIndex)
+{
+	return m_BodyPosInfo + nBodyIndex;
 }
 
 Vector2 * BaseRenderParam::GetFacePoint(int nFaceIndex, FacePointType eFaceType, bool bNormalize)
@@ -151,7 +258,7 @@ Vector2 * BaseRenderParam::GetFacePoint(int nFaceIndex, FacePointType eFaceType,
 	}
 }
 
-DX11DoubleBuffer * BaseRenderParam::GetDoubleBuffer()
+std::shared_ptr<DoubleBufferRHI> BaseRenderParam::GetDoubleBuffer()
 {
 	return m_pDoubleBuffer;
 }
@@ -166,9 +273,9 @@ int BaseRenderParam::GetHeight()
 	return m_pDoubleBuffer->GetHeight();
 }
 
-int BaseRenderParam::GetHandCount()
+int BaseRenderParam::GetBodyCount()
 {
-	return m_nHandCount;
+	return m_nBodyCount;
 }
 
 int BaseRenderParam::GetFaceCount()
@@ -198,17 +305,17 @@ FacePosInfo * BaseRenderParam::GetFaceInfo(int nFaceIndex)
 	return m_FacePosInfo + nFaceIndex;
 }
 
-DX11Texture * BaseRenderParam::GetBodyMaskTexture()
+std::shared_ptr<CC3DTextureRHI> BaseRenderParam::GetBodyMaskTexture()
 {
 	return m_pBodyMask;
 }
 
-DX11Texture * BaseRenderParam::GetHairMaskTexture()
+std::shared_ptr<CC3DTextureRHI> BaseRenderParam::GetHairMaskTexture()
 {
 	return m_pHairMask;
 }
 
-ID3D11ShaderResourceView * BaseRenderParam::GetSrcTex()
+std::shared_ptr<CC3DTextureRHI> BaseRenderParam::GetSrcTex()
 {
 	return m_SrcTex;
 }

@@ -10,6 +10,7 @@
 #include "DX11Texture2D.h"
 #include "DX11RenderTarget.h"
 #include "DX11CubeMapRHI.h"
+#include "Toolbox/DXUtils/DX11DoubleBuffer.h"
 
 template<class T>
 struct TD3D11ResourceTraits
@@ -74,6 +75,12 @@ template<>
 struct TD3D11ResourceTraits<CC3DCubeMapRHI>
 {
 	typedef DX11CubeMapRHI TConcreteType;
+};
+
+template<>
+struct TD3D11ResourceTraits<DoubleBufferRHI>
+{
+	typedef DX11DoubleBuffer TConcreteType;
 };
 
 template<typename TRHIType>

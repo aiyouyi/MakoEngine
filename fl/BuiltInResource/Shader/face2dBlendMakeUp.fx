@@ -84,7 +84,7 @@ float BlendColorDodgef(float base, float blend) {
 }
 //线性减淡
 float BlendLinearDodgef(float base, float blend) {
-    return min(base + blend, 1.0);
+    return (base + blend);
 }
 //深色
 float3 BlendDarkerColor(float3 base, float3 blend)
@@ -120,6 +120,13 @@ float4 PS( VS_OUTPUT input ) : SV_Target
 {  
     float4 srcColor = srcMeterial.Sample(samLinear,input.Tex1);
     float4 dstColor = txMeterial.Sample(samLinear,input.Tex);
+
+    if(param.z > 0.5 && dstColor.a > 0.001)
+    {
+        dstColor.rgb = dstColor.rgb / dstColor.a;
+    }
+
+
     float alpha2 = dstColor.a * param.x;
     float blendtype = param.y;
    

@@ -17,6 +17,6 @@ extern std::string g_temp_folder;
 std::string getCWD();
 void getFileListFromFolder(const std::string path, std::vector<std::string> &list);
 void removeFolder(const std::string path);
-void zipFolder(HZIP hz, const std::string path);
+void zipFolder(HZIP hz, const std::string& path);
 void resetTempFolder();
 std::string getTempFolder();

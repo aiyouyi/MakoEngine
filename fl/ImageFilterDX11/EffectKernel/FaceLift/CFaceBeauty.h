@@ -3,8 +3,12 @@
 #include <vector>
 #include "BaseDefine/Vectors.h"
 #include "Algorithm/InterFacePointDeform.h"
+#include "EffectKernel/DXBasicSample.h"
+
+class DX11Texture;
+
 #define MaxTypeCount 30
-class CFaceBeauty :public CEffectPart
+class CFaceBeauty :public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceBeauty();

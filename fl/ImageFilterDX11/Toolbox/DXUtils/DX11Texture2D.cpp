@@ -1,5 +1,6 @@
 #include "DX11Texture2D.h"
 #include "Toolbox/DXUtils/DX11Texture.h"
+#include "DX11Context.h"
 
 DWORD ms_dwTextureFormatType[] =
 {
@@ -10,6 +11,7 @@ DWORD ms_dwTextureFormatType[] =
 	DXGI_FORMAT_R32G32B32A32_FLOAT,
 	DXGI_FORMAT_R32G32B32_FLOAT,
 	DXGI_FORMAT_R16G16B16A16_FLOAT,
+	DXGI_FORMAT_UNKNOWN,
 	DXGI_FORMAT_R16G16_FLOAT,
 	DXGI_FORMAT_R16_FLOAT,
 	DXGI_FORMAT_R32_FLOAT,
@@ -40,6 +42,7 @@ DWORD ms_dwSRGBTextureFormatType[] =
 	DXGI_FORMAT_R32G32B32A32_FLOAT,
 	DXGI_FORMAT_R32G32B32_FLOAT,
 	DXGI_FORMAT_R16G16B16A16_FLOAT,
+	DXGI_FORMAT_UNKNOWN,
 	DXGI_FORMAT_R16G16_FLOAT,
 	DXGI_FORMAT_R16_FLOAT,
 	DXGI_FORMAT_R32_FLOAT,
@@ -73,8 +76,9 @@ DX11Texture2D::~DX11Texture2D()
 
 bool DX11Texture2D::InitTexture(uint32_t format, uint32_t BindFlags, int32_t width, int32_t height, void* pBuffer /*= NULL*/, int rowBytes /*= 0*/, bool bGenMipmap /*= false*/, bool bMultSample /*= false*/)
 {
+	m_Tex1D = {};
 	m_Attatched = nullptr;
-	UINT DXBindFlags = D3D11_BIND_SHADER_RESOURCE;
+	uint32_t DXBindFlags = D3D11_BIND_SHADER_RESOURCE;
 	if (BindFlags == OT_RENDER_TARGET)
 	{
 		DXBindFlags |= D3D11_BIND_RENDER_TARGET;
@@ -83,26 +87,49 @@ bool DX11Texture2D::InitTexture(uint32_t format, uint32_t BindFlags, int32_t wid
 	return m_DX11Texture->initTexture((DXGI_FORMAT)ms_dwTextureFormatType[format], DXBindFlags, width, height, pBuffer, rowBytes, bGenMipmap, bMultSample);
 }
 
+bool DX11Texture2D::InitTexture1D(uint32_t format, int32_t width, void* pBuffer, int rowBytes)
+{
+	m_Width1D = width;
+	CD3D11_TEXTURE1D_DESC texDesc((DXGI_FORMAT)ms_dwTextureFormatType[format], width, 1, 1);
+	D3D11_SUBRESOURCE_DATA initData{ pBuffer, rowBytes };
+
+	HRESULT hr = DevicePtr->CreateTexture1D(&texDesc, &initData, m_Tex1D.ReleaseAndGetAddressOf());
+	if (SUCCEEDED(hr))
+	{
+		hr = DevicePtr->CreateShaderResourceView(m_Tex1D, nullptr, m_SRV.ReleaseAndGetAddressOf());
+	}
+
+	return SUCCEEDED(hr);
+}
+
 bool DX11Texture2D::InitTextureFromFile(const std::string szFile, bool bGenMipmap /*= false*/)
 {
+	m_Tex1D = {};
 	m_Attatched = nullptr;
 	return m_DX11Texture->initTextureFromFile(szFile, bGenMipmap);
 }
 
 bool DX11Texture2D::InitTextureFromZip(void* hZip, const char* szImagePath, bool bGenMipmap /*= false*/)
 {
+	m_Tex1D = {};
 	m_Attatched = nullptr;
 	return m_DX11Texture->initTextureFromZip((HZIP)hZip, szImagePath, bGenMipmap);
 }
 
 bool DX11Texture2D::InitTextureFromFileCPUAcess(const std::string szFile)
 {
+	m_Tex1D = {};
 	m_Attatched = nullptr;
 	return m_DX11Texture->initTextureFromFileCPUAcess(szFile);
 }
 
 uint32_t DX11Texture2D::GetWidth() const
 {
+	if (m_Tex1D)
+	{
+		return m_Width1D;
+	}
+
 	if (m_Attatched)
 	{
 		return m_Attatched->width();
@@ -119,6 +146,20 @@ uint32_t DX11Texture2D::GetHeight() const
 	return m_DX11Texture->height();
 }
 
+bool DX11Texture2D::updateTextureInfo(void* pBuffer, int w, int h)
+{
+	if (m_Attatched)
+	{
+		return m_Attatched->updateTextureInfo(pBuffer, w, h);
+	}
+	return m_DX11Texture->updateTextureInfo(pBuffer, w, h);
+}
+
+void DX11Texture2D::AttatchSRV(void* SRV)
+{
+	m_SRV = (ID3D11ShaderResourceView*)SRV;
+}
+
 ID3D11Texture2D* DX11Texture2D::GetNativeTex()
 {
 	if (m_Attatched)
@@ -128,8 +169,18 @@ ID3D11Texture2D* DX11Texture2D::GetNativeTex()
 	return m_DX11Texture->getTex();
 }
 
+ID3D11Texture1D* DX11Texture2D::GetNativeTex1D()
+{
+	return m_Tex1D;
+}
+
 ID3D11ShaderResourceView* DX11Texture2D::GetSRV()
 {
+	if (m_SRV)
+	{
+		return m_SRV;
+	}
+
 	if (m_Attatched)
 	{
 		return m_Attatched->getTexShaderView();

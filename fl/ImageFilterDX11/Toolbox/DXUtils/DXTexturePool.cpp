@@ -1,6 +1,6 @@
-#include "DXTexturePool.h"
+﻿#include "DXTexturePool.h"
 #include <assert.h>
-
+#include "DX11Texture.h"
 
 DXTexturePool::DXTexturePool()
 {

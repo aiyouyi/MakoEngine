@@ -1,10 +1,13 @@
 ﻿#include "CFaceBlendMakeUp.h"
-#include "Toolbox\DXUtils\DXUtils.h"
+#include "Toolbox/DXUtils/DXUtils.h"
 #include <iostream>
-#include "Toolbox\fileSystem.h"
+#include "Toolbox/fileSystem.h"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
+
 CFaceBlendMakeUp::CFaceBlendMakeUp()
 {
 
@@ -126,11 +129,11 @@ void CFaceBlendMakeUp::Render(BaseRenderParam &RenderParam)
 		}
 
 		pParam[1] = GetBlendParm(m_vMeshType[t].m_blendType);
+		if (m_EnableMp4Alpha)pParam[2] = 1.0; else pParam[2] = 0.0;
 		Image* img = ResourceManager::Instance().getAnimFrame(m_vMeshType[t].m_anim_id, float(runTime));
-		auto pMaterialView = img->tex->getTexShaderView();
+		auto pMaterialView = RHIResourceCast(img->tex.get())->GetSRV();
 		//auto pMaterialView = m_vMeshType[t].m_drawable->getTex(runTime);
 	
-
 		DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 		DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 		DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -138,8 +141,6 @@ void CFaceBlendMakeUp::Render(BaseRenderParam &RenderParam)
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 		DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
 		
-
-
 		int nFaceCount = RenderParam.GetFaceCount();
 		for (int faceIndex = 0; faceIndex < nFaceCount; faceIndex++)
 		{
@@ -148,9 +149,9 @@ void CFaceBlendMakeUp::Render(BaseRenderParam &RenderParam)
 			MergeVertex((float*)FaceMesh->m_pVertices, (float*)FaceMesh->m_pUV, FaceMesh->m_nVerts);
 
 			pDoubleBuffer->SyncAToBRegion((float*)FaceMesh->m_pVertices, FaceMesh->m_nVerts,2,1);
-			auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-			DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
-
+			//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+			//DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
+			GetDynamicRHI()->SetPSShaderResource(1, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 
 			if (m_IndexBuffer[t] == NULL)
 			{
@@ -175,6 +176,15 @@ void CFaceBlendMakeUp::Render(BaseRenderParam &RenderParam)
 
 	}
 
+}
+
+void CFaceBlendMakeUp::SetAlpha(float Alpha)
+{
+	CEffectPart::SetAlpha(Alpha);
+	for (size_t i = 0; i < m_vMeshType.size(); i++)
+	{
+		m_vMeshType[i].alpha = Alpha;
+	}
 }
 
 CFaceBlendMakeUp * CFaceBlendMakeUp::createEffect()
@@ -256,7 +266,7 @@ void CFaceBlendMakeUp::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFilePa
 			const char* szAlpha = nodeDrawable.getAttribute("alpha");
 			if (szAlpha != NULL)
 			{
-				mInfo.alpha = atof(szAlpha);
+				m_alpha=mInfo.alpha = atof(szAlpha);
 			}
 
 			const char *szType = nodeDrawable.getAttribute("FaceType");
@@ -309,7 +319,7 @@ void CFaceBlendMakeUp::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFilePa
 			const char* szAlpha = nodeDrawable.getAttribute("alpha");
 			if (szAlpha != NULL)
 			{
-				mInfo.alpha = atof(szAlpha);
+				m_alpha=mInfo.alpha = atof(szAlpha);
 			}
 
 			const char *isCrop = nodeDrawable.getAttribute("Crop");

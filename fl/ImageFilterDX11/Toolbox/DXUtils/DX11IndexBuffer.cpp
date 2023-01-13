@@ -26,6 +26,13 @@ void DX11IndexBuffer::CreateIndexBuffer(unsigned int* pData, int nTriangle)
 	PtrIndexBuffer = DXUtils::CreateIndexBuffer(pData, nTriangle);
 }
 
+void DX11IndexBuffer::UpdateIndexBuffer(unsigned short* pData, int nTriangle, int sizePerTriangle, int offset)
+{
+	m_IndexFormat = DXGI_FORMAT_R16_UINT;
+	m_NumberTrangle = nTriangle;
+	DXUtils::UpdateVertexBuffer(PtrIndexBuffer, pData, nTriangle, sizePerTriangle, sizePerTriangle, 0, offset);
+}
+
 uint32_t DX11IndexBuffer::GetNumberTriangle() const 
 {
 	return m_NumberTrangle;

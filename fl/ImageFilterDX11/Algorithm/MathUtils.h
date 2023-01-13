@@ -3,11 +3,11 @@
 
 #include "BaseDefine/Define.h"
 #include "Matrices.h"
-#include <cmath>
-#include <vector>
+#include "Toolbox/inc.h"
+
 using namespace std;
 
-typedef unsigned char byte;
+//typedef unsigned char byte;
 typedef unsigned char BYTE;
 
 #define MATRIX_SIZE ( sizeof(float) * 16)
@@ -55,13 +55,13 @@ public:
 	//@param [width][height] mask宽高
 	//@param [points] 多边形的点集,!!第一个点和最后一个点无需重合!!
 	//@param [fillColor] 内部填充值
-	static bool FillRect5(byte* pMask,int width,int height,vector<Vector2>& points,byte fillColor = 255);
+	static bool FillRect5(byte_t* pMask,int width,int height,vector<Vector2>& points, byte_t fillColor = 255);
 	//填充相关区域(要求凸多边形),外部用fillColor
 	//@param [pMask] 要填充的mask
 	//@param [width][height] mask宽高
 	//@param [points] 多边形的点集,!!第一个点和最后一个点无需重合!!
 	//@param [fillColor] 外部填充值
-	static bool FillRect6(byte* pMask,int width,int height,vector<Vector2>& points,byte fillColor = 255);
+	static bool FillRect6(byte_t* pMask,int width,int height,vector<Vector2>& points, byte_t fillColor = 255);
 	//画线函数
 	//@param [nWidth]画布的图片宽
 	//@param [nHeight]画布的图片高

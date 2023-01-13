@@ -29,27 +29,27 @@ VS_OUTPUT VS(VS_INPUT input)
     return output;
 }
 
-float2 PS(VS_OUTPUT input) : SV_Target
+float4 PS(VS_OUTPUT input) : SV_Target
 {
     float2 TextureSize;
     InputImage.GetDimensions(TextureSize.x, TextureSize.y);
 
     float2 tex_offset = 1.0 / TextureSize; // gets size of single texel
-    float2 result = InputImage.Sample(samLinear, input.Tex).rg * weight[0]; // current fragment's contribution
+    float4 result = InputImage.Sample(samLinear, input.Tex) * weight[0]; // current fragment's contribution
     if(horizontal) 
     {
         for(int i = 1; i < 5; ++i)
         {
-            result += InputImage.Sample(samLinear, input.Tex + float2(tex_offset.x * i, 0.0)).rg * weight[i];
-            result += InputImage.Sample(samLinear, input.Tex - float2(tex_offset.x * i, 0.0)).rg * weight[i];
+            result += InputImage.Sample(samLinear, input.Tex + float2(tex_offset.x * i, 0.0)) * weight[i];
+            result += InputImage.Sample(samLinear, input.Tex - float2(tex_offset.x * i, 0.0)) * weight[i];
         }
     }
     else
     {
         for(int i = 1; i < 5; ++i)
         {
-            result += InputImage.Sample(samLinear, input.Tex + float2(0.0, tex_offset.y * i)).rg * weight[i];
-            result += InputImage.Sample(samLinear, input.Tex - float2(0.0, tex_offset.y * i)).rg * weight[i];
+            result += InputImage.Sample(samLinear, input.Tex + float2(0.0, tex_offset.y * i)) * weight[i];
+            result += InputImage.Sample(samLinear, input.Tex - float2(0.0, tex_offset.y * i)) * weight[i];
         }
     }
     return result;

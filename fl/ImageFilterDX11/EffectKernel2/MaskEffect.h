@@ -4,6 +4,7 @@
 #include "Toolbox/RectDraw.h"
 #include "Toolbox/mathlib.h"
 
+class CC3DTextureRHI;
 
 class MaskEffect
 {
@@ -22,5 +23,7 @@ private:
 	RectDraw *m_rectDraw;
 
 	ID3D11Texture2D *m_pTargetTexture;
+	std::shared_ptr<CC3DTextureRHI> m_InputSRV;
+	std::shared_ptr<CC3DTextureRHI> m_VideoSRV;
 };
 

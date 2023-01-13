@@ -31,6 +31,8 @@ DX11IMAGEFILTER_EXPORTS_API unsigned long ccCurrentTime()
 #endif
 }
 
+#ifdef PLATFORM_WINDOWS
+
 DX11IMAGEFILTER_EXPORTS_API void ccBeginFilter()
 {
 }
@@ -59,3 +61,4 @@ DX11IMAGEFILTER_EXPORTS_API void ccUnInitFilter()
 	cocos2d::PoolManager::getInstance()->getCurrentPool()->clear();
 	cocos2d::PoolManager::destroyInstance();
 }
+#endif

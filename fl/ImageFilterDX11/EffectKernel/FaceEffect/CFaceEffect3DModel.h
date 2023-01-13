@@ -4,8 +4,9 @@
 #include "Toolbox/EffectModel.hpp"
 #include "Toolbox/FSObject.h"
 #include "Toolbox/FacialObject.h"
+#include "EffectKernel/DXBasicSample.h"
 
-class CFaceEffect3DModel : public CEffectPart
+class CFaceEffect3DModel : public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceEffect3DModel();

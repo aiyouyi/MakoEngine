@@ -6,12 +6,13 @@
 #include <vector>
 #include "Algorithm/InterFacePointDeform.h"
 #include "Toolbox/Render/CC3DShaderDef.h"
+#include "EffectKernel/DXBasicSample.h"
 
-class CBodyLift2 :public CEffectPart
+class CBodyLift2 :public CEffectPart, protected DXBaicSample
 {
 public:
 	CBodyLift2();
-	~CBodyLift2();
+	virtual ~CBodyLift2();
 	virtual void* Clone() override;
 	virtual bool ReadConfig(XMLNode& childNode, HZIP hZip = 0, char* pFilePath = NULL) override;
 	virtual bool Prepare() override;
@@ -25,7 +26,7 @@ public:
 	}
 
 private:
-	DELCARE_SHADER_STRUCT_MEMBER(ConstantBufferVec4);
+	DECLARE_SHADER_STRUCT_MEMBER(ConstantBufferVec4);
 
 
 	void FilterToFaceFBO(BaseRenderParam &RenderParam, int nWidth, int nHeight);

@@ -6,8 +6,10 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CFaceShadowHighLight::CFaceShadowHighLight()
 {
@@ -40,6 +42,10 @@ void CFaceShadowHighLight::Release()
 	}
 
 	SAFE_DELETE_ARRAY(m_pMergeVertex);
+
+	ResourceManager::Instance().freeAnim(m_NormalId);
+	ResourceManager::Instance().freeAnim(m_HighLightID);
+	ResourceManager::Instance().freeAnim(m_ShadowID);
 }
 
 void * CFaceShadowHighLight::Clone()
@@ -183,23 +189,24 @@ void CFaceShadowHighLight::Render(BaseRenderParam &RenderParam)
 
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 
 	Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, 0);
-	pSrcShaderView = img->tex->getTexShaderView();
+	auto pSrcShaderView = RHIResourceCast(img->tex.get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
 
 	img = ResourceManager::Instance().getAnimFrame(m_NormalId, 0);
-	pSrcShaderView = img->tex->getTexShaderView();
+	pSrcShaderView = RHIResourceCast(img->tex.get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(2, 1, &pSrcShaderView);
 
 	img = ResourceManager::Instance().getAnimFrame(m_HighLightID, 0);
-	pSrcShaderView = img->tex->getTexShaderView();
+	pSrcShaderView = RHIResourceCast(img->tex.get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(3, 1, &pSrcShaderView);
 
 	img = ResourceManager::Instance().getAnimFrame(m_ShadowID, 0);
-	pSrcShaderView = img->tex->getTexShaderView();
+	pSrcShaderView = RHIResourceCast(img->tex.get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(4, 1, &pSrcShaderView);
 	
 	float blendFactor[] = { 0.f,0.f,0.f,0.f };

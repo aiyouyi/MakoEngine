@@ -54,6 +54,9 @@ DX11CubeMap::DX11CubeMap(int nTextureWidth, int nTexureHeight,int nMipLevels, bo
 
 bool DX11CubeMap::Init(int nTextureWidth, int nTexureHeight,int nMipLevels, bool UseDepth, bool GenMipRetarget)
 {
+	textureWidth = nTextureWidth;
+	textureHeight = nTexureHeight;
+	
 	//第一,填充2D纹理形容结构体,并创建2D渲染目标纹理
 	D3D11_TEXTURE2D_DESC cubeMapTextureDesc;
 	ZeroMemory(&cubeMapTextureDesc, sizeof(cubeMapTextureDesc));

@@ -5,14 +5,31 @@
 #include "CC3DEngine/Scene/CC3DSceneManage.h"
 #include "CC3DEngine/Render/CC3DPbrRender.h"
 #include "Toolbox/RenderState/PiplelineState.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
+#include "CC3DEngine/CC3DConfigStream.h"
 
 CFacePBRModel::CFacePBRModel()
 {
+	m_RenderUtils = std::make_shared<CRenderPBRModel>();
 	m_EffectPart = FACE_PBR_3D_MODEL;
 }
 
 void CFacePBRModel::Release()
 {
+}
+
+bool CFacePBRModel::WriteConfig(std::string& tempPath, XMLNode& root, HZIP dst /*= 0*/, HZIP src /*= 0*/)
+{
+	CC3DImageFilter::CC3DConfigStream Config;
+	
+	auto EffectConfig = m_RenderUtils->EffectConfig;
+	if (EffectConfig)
+	{
+		Config.SaveModelXML(root, EffectConfig->ModelConfig, EffectConfig->FurData.ConfigData);
+	}
+	
+	return true;
 }
 
 CFacePBRModel::~CFacePBRModel()
@@ -32,11 +49,7 @@ bool CFacePBRModel::ReadConfig(XMLNode& childNode, HZIP hZip, char* pFilePath)
 
 	if (!childNode.isEmpty())
 	{
-		if (!m_RenderUtils)
-		{
-			m_RenderUtils = std::make_shared<CRenderPBRModel>();
-			m_RenderUtils->ReadConfig(childNode, hZip, pFilePath);
-		}
+		m_RenderUtils->ReadConfig(childNode, hZip, pFilePath);
 		//time
 		XMLNode nodeTime = childNode.getChildNode("time", 0);
 		if (!nodeTime.isEmpty())
@@ -87,6 +100,11 @@ bool CFacePBRModel::ReadConfig(XMLNode& childNode, HZIP hZip, char* pFilePath)
 			if (rotateX != NULL)
 			{
 				sscanf(rotateX, "%f", &m_rotateX);
+			}
+			const char* HasRotate = nodeGltfModel.getAttribute("hasRotate");
+			if (HasRotate != NULL)
+			{
+				sscanf(HasRotate, "%f", &m_HasRotate);
 			}
 		}
 
@@ -156,26 +174,28 @@ void CFacePBRModel::Render(BaseRenderParam& RenderParam)
 			alpha = 0;
 		}
 	}
-	m_RenderUtils->m_runTime = runTime;
-	if (nFaceCount > 0)
+	
+	m_RenderUtils->RunTime = runTime;
+	if (nFaceCount > 0 )
 	{
+		
 		m_RenderUtils->PreRender(RenderParam);
 		//view matrix
 		glm::mat4 matView = glm::lookAtLH(glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec3(0.f, -1.f, 0.f));
 
 		auto pDoubleBuffer = RenderParam.GetDoubleBuffer();
 
-		if (m_RenderUtils->m_DoubleBuffer != NULL)
+		if (m_RenderUtils->GetDoubleBuffer() != NULL)
 		{
-			pDoubleBuffer = m_RenderUtils->m_DoubleBuffer;
+			pDoubleBuffer = m_RenderUtils->GetDoubleBuffer();
 		}
 
 
 		//渲染人头像信息,用于后续剔除(禁止混合，禁止写入颜色buffer，开启深度测试和深度buffer写)
-
-		pDoubleBuffer->GetFBOB()->clear(0, 0, 0, 1);
 		pDoubleBuffer->BindDoubleBuffer();
-		pDoubleBuffer->GetFBOA()->clearDepth();
+		pDoubleBuffer->ClearDepthA();
+		pDoubleBuffer->ClearB(0, 0, 0, 1);
+
 		for (int faceIndex = 0; faceIndex < nFaceCount; ++faceIndex)
 		{
 			GetDynamicRHI()->SetRasterizerState(CC3DPiplelineState::RasterizerStateCullBack);
@@ -199,15 +219,26 @@ void CFacePBRModel::Render(BaseRenderParam& RenderParam)
 
 			glm::mat4 matScale3 = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 			glm::mat4 matProjDX = matScale3 * glm::perspectiveLH(fAngle, pFaceInfo->pFaceRect.width * 1.f / pFaceInfo->pFaceRect.height, 10.0f, 2000.f);
-
+			glm::mat4 matProjDXForHead = matScale3 * glm::perspectiveRH(fAngle, pFaceInfo->pFaceRect.width * 1.f / pFaceInfo->pFaceRect.height, 10.0f, 2000.f);
 
 			glm::mat4 matWVP = matProjDX * matView * matRotateXYZ * matScale2;
 
 			glm::mat4 matScale = glm::scale(glm::mat4(1.0f), glm::vec3(m_MatScale));
 
 			m_RenderUtils->m_3DScene->m_ModelControl.m_ModelMatrix = matRotateXYZ * matScale;
+			m_RenderUtils->m_3DScene->m_Camera.m_ViewMatrix = matView;
+			m_RenderUtils->m_3DScene->m_Project.m_ProjectMatrix = matProjDX;
 
-			if (m_RenderUtils->m_DyBone_array.size() > 0 && m_RenderUtils->m_3DScene->m_Skeleton.size() > 0 && m_RenderUtils->m_3DScene->m_Skeleton[0]->m_RootNode.size() > 0 && m_RenderUtils->m_3DScene->m_Model[0]->m_hasSkin)
+			if (m_HasRotate<=0.5f)
+			{
+				glm::mat4 translation;
+				translation = glm::translate(translation, glm::vec3(pFaceInfo->x, pFaceInfo->y, -pFaceInfo->z));
+				m_RenderUtils->m_3DScene->m_ModelControl.m_ModelMatrix = translation * glm::scale(glm::mat4(1.0f), glm::vec3(m_MatScale));
+				m_RenderUtils->m_3DScene->m_Camera.m_ViewMatrix = glm::mat4(1.0);
+				m_RenderUtils->m_3DScene->m_Project.m_ProjectMatrix = matProjDXForHead;
+			}
+
+			if (m_RenderUtils->CheckIfHasDynamicBone() && m_RenderUtils->m_3DScene->m_Skeleton.size() > 0 && m_RenderUtils->m_3DScene->m_Skeleton[0]->m_RootNode.size() > 0 && m_RenderUtils->m_3DScene->m_Model[0]->m_hasSkin)
 			{
 				if (faceIndex == 0)
 				{
@@ -217,19 +248,14 @@ void CFacePBRModel::Render(BaseRenderParam& RenderParam)
 					matTranslate = glm::rotate(matTranslate, pFaceInfo->roll * CC_PI / 180.f, glm::vec3(0.0f, 0.0f, 1.0f));
 
 					m_RenderUtils->m_3DScene->m_Skeleton[0]->m_RootNode[0]->ParentMat = matTranslate;
-					m_RenderUtils->m_3DScene->m_Skeleton[0]->UpdateBone();
+					
 				}
+				m_RenderUtils->m_3DScene->m_Skeleton[0]->UpdateBone();
 				m_RenderUtils->m_3DScene->m_ModelControl.m_ModelMatrix = m_RenderUtils->m_3DScene->m_ModelControl.m_ModelMatrix * glm::inverse(m_RenderUtils->m_3DScene->m_Skeleton[0]->m_RootNode[0]->ParentMat);
 			}
-
-			m_RenderUtils->m_3DScene->m_Camera.m_ViewMatrix = matView;
-			m_RenderUtils->m_3DScene->m_Project.m_ProjectMatrix = matProjDX;
-
-
-
+		
 			float blendFactor[] = { 0.f,0.f,0.f,0.f };
 			GetDynamicRHI()->SetBlendState(CC3DPiplelineState::BSDisableWriteDisable, blendFactor, 0xffffffff);
-
 
 			int faceL = pFaceInfo->pFaceRect.x;
 			int faceT = pFaceInfo->pFaceRect.y;
@@ -243,21 +269,22 @@ void CFacePBRModel::Render(BaseRenderParam& RenderParam)
 			GetDynamicRHI()->SetViewPort(faceL, faceT, faceW, faceH);
 			//绘制人头标准模型
 			m_pShader->useShader();
-			SetParameter("matWVP", &matWVP, 0, sizeof(glm::mat4));
+			GET_SHADER_STRUCT_MEMBER(ConstantBufferMat4).SetMatrix4Parameter("matWVP", &matWVP[0][0], false, 1);
 			GET_SHADER_STRUCT_MEMBER(ConstantBufferMat4).ApplyToAllBuffer();
 			GetDynamicRHI()->DrawPrimitive(VerticeBuffer, IndexBuffer);
 
 			GetDynamicRHI()->SetBlendState(CC3DPiplelineState::BlendDisable, blendFactor, 0xffffffff);
 
-
 			m_RenderUtils->Render(RenderParam);
 
 		}
+
 		GetDynamicRHI()->SetDepthStencilState(CC3DPiplelineState::DepthStateDisable);
 		GetDynamicRHI()->SetRasterizerState(CC3DPiplelineState::RasterizerStateCullNone);
 
 
 	}
+
 	m_RenderUtils->PostRender(RenderParam);
 
 

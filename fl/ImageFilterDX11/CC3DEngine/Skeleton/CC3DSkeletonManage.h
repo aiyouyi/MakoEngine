@@ -8,7 +8,7 @@
 
 struct SkeletonInfo
 {
-	CC3DSkeleton *pSkeleton;
+	CC3DImageFilter::CC3DSkeleton *pSkeleton;
 	std::string AttachBone;
 };
 
@@ -19,13 +19,13 @@ public:
 	virtual ~CC3DSkeletonManage();
 
 	void UpdateSkeleton();
+	void AddDynamicBone(CC3DImageFilter::dynamicBoneParameter& DyBone);
+	CC3DImageFilter::dynamicBoneParameter CreateDefaultDynamicBone(const std::string bone_name);
+	void UpdateDynamicBoneConfig(const CC3DImageFilter::dynamicBoneParameter& config);
+	void ResetDynamicBone();
+	void DeleteDynamicBone(const std::string& db_name);
 
-
-	vector<SkeletonInfo>m_Skeletons;
-
-private:
-
-
+	std::vector<SkeletonInfo> Skeletons;
 };
 
 

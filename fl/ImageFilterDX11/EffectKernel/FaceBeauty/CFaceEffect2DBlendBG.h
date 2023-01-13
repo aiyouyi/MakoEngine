@@ -2,9 +2,16 @@
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "EffectKernel/CEffectPart.h"
 #include "Algorithm/Face2DMesh/MTFace2DInterFace.h"
+#include "EffectKernel/DXBasicSample.h"
+#include <map>
+#include <vector>
+#include <memory>
+#include "Toolbox/Render/VertexBuffer.h"
+#include "Toolbox/Render/IndexBuffer.h"
+#include <array>
+#include "../VideoAnimation.h"
 
-
-class CFaceEffect2DBlendBG : public CEffectPart
+class CFaceEffect2DBlendBG : public CEffectPart , protected DXBaicSample
 {
 public:
 	CFaceEffect2DBlendBG();
@@ -30,9 +37,11 @@ private:
 
 	mt3dface::MTFace2DInterFace *m_2DInterFace;
 
-
 	float *m_pMergeVertex;
 
 	bool m_isFirstInit;
+
+	int videoWidth;
+	int videoHeight;
 };
 

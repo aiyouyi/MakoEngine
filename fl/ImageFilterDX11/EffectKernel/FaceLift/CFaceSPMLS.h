@@ -5,8 +5,12 @@
 #include "Algorithm/InterFacePointDeform.h"
 #include "EffectKernel/FaceDeformation.h"
 #include "EffectKernel/EllipseDeformation.h"
+#include "EffectKernel/DXBasicSample.h"
 
-class MAGICSTUDIO_EXPORTS_CLASS CFaceSPMLS :public CEffectPart
+class DX11FBO;
+class DX11Texture;
+
+class MAGICSTUDIO_EXPORTS_CLASS CFaceSPMLS :public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceSPMLS();

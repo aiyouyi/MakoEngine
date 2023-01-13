@@ -5,7 +5,12 @@
 #include "../ResourceManager.h"
 #include "../FileManager.h"
 //#include "opencv2/opencv.hpp"
-
+#include "Toolbox/json.hpp"
+using namespace nlohmann;
+#include <fstream>
+#include "Toolbox/Render/DynamicRHI.h"
+#include "Toolbox/RenderState/PiplelineState.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
 
 
 CFaceEffect2DBlendBG::CFaceEffect2DBlendBG()
@@ -83,6 +88,17 @@ bool CFaceEffect2DBlendBG::Prepare()
 	}
 
 	m_2DInterFace = new mt3dface::MTFace2DInterFace();
+
+	//json root;
+	//std::ifstream ifile("E://git//ccfiltertmp//Release//resource//a.json");
+	//ifile >> root;
+
+	//vdoAnimation->ReadJson(root);
+
+	//vdoAnimation->SetTexture(0, "E:/profle.png");
+	//vdoAnimation->SetTexture(1, "E:/profile2.png");
+	//vdoAnimation->Init(m_resourcePath, videoWidth, videoHeight);
+
 	return true;
 }
 
@@ -102,25 +118,23 @@ void CFaceEffect2DBlendBG::Render(BaseRenderParam &RenderParam)
 	{
 		return;
 	}
-	auto pDoubleBuffer = RenderParam.GetDoubleBuffer();
-	//pDoubleBuffer->SyncAToB();
-	pDoubleBuffer->BindFBOA();
-	m_pShader->useShader();
-
-	//float blendFactor[] = { 0.f,0.f,0.f,0.f };
-	//DeviceContextPtr->OMSetBlendState(m_pBlendStateNormal, blendFactor, 0xffffffff);
-
 
 	float pParam[4];
 	pParam[0] = m_alpha;
 	pParam[1] = GetBlendParm(m_BlendType);
-
+	if (m_EnableMp4Alpha)pParam[2] = 1.0; else pParam[2] = 0.0;
 	//Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, float(runTime));
 	//auto pMaterialView = img->tex->getTexShaderView();
 
 
 	auto videoFrame = ResourceManager::Instance().getImageCommon(m_anim_id, double(runTime));
-	auto pMaterialView = videoFrame->tex->getTexShaderView();
+	auto pMaterialView = RHIResourceCast(videoFrame->tex.get())->GetSRV();
+
+	//auto pMaterialView = ResourceManager::Instance().getMaskedVideo(m_anim_id, double(runTime), vdoAnimation)->getTexShaderView();
+
+	auto pDoubleBuffer = RenderParam.GetDoubleBuffer();
+	pDoubleBuffer->BindFBOA();
+	m_pShader->useShader();
 
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -140,8 +154,9 @@ void CFaceEffect2DBlendBG::Render(BaseRenderParam &RenderParam)
 
 		pDoubleBuffer->SyncAToBRegion((float*)FaceMesh->pVertexs, FaceMesh->nVertex,3,1);
 
-		auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-		DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
+		//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+		//DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
+		GetDynamicRHI()->SetPSShaderResource(1, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 
 		if (m_IndexBuffer == NULL)
 		{
@@ -303,6 +318,8 @@ void CFaceEffect2DBlendBG::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFi
 					video_info.dir = path;
 					video_info.relative_filepath = szDrawableName;
 					m_anim_id = ResourceManager::Instance().loadVideoFromZip(video_info, hZip);
+					videoWidth = video_info.width * 0.5;
+					videoHeight = video_info.height;
 				}
 
 			}

@@ -3,6 +3,8 @@
 #include "Model/CC3DMesh.h"
 #include "Toolbox/DXUtils/DX11Shader.h"
 #include "Toolbox/Render/TextureRHI.h"
+#include "Toolbox/Render/ShaderRHI.h"
+#include "Toolbox/Render/MaterialTexRHI.h"
 
 CC3DMaterial::CC3DMaterial()
 {
@@ -23,7 +25,7 @@ CC3DMaterial::~CC3DMaterial()
 {
 }
 
-void CC3DMaterial::InitMaterial(uint32 MaterialIndex, std::vector<std::shared_ptr<CC3DTextureRHI>>&ModelTexture)
+void CC3DMaterial::InitMaterial(uint32 MaterialIndex, const std::vector<std::shared_ptr<CC3DTextureRHI>>&ModelTexture)
 {
 	const tinygltf::Material &material = m_Model->materials[MaterialIndex];
 
@@ -38,17 +40,13 @@ void CC3DMaterial::InitMaterial(uint32 MaterialIndex, std::vector<std::shared_pt
 	int32 index = material.pbrMetallicRoughness.baseColorTexture.index;
 	if (index>-1&&index< gltfTexture.size()&& gltfTexture[index].source<ModelTexture.size())
 	{
-
 		m_BaseColorTexture = ModelTexture[gltfTexture[index].source];
 	}
 	else
 	{
-
 		auto &BaseColor = material.pbrMetallicRoughness.baseColorFactor;
 
-		std::shared_ptr<CC3DTextureRHI> TextureRHI = GetDynamicRHI()->CreateTexture((float)BaseColor[0], (float)BaseColor[1], (float)BaseColor[2], (float)BaseColor[3]);
-		m_ModelTexture.push_back(TextureRHI);
-		m_BaseColorTexture = TextureRHI;
+		m_BaseColorTexture = GetDynamicRHI()->CreateTexture((float)BaseColor[0], (float)BaseColor[1], (float)BaseColor[2], (float)BaseColor[3]);
 	}
 
 	index = material.pbrMetallicRoughness.metallicRoughnessTexture.index;
@@ -58,9 +56,7 @@ void CC3DMaterial::InitMaterial(uint32 MaterialIndex, std::vector<std::shared_pt
 	}
 	else
 	{
-		std::shared_ptr<CC3DTextureRHI> TextureRHI = GetDynamicRHI()->CreateTexture(1.0, roughnessFactor, metallicFactor, 1.0);
-		m_ModelTexture.push_back(TextureRHI);
-		m_MetallicRoughnessTexture = TextureRHI;
+		m_MetallicRoughnessTexture = GetDynamicRHI()->CreateTexture(1.0, roughnessFactor, metallicFactor, 1.0);
 	}
 	index = material.emissiveTexture.index;
 	if (index > -1 && index < gltfTexture.size() && gltfTexture[index].source < ModelTexture.size())
@@ -71,9 +67,7 @@ void CC3DMaterial::InitMaterial(uint32 MaterialIndex, std::vector<std::shared_pt
 	else
 	{
 		auto emissiveColor = material.emissiveFactor;
-		std::shared_ptr<CC3DTextureRHI> TextureRHI = GetDynamicRHI()->CreateTexture((float)emissiveColor[0], (float)emissiveColor[1], (float)emissiveColor[2], 1.0);
-		m_ModelTexture.push_back(TextureRHI);
-		m_EmissiveTexture = TextureRHI;
+		m_EmissiveTexture = GetDynamicRHI()->CreateTexture((float)emissiveColor[0], (float)emissiveColor[1], (float)emissiveColor[2], 1.0);
 	}
 
 	index = material.normalTexture.index;
@@ -83,9 +77,7 @@ void CC3DMaterial::InitMaterial(uint32 MaterialIndex, std::vector<std::shared_pt
 	}
 	else
 	{
-		std::shared_ptr<CC3DTextureRHI> TextureRHI = GetDynamicRHI()->CreateTexture(0.5f, 0.5f, 1.0f, 1.0f);
-		m_ModelTexture.push_back(TextureRHI);
-		m_NormalTexture = TextureRHI;
+		m_NormalTexture = GetDynamicRHI()->CreateTexture(0.5f, 0.5f, 1.0f, 1.0f);
 	}
 
 	index = material.occlusionTexture.index;
@@ -95,9 +87,7 @@ void CC3DMaterial::InitMaterial(uint32 MaterialIndex, std::vector<std::shared_pt
 	}
 	else
 	{
-		std::shared_ptr<CC3DTextureRHI> TextureRHI = GetDynamicRHI()->CreateTexture(1.0f, 1.0f, 1.0f, 1.0f);
-		m_ModelTexture.push_back(TextureRHI);
-		m_OcclusionTexture = TextureRHI;
+		m_OcclusionTexture = GetDynamicRHI()->CreateTexture(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 
 }
@@ -105,33 +95,27 @@ void CC3DMaterial::InitMaterial(uint32 MaterialIndex, std::vector<std::shared_pt
 void CC3DMaterial::CreateDefault()
 {
 
-	std::shared_ptr<CC3DTextureRHI> TextureRHI1 = GetDynamicRHI()->CreateTexture(0.5f, 0.5f, 1.0f, 1.0f);
-	m_ModelTexture.push_back(TextureRHI1);
-	m_NormalTexture = TextureRHI1;
+	m_NormalTexture = GetDynamicRHI()->CreateTexture(0.5f, 0.5f, 1.0f, 1.0f);
 
-	std::shared_ptr<CC3DTextureRHI> TextureRHI2 = GetDynamicRHI()->CreateTexture(0.5f, 0.5f, 0.5f, 1.0f);
-	m_ModelTexture.push_back(TextureRHI2);
+	auto TextureRHI2 = GetDynamicRHI()->CreateTexture(0.5f, 0.5f, 0.5f, 1.0f);
 	m_BaseColorTexture = TextureRHI2;
 	m_MetallicRoughnessTexture = TextureRHI2;
 
-
-	std::shared_ptr<CC3DTextureRHI> TextureRHI3 = GetDynamicRHI()->CreateTexture(0.0f, 0.0f, 0.0f, 1.0f);
-	m_ModelTexture.push_back(TextureRHI3);
-	m_EmissiveTexture = TextureRHI3;
-
+	m_EmissiveTexture = GetDynamicRHI()->CreateTexture(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 
-void CC3DMaterial::InitShaderProgram(std::string path)
+void CC3DMaterial::InitShaderProgram(const std::string& path, CC3DImageFilter::EffectConfig* EffectConfig)
 {
 
 }
 
 void CC3DMaterial::UseShader()
 {
-	if (pShader)
+
+	if (mShader)
 	{
-		pShader->useShader();
+		mShader->UseShader();
 	}
 }
 
@@ -161,13 +145,17 @@ void CC3DMaterial::SetTexture2D(const char* str, std::shared_ptr<CC3DCubeMapRHI>
 
 }
 
+void CC3DMaterial::SetTexture2D(const char* str, std::shared_ptr<MaterialTexRHI> TextureRHI)
+{
+
+}
 
 void CC3DMaterial::DrawTriangle(CC3DMesh* pMesh)
 {
 	GetDynamicRHI()->DrawPrimitive(pMesh->m_pGPUBuffer->VerticeBuffer, pMesh->m_pGPUBuffer->AtrributeCount, pMesh->m_pGPUBuffer->IndexBuffer);
 }
 
-void CC3DMaterial::SetBoneMatrix(glm::mat4 mat, int index)
+void CC3DMaterial::SetBoneMatrix(const glm::mat4& mat, int index)
 {
-	GET_CONSTBUFFER(PBRSkinMat).BoneMat[index] = mat;
+	GET_SHADER_STRUCT_MEMBER(PBRSkinMat).SetArraySingleElementParamter("gBonesMatrix", mat, index);
 }

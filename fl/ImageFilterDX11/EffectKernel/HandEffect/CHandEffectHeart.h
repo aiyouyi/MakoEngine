@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "EffectKernel/CEffectPart.h"
 #include "Toolbox/Drawable.hpp"
+#include "EffectKernel/DXBasicSample.h"
 
 #define MAX_EFFECT_TYPE_NUM 3
 
@@ -27,7 +28,7 @@ struct HandData
 	int m_nTriangle;
 
 };
-class CHandEffectHeart : public CEffectPart
+class CHandEffectHeart : public CEffectPart, protected DXBaicSample
 {
 public:
 	CHandEffectHeart();

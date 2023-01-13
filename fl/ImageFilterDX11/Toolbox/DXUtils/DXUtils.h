@@ -113,6 +113,53 @@ public:
 		}
 	}
 
+	static ID3D11Buffer* CreateVertexBuffer(const void* pData, int ByteWidth)
+	{
+		//创建顶点缓存
+		D3D11_BUFFER_DESC verBufferDesc;
+		memset(&verBufferDesc, 0, sizeof(D3D11_BUFFER_DESC));
+		verBufferDesc.ByteWidth = ByteWidth;
+		verBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		verBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		verBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+		D3D11_SUBRESOURCE_DATA vertexInitData;
+		memset(&vertexInitData, 0, sizeof(D3D11_SUBRESOURCE_DATA));
+		vertexInitData.pSysMem = pData;
+		ID3D11Buffer* pVertexBuffer;
+		HRESULT hr = DevicePtr->CreateBuffer(&verBufferDesc, &vertexInitData, &pVertexBuffer);
+		if (FAILED(hr))
+		{
+			return NULL;
+		}
+		else
+		{
+			return pVertexBuffer;
+		}
+	}
+
+	static ID3D11Buffer* CreateStreamOutVertexBuffer(const void* pData, int ByteWidth)
+	{
+		//创建顶点缓存
+		D3D11_BUFFER_DESC verBufferDesc{};
+		memset(&verBufferDesc, 0, sizeof(D3D11_BUFFER_DESC));
+		verBufferDesc.ByteWidth = ByteWidth;
+		verBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER | D3D11_BIND_STREAM_OUTPUT;
+
+		D3D11_SUBRESOURCE_DATA vertexInitData;
+		memset(&vertexInitData, 0, sizeof(D3D11_SUBRESOURCE_DATA));
+		vertexInitData.pSysMem = pData;
+		ID3D11Buffer* pVertexBuffer;
+		HRESULT hr = DevicePtr->CreateBuffer(&verBufferDesc, &vertexInitData, &pVertexBuffer);
+		if (FAILED(hr))
+		{
+			return NULL;
+		}
+		else
+		{
+			return pVertexBuffer;
+		}
+	}
+
 	static ID3D11Buffer * CreateIndexBuffer(unsigned short *pData, int nTriangle)
 	{
 		//创建索引buffer
@@ -181,8 +228,8 @@ public:
 			return pConstantBuffer;
 		}
 	}
-
-	static void UpdateVertexBuffer(ID3D11Buffer *pVertexBuffer,float  *pData, int nVertex, int perUpdateSize, int sizePerVertex, int begin=0, int offset=0)
+	template<class T>
+	static void UpdateVertexBuffer(ID3D11Buffer *pVertexBuffer,T  *pData, int nVertex, int perUpdateSize, int sizePerVertex, int begin=0, int offset=0)
 	{
 		if (nVertex <= 0 || nullptr == pData) 
 			return ;
@@ -319,31 +366,6 @@ public:
 
 		return pTex;
 	}
-
-	static float *CreateHDRFromZIP(HZIP hZip, const char *szImagePath, int &nWidth, int &nHeight)
-	{
-		int index;
-		ZIPENTRY ze;
-
-		if (FindZipItem(hZip, szImagePath, true, &index, &ze) == ZR_OK)
-		{
-			char *pDataBuffer = new char[ze.unc_size];
-			ZRESULT res = UnzipItem(hZip, index, pDataBuffer, ze.unc_size);
-			float *pImageDataDest = NULL;
-			if (res == ZR_OK)
-			{
-				int width, height, nrComponents;
-				pImageDataDest = ccLoadImagefFromBuffer((unsigned char *)pDataBuffer, ze.unc_size, &width, &height, &nrComponents, 0);
-				nWidth = width;
-				nHeight = height;
-			}
-			delete[]pDataBuffer;
-			return pImageDataDest;
-		}
-		return NULL;
-	}
-
-
 
 	static void  SetRasterizerState(bool FillSolid = true)
 	{

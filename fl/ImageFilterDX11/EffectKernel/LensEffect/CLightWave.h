@@ -2,7 +2,11 @@
 #define CLIGHT_WAVE_H____
 
 #include "EffectKernel/CEffectPart.h"
-class MAGICSTUDIO_EXPORTS_CLASS CLightWave: public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class DX11FBO;
+
+class MAGICSTUDIO_EXPORTS_CLASS CLightWave: public CEffectPart, protected DXBaicSample
 {
 public:
 	CLightWave();
@@ -29,6 +33,7 @@ private:
 
 	DX11Shader *m_pShaderSobel;
 	DX11Shader * m_pShaderBlur;
+	DX11Shader* m_pShaderSplit;
 	DX11FBO *m_pFBO;
 
 	int m_nWidth = 0;

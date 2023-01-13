@@ -8,6 +8,8 @@
 #include "Toolbox/zip/unzip.h"
 #include "StickerEffect.h"
 
+class CC3DTextureRHI;
+
 class SLinearData
 {
 public:
@@ -80,6 +82,8 @@ private:
 	RectDraw *m_rectDraw;
 
 	ID3D11Texture2D *m_pTargetTexture;
+
+	std::shared_ptr< CC3DTextureRHI> m_InputSRV;
 
 	float m_fStartTime;
 };

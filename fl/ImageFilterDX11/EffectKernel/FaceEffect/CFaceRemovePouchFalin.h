@@ -3,8 +3,9 @@
 
 #include "EffectKernel/CEffectPart.h"
 #include "Algorithm/Face2DMesh/MTFace2DInterFace.h"
+#include "EffectKernel/DXBasicSample.h"
 
-class CFaceRemovePouchFalin : public CEffectPart
+class CFaceRemovePouchFalin : public CEffectPart, protected DXBaicSample
 {
 public:
     CFaceRemovePouchFalin();
@@ -24,7 +25,7 @@ private:
 	void  MergeVertex(float * pVertex, float * pUV, int nVertex);
 	DX11Shader *m_pShaderSmooth = nullptr;
 	DX11Shader *m_pShaderMean = nullptr;
-	DX11DoubleBuffer *m_DoubleBuffer = nullptr;
+	class DX11DoubleBuffer *m_DoubleBuffer = nullptr;
 
 	ID3D11Buffer *m_rectVerticeBuffer = nullptr;
 	ID3D11Buffer *m_rectIndexBuffer = nullptr;
@@ -33,7 +34,7 @@ private:
 	ID3D11Buffer *m_VerticeBuffer[MAX_SUPPORT_PEOPLE];
 	ID3D11Buffer *m_IndexBuffer = nullptr;
 
-	DX11FBO *m_pFBO = nullptr;
+	class DX11FBO *m_pFBO = nullptr;
     int m_nWidth;
     int m_nHeight;
 

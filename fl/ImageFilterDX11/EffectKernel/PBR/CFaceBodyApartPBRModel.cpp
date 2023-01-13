@@ -5,6 +5,7 @@
 #include "CC3DEngine/Scene/CC3DSceneManage.h"
 #include "CC3DEngine/Render/CC3DPbrRender.h"
 #include "Toolbox/RenderState/PiplelineState.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
 
 CFaceBodyApartPBRModel::CFaceBodyApartPBRModel()
 {
@@ -161,7 +162,7 @@ void CFaceBodyApartPBRModel::Render(BaseRenderParam & RenderParam)
 			alpha = 0;
 		}
 	}
-	m_RenderUtils->m_runTime = runTime;
+	m_RenderUtils->RunTime = runTime;
 	//frame = 0;
 	//frame++;
 	//if (frame>125)
@@ -194,17 +195,17 @@ void CFaceBodyApartPBRModel::Render(BaseRenderParam & RenderParam)
 
 		auto pDoubleBuffer = RenderParam.GetDoubleBuffer();
 
-		if (m_RenderUtils->m_DoubleBuffer != NULL)
+		if (m_RenderUtils->GetDoubleBuffer() != NULL)
 		{
-			pDoubleBuffer = m_RenderUtils->m_DoubleBuffer;
+			pDoubleBuffer = m_RenderUtils->GetDoubleBuffer();
 		}
 
 
 		//渲染人头像信息,用于后续剔除(禁止混合，禁止写入颜色buffer，开启深度测试和深度buffer写)
 
-		pDoubleBuffer->GetFBOB()->clear(0, 0, 0, 1);
-		pDoubleBuffer->BindDoubleBuffer();
-		pDoubleBuffer->GetFBOA()->clearDepth();
+		RHIResourceCast(pDoubleBuffer.get())->GetFBOB()->clear(0, 0, 0, 1);
+		RHIResourceCast(pDoubleBuffer.get())->BindDoubleBuffer();
+		RHIResourceCast(pDoubleBuffer.get())->GetFBOA()->clearDepth();
 		for (int faceIndex = 0; faceIndex < nFaceCount; ++faceIndex)
 		{
 			GetDynamicRHI()->SetRasterizerState(CC3DPiplelineState::RasterizerStateCullBack);
@@ -291,7 +292,8 @@ void CFaceBodyApartPBRModel::Render(BaseRenderParam & RenderParam)
 			GetDynamicRHI()->SetViewPort(faceL, faceT, faceW, faceH);
 			//绘制人头标准模型
 			m_pShader->useShader();
-			SetParameter("matWVP", &matWVP, 0, sizeof(glm::mat4));
+			//SetParameter("matWVP", &matWVP, 0, sizeof(glm::mat4));
+			GET_SHADER_STRUCT_MEMBER(ConstantBufferMat4).SetMatrix4Parameter("matWVP", &matWVP[0][0], false, 1);
 			GET_SHADER_STRUCT_MEMBER(ConstantBufferMat4).ApplyToAllBuffer();
 			GetDynamicRHI()->DrawPrimitive(VerticeBuffer, IndexBuffer);
 

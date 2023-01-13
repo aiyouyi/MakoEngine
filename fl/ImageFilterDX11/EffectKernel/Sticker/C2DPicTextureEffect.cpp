@@ -1,4 +1,4 @@
-#include "C2DPicTextureEffect.h"
+Ôªø#include "C2DPicTextureEffect.h"
 #include "Toolbox/Helper.h"
 
 #include "math\Mat4.h"
@@ -8,11 +8,14 @@
 #include "Toolbox/EffectModel.hpp"
 #include "Toolbox/FSObject.h"
 #include "Toolbox/FacialObject.h"
-#include "Toolbox\fileSystem.h"
+#include "Toolbox/fileSystem.h"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
-
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
+#include "EffectKernel/VideoAnimation.h"
+#include "BaseDefine/commonFunc.h"
 
 C2DPicTextureEffect::C2DPicTextureEffect()
 {
@@ -43,13 +46,25 @@ bool C2DPicTextureEffect::ReadConfig(XMLNode & childNode, const std::string & pa
 	return true;
 }
 
-bool C2DPicTextureEffect::Prepare() {
+bool C2DPicTextureEffect::Prepare() 
+{
+	//ÂàõÂª∫shader
+	CCVetexAttribute pAttribute[] =
+	{
+		{VERTEX_ATTRIB_POSITION, FLOAT_C3},
+		{VERTEX_ATTRIB_TEX_COORD, FLOAT_C2}
+	};
 
-		string path = m_resourcePath + "/Shader/face2dBlendMakeUp.fx";
-		m_pShader = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path, nullptr, 0);
+	string path = m_resourcePath + "/Shader/C2DPicTextureBlend.fx";
+	m_pShader = ShaderProgramManager::GetInstance()->GetOrCreateShaderByPathAndAttribs(path, pAttribute, 2);
 
 
-		m_pConstantBuffer = DXUtils::CreateConstantBuffer(sizeof(float) * 4);
+	m_pConstantBuffer = DXUtils::CreateConstantBuffer(sizeof(float) * 8);
+
+	if (vdoAnimation)
+	{
+		vdoAnimation->Init(m_resourcePath, m_MaskVideoWidth, m_MaskVideoHeight);
+	}
 
 	return true;
 }
@@ -58,8 +73,40 @@ void C2DPicTextureEffect::Render(BaseRenderParam& RenderParam) {
 
 	long runTime = GetRunTime();
 	if (runTime<0)
-	{
+	{ 
 		return;
+	}
+
+	int SplitScreenNum = 1;
+	if (m_EnableSplit)
+	{
+		bool bMirror;
+		SplitScreenNum = RenderParam.GetSplitScreenNum(bMirror);
+	}
+
+	
+	if (vdoAnimation && m_EnableMaskJson)
+	{
+		std::map<AnchorType, long long> mCardId = RenderParam.GetCardMaskID();
+		for (int index = 0; index < m_AnchorType.size(); index++)
+		{
+			auto iter = mCardId.find(m_AnchorType[index]);
+			if (iter != mCardId.end())
+			{
+				vdoAnimation->SetTexture(index, iter->second);
+			}
+			//ËÆæÁΩÆÂØπÂ∫îÁöÑÂ±ûÊÄßÊòØÂê¶ÂÜôÂÖ•alpha
+			if (m_AnchorType[index] == AnchorType::ANCHOR_IMAGE)
+			{
+				vdoAnimation->SetMaskWriteAlpha(index, false);
+			}
+			else
+			{
+				vdoAnimation->SetMaskWriteAlpha(index, true);
+			}
+			
+		}
+		m_EnableMaskJson = false;
 	}
 
 	m_v2DEffectModel.updateRenderInfo2(RenderParam.GetWidth(), RenderParam.GetHeight());
@@ -70,33 +117,61 @@ void C2DPicTextureEffect::Render(BaseRenderParam& RenderParam) {
 	
 	pDoubleBuffer->BindFBOA();
 
-	float pParam[4];
-	pParam[0] = m_alpha;
-	pParam[1] = GetBlendParm(m_BlendType);
-	pParam[2] = 0.5;
-
 	unsigned int nStride = sizeof(EffectVertex);
 	unsigned int nOffset = 0;
 
-	//…Ë÷√æÿ’Û±‰ªª
-	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
-	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
-	DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBuffer);
-	//…Ë÷√Œ∆¿Ì“‘º∞Œ∆¿Ì≤…—˘
+	//ËÆæÁΩÆÁ∫πÁêÜ‰ª•ÂèäÁ∫πÁêÜÈááÊ†∑
+	ID3D11ShaderResourceView* pMyShaderResourceView = 0;
+	if (vdoAnimation)
+	{
+		auto videoMaskFrame = ResourceManager::Instance().getMaskedVideo(m_anim_id, double(runTime), vdoAnimation);
+		if (videoMaskFrame == NULL)
+		{
+			return;
+		}
+		m_pShader->useShader();
+		pDoubleBuffer->BindFBOA();
+		pMyShaderResourceView = RHIResourceCast(videoMaskFrame.get())->GetSRV();
 
-	Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, float(runTime));
-	auto pMyShaderResourceView = img->tex->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
+	}
+	else 
+	{
+		Image* img = ResourceManager::Instance().getImageCommon(m_anim_id, double(runTime));
+		if (img == NULL)
+		{
+			return;
+		}
+		pMyShaderResourceView = RHIResourceCast(img->tex.get())->GetSRV();
+	}
 
-	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
+	float pParam[8];
+	pParam[0] = m_alpha;
+	pParam[1] = GetBlendParm(m_BlendType);
+	if (m_EnableMp4Alpha)pParam[2] = 1.0; else pParam[2] = 0.0;
 
-	//…Ë÷√∂•µ„ ˝æ›
-	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_v2DEffectModel.m_rectVerticeBuffer, &nStride, &nOffset);
-	DeviceContextPtr->IASetIndexBuffer(m_v2DEffectModel.m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	pParam[6] = 1.0;//‰∏∫‰øùËØÅÂÖ±Áî®‰∏Ä‰∏™shader ÂàùÂßãÂåñ‰∏∫1.0;
+	for (int j = 0; j < SplitScreenNum; j++)
+	{
+		pParam[4] = j * 1.0;
+		pParam[5] = SplitScreenNum * 1.0;
 
-	DeviceContextPtr->DrawIndexed(2 * 3, 0, 0);
+		DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
+		DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
+		DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBuffer);
+
+		DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
+		GetDynamicRHI()->SetPSShaderResource(1, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
+
+		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
+
+		//ËÆæÁΩÆÈ°∂ÁÇπÊï∞ÊçÆ
+		DeviceContextPtr->IASetVertexBuffers(0, 1, &m_v2DEffectModel.m_rectVerticeBuffer, &nStride, &nOffset);
+		DeviceContextPtr->IASetIndexBuffer(m_v2DEffectModel.m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+
+		DeviceContextPtr->DrawIndexed(2 * 3, 0, 0);
+
+	}
+
 }
 
 void C2DPicTextureEffect::Release() {
@@ -182,6 +257,8 @@ void C2DPicTextureEffect::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFil
 
 			m_v2DEffectModel.setRect(info.x, info.y, info.width, info.height, alignType);
 		}
+
+
 	}
 
 	//anidrawable 
@@ -201,7 +278,11 @@ void C2DPicTextureEffect::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFil
 		{
 			m_alpha = atof(szAlpha);
 		}
-
+		const char* szEnableSplit = nodeDrawable.getAttribute("EnableSplit");
+		if (szEnableSplit != NULL && !strcmp(szEnableSplit, "true"))
+		{
+			m_EnableSplit = true;
+		}
 
 		//get items info
 		const char *szItems = nodeDrawable.getAttribute("items");
@@ -247,18 +328,159 @@ void C2DPicTextureEffect::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFil
 		}
 	}
 
+	XMLNode nodeTime = childNode.getChildNode("time", 0);
+	if (!nodeTime.isEmpty())
+	{
+		const char* szDelay = nodeTime.getAttribute("delay");
+		const char* szPlay = nodeTime.getAttribute("play");
+		const char* szAll = nodeTime.getAttribute("all");
+		if (szDelay != NULL)
+		{
+			m_play.delaytime = atoi(szDelay);
+		}
+		if (szPlay != NULL)
+		{
+			m_play.playtime = atoi(szPlay);
+		}
+
+		if (szAll != NULL)
+		{
+			m_play.alltime = atoi(szAll);
+		}
+	}
+
+	nodeDrawable = childNode.getChildNode("webpdrawable", 0);
+	if (!nodeDrawable.isEmpty())
+	{
+		const char* szBlendType = nodeDrawable.getAttribute("blendType");
+		m_BlendType = GetBlendType(szBlendType);
+		const char* szAlpha = nodeDrawable.getAttribute("alpha");
+		if (szAlpha != NULL)
+		{
+			m_alpha = atof(szAlpha);
+		}
+		const char* szEnableMp4Alpha = nodeDrawable.getAttribute("EnableMp4Alpha");
+		if (szEnableMp4Alpha != NULL && !strcmp(szEnableMp4Alpha, "true"))
+		{
+			m_EnableMp4Alpha = true;
+		}
+		const char* szEnableSplit = nodeDrawable.getAttribute("EnableSplit");
+		if (szEnableSplit != NULL && !strcmp(szEnableSplit, "true"))
+		{
+			m_EnableSplit = true;
+		}
+		const char *szDrawableName = nodeDrawable.getAttribute("Material");
+		if (szDrawableName != NULL)
+		{
+			if (hZip == 0)
+			{
+				WebpAnimInfo webp_info;
+				webp_info.webp_dir = path;
+				webp_info.webp_relative_filepath = szDrawableName;
+				m_anim_id = ResourceManager::Instance().loadWebpFromFile(webp_info);
+			}
+			else
+			{
+				WebpAnimInfo webp_info;
+				webp_info.webp_dir = path;
+				webp_info.webp_relative_filepath = szDrawableName;
+				m_anim_id = ResourceManager::Instance().loadWebpFromZip(webp_info, hZip);
+			}
+
+		}
+	}
+
+	nodeDrawable = childNode.getChildNode("videodrawable", 0);
+	if (!nodeDrawable.isEmpty())
+	{
+		const char* szBlendType = nodeDrawable.getAttribute("blendType");
+		m_BlendType = GetBlendType(szBlendType);
+		m_VideoXMLInfo.blendType = szBlendType;
+
+		const char* szAlpha = nodeDrawable.getAttribute("alpha");
+		if (szAlpha != NULL)
+		{
+			m_alpha = atof(szAlpha);
+		}
+
+		const char* szDrawableName = nodeDrawable.getAttribute("Material");
+		if (szDrawableName != NULL)
+		{
+			m_VideoXMLInfo.Material = szDrawableName;
+			if (hZip == 0)
+			{
+				VideoInfo video_info;
+				video_info.dir = path;
+				video_info.relative_filepath = szDrawableName;
+				m_anim_id = ResourceManager::Instance().loadVideo(video_info);
+
+				m_MaskVideoWidth = video_info.width * 0.5;
+				m_MaskVideoHeight = video_info.height;
+			}
+			else
+			{
+				VideoInfo video_info;
+				video_info.dir = path;
+				video_info.relative_filepath = szDrawableName;
+				m_anim_id = ResourceManager::Instance().loadVideoFromZip(video_info, hZip);
+				m_MaskVideoWidth = video_info.width * 0.5;
+				m_MaskVideoHeight = video_info.height;
+			}
+
+		}
+
+		const char* maskJson = nodeDrawable.getAttribute("maskJson");
+		if (maskJson != NULL)
+		{
+			m_EnableMaskJson = true;
+			vdoAnimation = std::make_shared<VideoAnimation>();
+			std::string jsonName("a.json");
+			if (hZip == 0)
+			{
+				jsonName = path + "/" + jsonName;
+				vdoAnimation->ReadJsonFromFile(jsonName);
+			}
+			else
+			{
+				vdoAnimation->ReadJsonFromZip(jsonName, hZip);
+			}
+		}
+		const char* szMasktype = nodeDrawable.getAttribute("maskType");
+		if (szMasktype != NULL)
+		{
+			std::vector<std::string> str;
+			StringSplit(szMasktype, ',', str);
+			m_AnchorType.resize(str.size());
+			for (int i = 0; i < str.size(); i++)
+			{
+				m_AnchorType[i] = AnchorType(atoi(str[i].c_str()));
+			}
+		}
+		const char* szEnableMp4Alpha = nodeDrawable.getAttribute("EnableMp4Alpha");
+		if (szEnableMp4Alpha != NULL && !strcmp(szEnableMp4Alpha, "true"))
+		{
+			m_EnableMp4Alpha = true;
+		}
+		if (szEnableMp4Alpha)
+		{
+			m_VideoXMLInfo.EnableMp4Alpha = szEnableMp4Alpha;
+		}
+		const char* szEnableSplit = nodeDrawable.getAttribute("EnableSplit");
+		if (szEnableSplit != NULL && !strcmp(szEnableSplit, "true"))
+		{
+			m_EnableSplit = true;
+		}
+	}
+
 
 }
 
 bool C2DPicTextureEffect::WriteConfig(std::string & tempPath, XMLNode & root, HZIP dst, HZIP src)
 {
 	FileManager::Instance().SetSaveFolder(tempPath);
-	Anim* anim = ResourceManager::Instance().getAnim(m_anim_id);
-	AnimInfo animInfo = anim->info;
-	AnimInfo renamed_info = FileManager::Instance().AddAnim(anim->info);
-	animInfo.relative_filename_list = renamed_info.relative_filename_list;
 
 	XMLNode nodeEffect = root.addChild("typeeffect");
+
 	std::string typeEffect = "2DTexture";
 	nodeEffect.addAttribute("type", typeEffect.c_str());
 	nodeEffect.addAttribute("showname", m_showname.c_str());
@@ -278,32 +500,56 @@ bool C2DPicTextureEffect::WriteConfig(std::string & tempPath, XMLNode & root, HZ
 	string szArrAlignType[] = { "EAPT_LT", "EAPT_LB", "EAPT_RT", "EAPT_RB", "EAPT_CT", "EAPT_CB", "EAPT_LC", "EAPT_RC", "EAPT_CC" ,"EAPT_SCALE"};
 	nodeRect.addAttribute("alignType", szArrAlignType[m_v2DEffectModel.m_nAlignType].c_str());
 
-
-	XMLNode nodeDrwable = nodeEffect.addChild("anidrawable");
-	nodeDrwable.addAttribute("name", "11");
-
-	GetBlendParm(m_BlendType);
-	nodeDrwable.addAttribute("blendType", m_BlendName.c_str());
-	char alpha[256];
-	sprintf(alpha, "%.4f", m_alpha);
-	nodeDrwable.addAttribute("alpha", alpha);
-	//get items
-	if (animInfo.relative_filename_list.size() > 0)
+	Anim* anim = ResourceManager::Instance().getAnim(m_anim_id);
+	if (anim)
 	{
-		std::string items = animInfo.relative_filename_list[0];
-		items = items.replace(items.find("/") + 1, 6, "%06d");
-		nodeDrwable.addAttribute("items", items.c_str());
+		AnimInfo animInfo = anim->info;
+		AnimInfo renamed_info = FileManager::Instance().AddAnim(anim->info);
+		animInfo.relative_filename_list = renamed_info.relative_filename_list;
+
+		XMLNode nodeDrwable = nodeEffect.addChild("anidrawable");
+		nodeDrwable.addAttribute("name", "11");
+
+		GetBlendParm(m_BlendType);
+		nodeDrwable.addAttribute("blendType", m_BlendName.c_str());
+		char alpha[256];
+		sprintf(alpha, "%.4f", m_alpha);
+		nodeDrwable.addAttribute("alpha", alpha);
+		//get items
+		if (animInfo.relative_filename_list.size() > 0)
+		{
+			std::string items = animInfo.relative_filename_list[0];
+			items = items.replace(items.find("/") + 1, 6, "%06d");
+			nodeDrwable.addAttribute("items", items.c_str());
+		}
+		// get iteminfo
+		char iteminfo[256];
+		int end = animInfo.relative_filename_list.size() - 1;
+		if (animInfo.fps <= 0)
+		{
+			animInfo.fps = 30;
+		}
+		int singleFrameTime = 1000 / animInfo.fps;
+		int nStep = 1;
+		sprintf(iteminfo, "%d,%d,%d,%d", 0, end, singleFrameTime, nStep);
+		nodeDrwable.addAttribute("iteminfo", iteminfo);
 	}
-	// get iteminfo
-	char iteminfo[256];
-	int end = animInfo.relative_filename_list.size() - 1;
-	if (animInfo.fps <= 0)
+	else
 	{
-		animInfo.fps = 30;
+		if (m_VideoXMLInfo.Material.empty())
+		{
+		}
+		else
+		{
+			XMLNode nodeDrwable = nodeEffect.addChild("videodrawable");
+			nodeDrwable.addAttribute("Material", m_VideoXMLInfo.Material.c_str());
+			nodeDrwable.addAttribute("blendType", m_VideoXMLInfo.blendType.c_str());
+			if (!m_VideoXMLInfo.EnableMp4Alpha.empty())
+			{
+				nodeDrwable.addAttribute("EnableMp4Alpha", m_VideoXMLInfo.EnableMp4Alpha.c_str());
+			}
+		}
 	}
-	int singleFrameTime = 1000 / animInfo.fps;
-	int nStep = 1;
-	sprintf(iteminfo, "%d,%d,%d,%d", 0, end, singleFrameTime, nStep);
-	nodeDrwable.addAttribute("iteminfo", iteminfo);
+
 	return true;
 }

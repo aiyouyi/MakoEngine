@@ -57,7 +57,7 @@ void DX11BlendState::CreateState()
 	DevicePtr->CreateBlendState(&desc, &PtrBlendState);
 }
 
-void DX11BlendState::CreateState(bool bBlend, bool bBlendAlpha, bool writeBuffer)
+void DX11BlendState::CreateState(bool bBlend, bool bBlendAlpha, bool writeBuffer, bool maskRGB)
 {
-	PtrBlendState = ContextInst->fetchBlendState(bBlend, bBlendAlpha, writeBuffer);
+	PtrBlendState = ContextInst->fetchBlendState(bBlend, bBlendAlpha, writeBuffer, maskRGB);
 }

@@ -6,6 +6,7 @@
 #include "Toolbox/FacialObject.h"
 #include "BaseDefine/Vectors.h"
 #include "Algorithm/Face2DMesh/MTFace2DInterFace.h"
+#include "EffectKernel/DXBasicSample.h"
 
 struct FaceBoundingBox
 {
@@ -29,7 +30,7 @@ struct HeadRectVertex
 	Vector2 UV;
 };
 
-class CFaceEffect3DRect : public CEffectPart
+class CFaceEffect3DRect : public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceEffect3DRect();

@@ -1,7 +1,8 @@
-#include "Matting.h"
+ï»¿#include "Matting.h"
 #include "Toolbox/DXUtils/DX11Context.h"
 #include "Toolbox/Helper.h"
 #include "Toolbox/mathlib.h"
+#include "Toolbox/DXUtils/DX11Texture.h"
 
 const char *s_szMattingShader = R"(
 static const float4x4 yuv_mat = { 0.182586,  0.614231,  0.062007, 0.062745,
@@ -151,7 +152,7 @@ bool MattingDraw::init(float x, float y, float width, float height, const std::s
 	}
 
 
-	//´´½¨¶¥µãbuffer
+	//åˆ›å»ºé¡¶ç‚¹buffer
 	MattingRectVertex vertices[] =
 	{
 		{ arrCoords[0], XMFLOAT2(0.0f, 0.0f) },
@@ -171,7 +172,7 @@ bool MattingDraw::init(float x, float y, float width, float height, const std::s
 	DevicePtr->CreateBuffer(&verBufferDesc, &vertexInitData, &m_rectVerticeBuffer);
 
 
-	//´´½¨Ë÷Òýbuffer
+	//åˆ›å»ºç´¢å¼•buffer
 	WORD index[] =
 	{
 		0, 1, 2,
@@ -189,7 +190,7 @@ bool MattingDraw::init(float x, float y, float width, float height, const std::s
 	DevicePtr->CreateBuffer(&indexBufferDesc, &indexInitData, &m_rectIndexBuffer);
 
 
-	//ÊÖ¶¯´´½¨ÎÆÀí¶ÔÏó
+	//æ‰‹åŠ¨åˆ›å»ºçº¹ç†å¯¹è±¡
 	DX11Texture *pTexture = ContextInst->fetchTexture(szTexture);
 	setTexture(pTexture);
 	if (pTexture != NULL)
@@ -197,7 +198,7 @@ bool MattingDraw::init(float x, float y, float width, float height, const std::s
 		pTexture->unref();
 	}
 
-	//´´½¨ÎÆÀí²ÉÑù
+	//åˆ›å»ºçº¹ç†é‡‡æ ·
 	D3D11_SAMPLER_DESC sampDesc;
 	ZeroMemory(&sampDesc, sizeof(sampDesc));
 	sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -211,11 +212,11 @@ bool MattingDraw::init(float x, float y, float width, float height, const std::s
 	if (FAILED(hr))return false;
 
 
-	//´´½¨shader
+	//åˆ›å»ºshader
 	m_pShader = new DX11Shader();
 	m_pShader->initShaderWithString(s_szMattingShader);
 
-	//´´½¨constbuffer ²ÎÊý
+	//åˆ›å»ºconstbuffer å‚æ•°
 	D3D11_BUFFER_DESC bd;
 	memset(&bd, 0, sizeof(bd));
 	bd.Usage = D3D11_USAGE_DEFAULT;
@@ -230,7 +231,7 @@ void MattingDraw::reRect(float x, float y, float width, float height)
 {
 	SAFERALEASE(m_rectVerticeBuffer);
 
-	//´´½¨¶¥µãbuffer
+	//åˆ›å»ºé¡¶ç‚¹buffer
 	MattingRectVertex vertices[] =
 	{
 		{ XMFLOAT3(-1.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
@@ -302,16 +303,16 @@ void MattingDraw::setShaderTextureView(ID3D11ShaderResourceView *pShaderTextureV
 
 void MattingDraw::render(int w, int h)
 {
-	//»ìºÏ×´Ì¬
+	//æ··åˆçŠ¶æ€
 	m_pBSEnable = ContextInst->fetchBlendState(false, false, true);
 
 	unsigned int nStride = sizeof(MattingRectVertex);
 	unsigned int nOffset = 0;
 
-	//ÉèÖÃshader
+	//è®¾ç½®shader
 	m_pShader->useShader();
 	
-	//ÉèÖÃ¾ØÕó±ä»»
+	//è®¾ç½®çŸ©é˜µå˜æ¢
 	SMattingBuffer mWVP;
 	mWVP.mWVP  =XMMatrixIdentity();
 	{
@@ -343,12 +344,12 @@ void MattingDraw::render(int w, int h)
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 	DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBuffer);
 
-	//ÉèÖÃÎÆÀíÒÔ¼°ÎÆÀí²ÉÑù
+	//è®¾ç½®çº¹ç†ä»¥åŠçº¹ç†é‡‡æ ·
 	ID3D11ShaderResourceView *pMyShaderResourceView = m_pShaderTextureView;
 	DeviceContextPtr->PSSetShaderResources(0, 1, &pMyShaderResourceView);
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
-	//ÉèÖÃ¶¥µãÊý¾Ý
+	//è®¾ç½®é¡¶ç‚¹æ•°æ®
 	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer, &nStride, &nOffset);
 	DeviceContextPtr->IASetIndexBuffer(m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 

@@ -1,8 +1,10 @@
 ﻿#include "CDyeHairEffect.h"
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CDyeHairEffect::CDyeHairEffect()
 {
@@ -170,8 +172,9 @@ void CDyeHairEffect::Render(BaseRenderParam &RenderParam)
 	pDoubleBuffer->SwapFBO();
 	pDoubleBuffer->BindFBOA();
 	m_pShader->useShader();
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	auto pMaskView = hairTexture->getTexShaderView();
+
+	auto pMaskView = RHIResourceCast(hairTexture.get())->GetSRV();
+	auto pSrcShaderView = RHIResourceCast(RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB().get())->GetSRV();
 
 	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pMaskView);

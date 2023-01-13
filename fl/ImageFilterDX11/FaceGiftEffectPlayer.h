@@ -3,6 +3,7 @@
 #include "common.h"
 #include "DX11ImageFilterDef.h"
 #include "FaceDetectorInterface.h"
+#include "BodyDetectInterface.h"
 #include <d3d11.h>
 
 typedef void (*GiftEffectCallback)(const char *giftId);
@@ -32,3 +33,6 @@ DX11IMAGEFILTER_EXPORTS_API void ccSetBGRAGiftEffect(unsigned char *pBGRA);
 DX11IMAGEFILTER_EXPORTS_API void ccDestoryGiftEffect();
 DX11IMAGEFILTER_EXPORTS_API void ccSetGiftEffectCacheSize(int nSize);
 DX11IMAGEFILTER_EXPORTS_API void ccDestoryGiftInst();
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetGiftAnchor(unsigned char* data, int width, int height, AnchorType type);
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetBodyPointOld(ccBodyRes* bodyRes);
+DX11IMAGEFILTER_EXPORTS_API void ccEffectSetSplitScreenOld(int SplitScreen, CCEffectType type);

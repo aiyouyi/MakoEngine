@@ -9,7 +9,7 @@ public:
 	virtual ~DX11BlendState();
 
 	virtual void CreateState();
-	void CreateState(bool bBlend, bool bBlendAlpha, bool writeBuffer);
+	void CreateState(bool bBlend, bool bBlendAlpha, bool writeBuffer, bool maskRGB = false);
 
 	ID3D11BlendState* PtrBlendState = nullptr;
 };

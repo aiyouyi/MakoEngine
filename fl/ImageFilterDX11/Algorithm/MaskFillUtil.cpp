@@ -1,5 +1,5 @@
 ﻿#include "MaskFillUtil.h"
-bool CMaskFillUtil::FillMask(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTPolygonType polygonType, MTFillColor inside, MTFillColor outside) {
+bool CMaskFillUtil::FillMask(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTPolygonType polygonType, MTFillColor inside, MTFillColor outside) {
 	switch (polygonType) {
 	case MT_ConcavePolygon:
 		return DirectFillPolygon(pMask, iWidth, iHeight, pPolygon, iCount, inside, outside);
@@ -14,7 +14,7 @@ bool CMaskFillUtil::FillMask(byte* pMask, int iWidth, int iHeight, Vector2* pPol
 	}
 }
 
-bool CMaskFillUtil::DirectFillPolygon(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside) {
+bool CMaskFillUtil::DirectFillPolygon(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside) {
 	if (inside == MT_INVALID_COLOR && outside != MT_INVALID_COLOR) {
 		return DirectFillPolygonOutside(pMask, iWidth, iHeight, pPolygon, iCount, outside);
 	}
@@ -26,14 +26,14 @@ bool CMaskFillUtil::DirectFillPolygon(byte* pMask, int iWidth, int iHeight, Vect
 	CMaskFillUtil::MTRect rect = OutsideRect(pCirclePoints, iPointCount, iWidth, iHeight);
 	int iStride = iWidth, iOffsetX = rect.iLeftX;
 
-	byte insideColor = inside;
+	byte_t insideColor = inside;
 	if (outside != MT_INVALID_COLOR) {
-		byte outsideColor = (byte)outside;
-		memset(pMask, outsideColor, sizeof(byte)*iWidth*iHeight);
+		byte_t outsideColor = (byte_t)outside;
+		memset(pMask, outsideColor, sizeof(byte_t)*iWidth*iHeight);
 	}
 	for (int y = rect.iLeftY; y <= rect.iRightY; y++) {
 		Vector2 p(0, y);
-		byte *pPixels = pMask + (y * iStride + iOffsetX);
+		byte_t*pPixels = pMask + (y * iStride + iOffsetX);
 		for (int x = rect.iLeftX; x < rect.iRightX; x++) {
 			p.x = (float)(x);
 			if (InsidePolygon(pCirclePoints, iPointCount, p)) {
@@ -46,26 +46,26 @@ bool CMaskFillUtil::DirectFillPolygon(byte* pMask, int iWidth, int iHeight, Vect
 	return true;
 }
 
-bool CMaskFillUtil::DirectFillPolygonOutside(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor) {
+bool CMaskFillUtil::DirectFillPolygonOutside(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor) {
 	if (pMask == NULL || iCount < 3 || fillColor == MT_INVALID_COLOR) {
 		return false;
 	}
 	int iPointCount = iCount;
-	byte outsideColor = (byte)fillColor;
+	byte_t outsideColor = (byte_t)fillColor;
 
 	Vector2* pCirclePoints = GetCirclePoints(pPolygon, iPointCount);
 	CMaskFillUtil::MTRect rect = OutsideRect(pCirclePoints, iPointCount, iWidth, iHeight);
 	int iStride = iWidth, iOffsetX = rect.iLeftX;
 	int iByteCount = iStride * iHeight;
 
-	byte* pCopyMask = new byte[iByteCount];
+	byte_t* pCopyMask = new byte_t[iByteCount];
 	memcpy(pCopyMask, pMask, iByteCount);
 	memset(pMask, outsideColor, iByteCount);
 
 	for (int y = rect.iLeftY; y <= rect.iRightY; y++) {
 		Vector2 p(0, (float)(y));
-		byte *pPixels = pMask + (y * iStride + iOffsetX);
-		byte *pCopyPixels = pCopyMask + (y * iStride + iOffsetX);
+		byte_t*pPixels = pMask + (y * iStride + iOffsetX);
+		byte_t*pCopyPixels = pCopyMask + (y * iStride + iOffsetX);
 		for (int x = rect.iLeftX; x < rect.iRightX; x++) {
 			p.x = (float)(x);
 			if (InsidePolygon(pCirclePoints, iPointCount, p)) {
@@ -79,7 +79,7 @@ bool CMaskFillUtil::DirectFillPolygonOutside(byte* pMask, int iWidth, int iHeigh
 	return true;
 }
 
-bool CMaskFillUtil::VerticalFillPolygon(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside) {
+bool CMaskFillUtil::VerticalFillPolygon(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside) {
 	if (inside == MT_INVALID_COLOR && outside != MT_INVALID_COLOR) {
 		return VerticalFillPolygonOutside(pMask, iWidth, iHeight, pPolygon, iCount, outside);
 	}
@@ -91,13 +91,13 @@ bool CMaskFillUtil::VerticalFillPolygon(byte* pMask, int iWidth, int iHeight, Ve
 	CMaskFillUtil::MTRect rect = OutsideRect(pCirclePoints, iPointCount, iWidth, iHeight);
 	int iStride = iWidth, iByteCount = iStride * iHeight;
 
-	byte insideColor = inside;
+	byte_t insideColor = inside;
 	if (outside != MT_INVALID_COLOR) {
-		byte outsideColor = (byte)outside;
-		memset(pMask, outsideColor, sizeof(byte)*iByteCount);
+		byte_t outsideColor = (byte_t)outside;
+		memset(pMask, outsideColor, sizeof(byte_t)*iByteCount);
 	}
 
-	byte* pPixels = pMask;
+	byte_t* pPixels = pMask;
 	MTRange vRange(rect.iLeftY, rect.iRightY);
 	for (int x = rect.iLeftX; x < rect.iRightX; x++) {
 		MTRange range = VerticalDichotomize(pCirclePoints, iCount, vRange, x);
@@ -113,28 +113,28 @@ bool CMaskFillUtil::VerticalFillPolygon(byte* pMask, int iWidth, int iHeight, Ve
 	return true;
 }
 
-bool CMaskFillUtil::VerticalFillPolygonOutside(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor) {
+bool CMaskFillUtil::VerticalFillPolygonOutside(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor) {
 	if (pMask == NULL || iCount < 3 || fillColor == MT_INVALID_COLOR) {
 		return false;
 	}
 	int iPointCount = iCount;
-	byte outsideColor = fillColor;
+	byte_t outsideColor = fillColor;
 
 	Vector2* pCirclePoints = GetCirclePoints(pPolygon, iPointCount);
 	CMaskFillUtil::MTRect rect = OutsideRect(pCirclePoints, iPointCount, iWidth, iHeight);
 	int iStride = iWidth, iByteCount = iStride * iHeight;
 
-	byte* pCopyMask = new byte[iByteCount];
+	byte_t* pCopyMask = new byte_t[iByteCount];
 	memcpy(pCopyMask, pMask, iByteCount);
 	memset(pMask, outsideColor, iByteCount);
 
-	byte* pPixels = pMask;
+	byte_t* pPixels = pMask;
 	MTRange vRange(rect.iLeftY, rect.iRightY);
 	for (int x = rect.iLeftX; x < rect.iRightX; x++) {
 		MTRange range = VerticalDichotomize(pCirclePoints, iCount, vRange, x);
 		if (range.m_iStart <= range.m_iEnd) {
 			pPixels = pMask + iStride * range.m_iStart + x;
-			byte* pCopyPixels = pCopyMask + iStride * range.m_iStart + x;
+			byte_t* pCopyPixels = pCopyMask + iStride * range.m_iStart + x;
 			for (int y = range.m_iStart; y <= range.m_iEnd; y++) {
 				*pPixels = *pCopyPixels;
 				pPixels += iStride;
@@ -147,7 +147,7 @@ bool CMaskFillUtil::VerticalFillPolygonOutside(byte* pMask, int iWidth, int iHei
 	return true;
 }
 
-bool CMaskFillUtil::HorizontalFillPolygon(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside) {
+bool CMaskFillUtil::HorizontalFillPolygon(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor inside, MTFillColor outside) {
 	if (inside == MT_INVALID_COLOR && outside != MT_INVALID_COLOR) {
 		return HorizontalFillPolygonOutside(pMask, iWidth, iHeight, pPolygon, iCount, outside);
 	}
@@ -155,18 +155,18 @@ bool CMaskFillUtil::HorizontalFillPolygon(byte* pMask, int iWidth, int iHeight, 
 		return false;
 	}
 	int iPointCount = iCount;
-	byte insideColor = inside;
+	byte_t insideColor = inside;
 
 	Vector2* pCirclePoints = GetCirclePoints(pPolygon, iPointCount);
 	CMaskFillUtil::MTRect rect = OutsideRect(pCirclePoints, iPointCount, iWidth, iHeight);
 	int iStride = iWidth, iByteCount = iStride * iHeight;
 
 	if (outside != MT_INVALID_COLOR) {
-		byte outsideColor = (byte)outside;
-		memset(pMask, outsideColor, sizeof(byte)*iByteCount);
+		byte_t outsideColor = (byte_t)outside;
+		memset(pMask, outsideColor, sizeof(byte_t)*iByteCount);
 	}
 
-	byte* pPixels = pMask;
+	byte_t* pPixels = pMask;
 	MTRange hRange(rect.iLeftX, rect.iRightX);
 	for (int y = rect.iLeftY; y <= rect.iRightY; y++) {
 		MTRange range = HorizontalDichotomize(pCirclePoints, iCount, hRange, y);
@@ -181,28 +181,28 @@ bool CMaskFillUtil::HorizontalFillPolygon(byte* pMask, int iWidth, int iHeight, 
 	return true;
 }
 
-bool CMaskFillUtil::HorizontalFillPolygonOutside(byte* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor) {
+bool CMaskFillUtil::HorizontalFillPolygonOutside(byte_t* pMask, int iWidth, int iHeight, Vector2* pPolygon, int iCount, MTFillColor fillColor) {
 	if (pMask == NULL || iCount < 3 || fillColor == MT_INVALID_COLOR) {
 		return false;
 	}
 	int iPointCount = iCount;
-	byte outsideColor = fillColor;
+	byte_t outsideColor = fillColor;
 
 	Vector2* pCirclePoints = GetCirclePoints(pPolygon, iPointCount);
 	CMaskFillUtil::MTRect rect = OutsideRect(pCirclePoints, iPointCount, iWidth, iHeight);
 	int iStride = iWidth, iByteCount = iStride * iHeight;
 
-	byte* pCopyMask = new byte[iByteCount];
+	byte_t* pCopyMask = new byte_t[iByteCount];
 	memcpy(pCopyMask, pMask, iByteCount);
 	memset(pMask, outsideColor, iByteCount);
 
-	byte* pPixels = pMask;
+	byte_t* pPixels = pMask;
 	MTRange hRange(rect.iLeftX, rect.iRightX);
 	for (int y = rect.iLeftY; y <= rect.iRightY; y++) {
 		MTRange range = HorizontalDichotomize(pCirclePoints, iCount, hRange, y);
 		if (range.m_iStart <= range.m_iEnd) {
 			pPixels = pMask + y * iStride + range.m_iStart;
-			byte* pCopyPixels = pCopyMask + y * iStride + range.m_iStart;
+			byte_t* pCopyPixels = pCopyMask + y * iStride + range.m_iStart;
 			for (int x = range.m_iStart; x <= range.m_iEnd; x++) {
 				*pPixels++ = *pCopyPixels++;
 			}

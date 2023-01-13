@@ -1,6 +1,10 @@
 #include "DX11DoubleBuffer.h"
 #include "BaseDefine/Define.h"
 #include <algorithm>
+#include "DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
+
+extern DWORD ms_dwTextureFormatType[];
 
 DX11DoubleBuffer::DX11DoubleBuffer()
 {
@@ -21,24 +25,23 @@ DX11DoubleBuffer::~DX11DoubleBuffer()
 
 void DX11DoubleBuffer::Release()
 {
-	SAFE_DELETE(m_pFBOA);
-	SAFE_DELETE(m_pFBOB);
-//	SAFE_DELETE(m_pTextureA);
-//	SAFE_DELETE(m_pTextureB);
+	m_pFBOA.reset();
+	m_pFBOB.reset();
+	m_pTextureA.reset();
+	m_pTextureB.reset();
 }
 
-void DX11DoubleBuffer::InitDoubleBuffer(DX11Texture * pTexIn, DX11Texture * pTexOut, int nWidth, int nHeight)
+void DX11DoubleBuffer::InitDoubleBuffer(std::shared_ptr<CC3DTextureRHI> pTexIn, std::shared_ptr<CC3DTextureRHI> pTexOut, int nWidth, int nHeight, bool bMSAA)
 {
-	SAFE_DELETE(m_pFBOA);
-	SAFE_DELETE(m_pFBOB);
+	m_Msaa = bMSAA;
 	m_pTextureA = pTexIn;
 	m_pTextureB = pTexOut;
 
-	m_pFBOA = new DX11FBO();
-	m_pFBOA->initWithTexture(nWidth, nHeight, true, m_pTextureA->getTex());
+	m_pFBOA = std::make_shared<DX11FBO>();
+	m_pFBOA->initWithTexture(nWidth, nHeight, true, RHIResourceCast(m_pTextureA.get())->GetNativeTex());
 
-	m_pFBOB = new DX11FBO();
-	m_pFBOB->initWithTexture(nWidth, nHeight, true, m_pTextureB->getTex());
+	m_pFBOB = std::make_shared<DX11FBO>();
+	m_pFBOB->initWithTexture(nWidth, nHeight, true, RHIResourceCast(m_pTextureB.get())->GetNativeTex());
 
 	m_nWidth = nWidth;
 	m_nHeight = nHeight;
@@ -47,20 +50,29 @@ void DX11DoubleBuffer::InitDoubleBuffer(DX11Texture * pTexIn, DX11Texture * pTex
 
 void DX11DoubleBuffer::InitDoubleBuffer( int nWidth, int nHeight, bool UseDepth, bool bMSAA, DXGI_FORMAT format)
 {
-	SAFE_DELETE(m_pFBOA);
-	SAFE_DELETE(m_pFBOB);
-
-	m_pFBOA = new DX11FBO();
+	m_Msaa = bMSAA;
+	m_pFBOA = std::make_shared<DX11FBO>();
 	m_pFBOA->initWithTexture(nWidth, nHeight, UseDepth, NULL, format, bMSAA);
 
-	m_pFBOB = new DX11FBO();
+	m_pFBOB = std::make_shared<DX11FBO>();
 	m_pFBOB->initWithTexture(nWidth, nHeight, UseDepth, NULL, format, bMSAA);
 
-	m_pTextureA = m_pFBOA->getTexture();
-	m_pTextureB = m_pFBOB->getTexture();
+	m_pTextureA = GetDynamicRHI()->CreateTexture();
+	RHIResourceCast(m_pTextureA.get())->Attatch(m_pFBOA->getTexture());
+
+	m_pTextureB = GetDynamicRHI()->CreateTexture();
+	RHIResourceCast(m_pTextureB.get())->Attatch(m_pFBOB->getTexture());
+
 	m_nWidth = nWidth;
 	m_nHeight = nHeight;
 
+}
+
+
+void DX11DoubleBuffer::InitDoubleBuffer(uint32_t format, int32_t width, int32_t height, bool UseDepth, bool UseMultiTarget, bool bMSAA)
+{
+	DXGI_FORMAT dxgiFormat = (DXGI_FORMAT)ms_dwTextureFormatType[format];
+	InitDoubleBuffer(width, height, UseDepth, bMSAA, dxgiFormat);
 }
 
 void DX11DoubleBuffer::BindFBOA()
@@ -75,14 +87,14 @@ void DX11DoubleBuffer::BindFBOB()
 
 void DX11DoubleBuffer::SetAShaderResource(uint32_t StartSlot)
 {
-	auto pMaterialView = m_pTextureA->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(StartSlot, 1, &pMaterialView);
+	//auto pMaterialView = m_pTextureA->getTexShaderView();
+	GetDynamicRHI()->SetPSShaderResource(StartSlot, m_pTextureA);
 }
 
 void DX11DoubleBuffer::SetBShaderResource(uint32_t StartSlot)
 {
-	auto pMaterialView = m_pTextureB->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(StartSlot, 1, &pMaterialView);
+	//auto pMaterialView = m_pTextureB->getTexShaderView();
+	GetDynamicRHI()->SetPSShaderResource(StartSlot, m_pTextureB);
 }
 
 void DX11DoubleBuffer::BindDoubleBuffer()
@@ -103,12 +115,14 @@ void DX11DoubleBuffer::BindDoubleBuffer()
 
 void DX11DoubleBuffer::SwapFBO()
 {
-	DX11FBO* pTempFBO = m_pFBOA;
-	m_pFBOA = m_pFBOB;
-	m_pFBOB = pTempFBO;
-	DX11Texture *pTempTex = m_pTextureA;
-	m_pTextureA = m_pTextureB;
-	m_pTextureB = pTempTex;
+	std::swap(m_pFBOA, m_pFBOB);
+	std::swap(m_pTextureA, m_pTextureB);
+	//DX11FBO* pTempFBO = m_pFBOA;
+	//m_pFBOA = m_pFBOB;
+	//m_pFBOB = pTempFBO;
+	//DX11Texture *pTempTex = m_pTextureA;
+	//m_pTextureA = m_pTextureB;
+	//m_pTextureB = pTempTex;
 }
 
 void DX11DoubleBuffer::SyncAToB()
@@ -119,7 +133,7 @@ void DX11DoubleBuffer::SyncAToB()
 	}
 	m_pFBOB->bind();
 
-	m_rectDraw->setShaderTextureView(m_pTextureA->getTexShaderView());
+	m_rectDraw->setShaderTextureView(m_pTextureA);
 	m_rectDraw->render();
 
 	//DeviceContextPtr->CopyResource(m_pTextureB->getTex(), );
@@ -129,7 +143,7 @@ void DX11DoubleBuffer::SyncAToBRegion(float * pVerts, int nVerts, int nStep, int
 {
 	if (m_Msaa)
 	{
-		DeviceContextPtr->CopyResource(m_pTextureB->getTex(), m_pTextureA->getTex());
+		DeviceContextPtr->CopyResource(RHIResourceCast(m_pTextureB.get())->GetNativeTex(), RHIResourceCast(m_pTextureA.get())->GetNativeTex());
 		return;
 	}
 	D3D11_BOX box;
@@ -167,7 +181,7 @@ void DX11DoubleBuffer::SyncAToBRegion(float * pVerts, int nVerts, int nStep, int
 	box.right = (std::min)(box.right+1, (UINT)(m_nWidth));
 	box.bottom = (std::min)(box.bottom+1, (UINT)(m_nHeight));
 
-	DeviceContextPtr->CopySubresourceRegion(m_pTextureB->getTex(), 0, box.left, box.top, 0, m_pTextureA->getTex(), 0, &box);
+	DeviceContextPtr->CopySubresourceRegion(RHIResourceCast(m_pTextureB.get())->GetNativeTex(), 0, box.left, box.top, 0, RHIResourceCast(m_pTextureA.get())->GetNativeTex(), 0, &box);
 
 }
 
@@ -179,37 +193,68 @@ void DX11DoubleBuffer::SyncBToA()
 	}
 	m_pFBOA->bind();
 
-	m_rectDraw->setShaderTextureView(m_pTextureB->getTexShaderView());
+	m_rectDraw->setShaderTextureView(m_pTextureB);
 	m_rectDraw->render();
-//	DeviceContextPtr->CopyResource(m_pTextureA->getTex(), m_pTextureB->getTex());
 }
 
-DX11Texture * DX11DoubleBuffer::GetFBOTextureA()
+std::shared_ptr<CC3DTextureRHI> DX11DoubleBuffer::GetFBOTextureA()
 {
 	return m_pTextureA;
 }
 
-DX11Texture * DX11DoubleBuffer::GetFBOTextureB()
+std::shared_ptr<CC3DTextureRHI> DX11DoubleBuffer::GetFBOTextureB()
 {
 	return m_pTextureB;
 }
 
-DX11FBO * DX11DoubleBuffer::GetFBOA()
+std::shared_ptr<DX11FBO> DX11DoubleBuffer::GetFBOA()
 {
 	return m_pFBOA;
 }
 
-DX11FBO * DX11DoubleBuffer::GetFBOB()
+std::shared_ptr<DX11FBO> DX11DoubleBuffer::GetFBOB()
 {
 	return m_pFBOB;
 }
 
-int DX11DoubleBuffer::GetWidth()
+int DX11DoubleBuffer::GetWidth() const
 {
 	return m_nWidth;
 }
 
-int DX11DoubleBuffer::GetHeight()
+int DX11DoubleBuffer::GetHeight() const
 {
 	return m_nHeight;
+}
+
+void DX11DoubleBuffer::ClearA(float r, float g, float b, float a, float depth /*= 1.0f*/, unsigned char Stencil /*= 0*/)
+{
+	if (m_pFBOA)
+	{
+		m_pFBOA->clear(r, g, b, a, depth, Stencil);
+	}
+}
+
+void DX11DoubleBuffer::ClearDepthA(float depth /*= 1.0f*/, unsigned char Stencil /*= 0*/)
+{
+	if (m_pFBOA)
+	{
+		m_pFBOA->clearDepth(depth, Stencil);
+	}
+}
+
+void DX11DoubleBuffer::ClearB(float r, float g, float b, float a, float depth /*= 1.0f*/, unsigned char Stencil /*= 0*/)
+{
+	if (m_pFBOB)
+	{
+		m_pFBOB->clear(r, g, b, a, depth, Stencil);
+	}
+}
+
+void DX11DoubleBuffer::ClearDepthB(float depth /*= 1.0f*/, unsigned char Stencil /*= 0*/)
+{
+	if (m_pFBOB)
+	{
+		m_pFBOB->clearDepth(depth, Stencil);
+	}
 }

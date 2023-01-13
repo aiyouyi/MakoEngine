@@ -11,6 +11,7 @@ public:
 
 	virtual void CreateIndexBuffer(unsigned short* pData, int nTriangle) = 0;
 	virtual void CreateIndexBuffer(unsigned int* pData, int nTriangle) = 0;
+	virtual void UpdateIndexBuffer(unsigned short* pData, int nTriangle, int sizePerTriangle, int offset) = 0;
 	virtual uint32_t GetNumberTriangle() const = 0;
 	virtual int32_t GetIndexFormat() const = 0;
 };

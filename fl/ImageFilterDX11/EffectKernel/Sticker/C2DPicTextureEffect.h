@@ -5,6 +5,7 @@
 #include <xnamath.h>
 #include <vector>
 #include "Toolbox\EffectModel.hpp"
+#include "EffectKernel/DXBasicSample.h"
 
 class cocos2d::Mat4;
 class AnimationDrawable;
@@ -22,7 +23,17 @@ struct RectInfo
 	int height;
 };
 
-class MAGICSTUDIO_EXPORTS_CLASS C2DPicTextureEffect : public CEffectPart {
+
+
+class MAGICSTUDIO_EXPORTS_CLASS C2DPicTextureEffect : public CEffectPart , protected DXBaicSample
+{
+public:
+	struct VideodrawableXMLInfo
+	{
+		std::string Material;
+		std::string blendType;
+		std::string EnableMp4Alpha;
+	};
 public:
 	C2DPicTextureEffect();
 	virtual ~C2DPicTextureEffect();
@@ -41,12 +52,12 @@ public:
 private:
 	void ReadConfig(XMLNode& childNode, HZIP hZip = 0, char *pFilePath = NULL, const std::string &path = "");
 	bool WriteConfig(std::string &tempPath, XMLNode &root, HZIP dst, HZIP src);
-
-
+	
+	bool m_EnableSplit = false;
 
 	Effect2DRect		 m_v2DEffectModel;
 
 	DX11Shader*			 m_StickerShader = NULL;
 	ID3D11Buffer*		 m_pConstantBuffer = NULL;
-
+	VideodrawableXMLInfo m_VideoXMLInfo;
 };

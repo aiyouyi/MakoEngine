@@ -233,15 +233,13 @@ bool SceneInfo::loadScene(const char *szFile)
 					bGenMipmap = true;
 				}
 
-				//∑¿÷π÷ÿ∏¥º”‘ÿÕº∆¨
-
-				std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-				if (TexRHI == nullptr)
-				{
-					TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-					GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-				}
-
+				//std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
+				//if (TexRHI == nullptr)
+				//{
+				//	TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
+				//	GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
+				//}
+				std::shared_ptr< MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
 				m_mapImage.insert(make_pair(szDrawableName, new BitmapDrawable(TexRHI)));
 
 
@@ -299,12 +297,14 @@ bool SceneInfo::loadScene(const char *szFile)
 					const char *szImagePath = nodeItem.getAttribute("image");
 					sprintf(szFullFile, "%s/%s", szFile, szImagePath);
 
-					std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-					if (TexRHI == nullptr)
-					{
-						TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-						GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-					}
+					//std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
+					//if (TexRHI == nullptr)
+					//{
+					//	TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
+					//	GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
+					//}
+					std::shared_ptr< MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
+
 
 					const char *szDuring = nodeItem.getAttribute("duration");
 					long during = atol(szDuring);
@@ -569,13 +569,13 @@ void SceneInfo::setBackGround(const char *szZipFile, const char *szImg)
 
 		//∑¿÷π÷ÿ∏¥º”‘ÿÕº∆¨
 
-		std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
-		if (TexRHI == nullptr)
-		{
-			TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImg, bGenMipmap);
-			GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-		}
-
+		//std::shared_ptr< CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile, bGenMipmap);
+		//if (TexRHI == nullptr)
+		//{
+		//	TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImg, bGenMipmap);
+		//	GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
+		//}
+		std::shared_ptr< MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImg, bGenMipmap);
 		BitmapDrawable *drawable = new BitmapDrawable(TexRHI);
 
 		if (m_vBackGround.at(0).m_drawable != NULL)
@@ -715,6 +715,7 @@ bool FacialAnimation::renderEffectToTexture(ID3D11ShaderResourceView *pInputText
 		m_bNeedUpdateCameraDraw = false;
 		if (m_rectDraw == NULL)
 		{
+			m_InputSRV = GetDynamicRHI()->CreateTexture();
 			m_rectDraw = new RectDraw();
 			m_rectDraw->init(m_arrCameraView.x, m_arrCameraView.y, m_arrCameraView.z, m_arrCameraView.w);
 		}
@@ -732,9 +733,6 @@ bool FacialAnimation::renderEffectToTexture(ID3D11ShaderResourceView *pInputText
 	//float blendFactor[] = { 0.f,0.f,0.f,0.f };
 	//DeviceContextPtr->OMSetBlendState(m_pBSEnable, blendFactor, 0xffffffff);
 
-
-
-
 	m_pFBO->bind();
 	float ClearColor[4] = {0.0f, 0.0f, 0.0f, 0.0f }; // rgba  
 	DeviceContextPtr->ClearRenderTargetView(m_pFBO->getRenderTargetView(), ClearColor);
@@ -743,12 +741,11 @@ bool FacialAnimation::renderEffectToTexture(ID3D11ShaderResourceView *pInputText
 	//‰÷»æÃ˘÷Ω–ßπ˚
 	renderEffect(width, height, faceRes);
 
-
-
 	if (m_arrCameraView.z > 0.0f && m_arrCameraView.w > 0.0f)
 	{
 		//‰÷»æ±≥æ∞
-		m_rectDraw->setShaderTextureView(pInputTexture);
+		m_InputSRV->AttatchSRV(pInputTexture);
+		m_rectDraw->setShaderTextureView(m_InputSRV);
 		m_rectDraw->render();
 	}
 
@@ -973,7 +970,7 @@ void FacialAnimation::resetAnidrawable(const std::vector<std::string>& file_list
 
 	for(auto file : file_list) {
 
-		std::shared_ptr<CC3DTextureRHI> TexRHI = GetDynamicRHI()->CreateTextureFromFileCPUAcess(file);
+		std::shared_ptr<MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureFromFile(file);
 		drawable->appandTex(84, TexRHI);
 	}
 	
@@ -987,7 +984,7 @@ bool FacialAnimation::prepare()
 	{
 		m_Reconstruct3D = new mt3dface::MultiLinearVideoReconstructor();
 
-		string path = m_resourcePath + "/3DModels/";
+		std::string path = m_resourcePath + "/3DModels/";
 		//string path =  "../BuiltInResource/3DModels/";
 		m_Reconstruct3D->LoadModel(path.c_str());
 	}

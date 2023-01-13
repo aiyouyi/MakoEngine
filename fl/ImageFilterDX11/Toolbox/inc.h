@@ -67,6 +67,8 @@ typedef int32_t intx_h;
 typedef uint32_t uintx_h;
 #endif
 
+#include "bitflag.h"
+#include "error.h"
 
 #if !_HAS_CXX17
 namespace std

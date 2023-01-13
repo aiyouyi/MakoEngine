@@ -1,11 +1,12 @@
 #include "CBodyLift2.h"
 #include "common.h"
 #include <xnamath.h>
-#include<BaseDefine/Vectors.h>
-#include "../ShaderProgramManager.h"
+#include <BaseDefine/Vectors.h>
+#include "EffectKernel/ShaderProgramManager.h"
 #include "Toolbox/Render/RenderTargetRHI.h"
 #include "Toolbox/Render/VertexBuffer.h"
 #include "Toolbox/RenderState/PiplelineState.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
 
 CBodyLift2::CBodyLift2()
 {
@@ -115,7 +116,7 @@ void CBodyLift2::Render(BaseRenderParam & RenderParam)
 	pDoubleBuffer->BindFBOB();
 
 	m_pShader->useShader();
-	pDoubleBuffer->SetAShaderResource(0);
+	RHIResourceCast(pDoubleBuffer.get())->SetAShaderResource(0);
 	GetDynamicRHI()->SetPSShaderResource(1, m_pFBOFace);
 	GetDynamicRHI()->SetSamplerState(CC3DPiplelineState::ClampLinerSampler);
 	if (!mVertexBuffer[0])
@@ -154,7 +155,7 @@ void CBodyLift2::FilterToFaceFBO(BaseRenderParam & RenderParam, int nWidth, int 
 	{
 		m_nWidth = nWidth;
 		m_nHeight = nHeight;
-		m_pFBOFace = GetDynamicRHI()->CreateRenderTarget(nWidth*0.25, nHeight*0.25, false, nullptr, CC3DDynamicRHI::SFT_A8R8G8B8);
+		m_pFBOFace = GetDynamicRHI()->CreateRenderTarget(nWidth*0.25, nHeight*0.25, false, nullptr, CC3DTextureRHI::SFT_A8R8G8B8);
 	}
 
 	int nFaceCount = RenderParam.GetFaceCount();

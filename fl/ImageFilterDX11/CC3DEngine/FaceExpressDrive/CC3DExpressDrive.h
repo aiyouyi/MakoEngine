@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include "DX11ImageFilterDef.h"
 
 #define BlendShapeCoffes 52
 
@@ -150,7 +151,7 @@ private:
 #endif // _H_CC3D_EXPRESSDRIVE_H_
 
 
-class CC3DExpressDrive
+class DX11IMAGEFILTER_EXPORTS_CLASS CC3DExpressDrive
 {
 public:
 	CC3DExpressDrive();

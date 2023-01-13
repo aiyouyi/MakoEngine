@@ -1,11 +1,17 @@
-#pragma once
+﻿#pragma once
 #include "Toolbox/xmlParser.h"
 #include "BaseRenderParam.h"
 #include "Toolbox/zip/unzip.h"
 #include "common.h"
 #include "AnimInfo.h"
-
+//#include "VideoAnimation.h"
+//#ifndef _WIN64
+//	#include "BaseRenderParamGL.h"
+//#endif
 //=======������Ч����ʱ��=======
+
+class VideoAnimation;
+
 struct EffectPlayControl  
 {
 	long delaytime = 0;
@@ -44,10 +50,12 @@ public:
 	virtual bool ReadConfig(XMLNode& childNode, const std::string &path);
 
 	virtual bool WriteConfig(XMLNode& root, HZIP dst = 0, HZIP src = 0);
-	virtual bool WriteConfig(std::string &tempPath, XMLNode& root, HZIP dst=0, HZIP src = 0);
+	virtual bool WriteConfig(std::string& tempPath, XMLNode& root, HZIP dst = 0, HZIP src = 0);
 
 	virtual bool Prepare();
 	virtual void Render(BaseRenderParam &RenderParam);
+	virtual void SetAlpha(float Alpha);
+
 	virtual void Release();
 	virtual long GetRunTime();
 	virtual BlendType GetBlendType(const char *szBlendType);
@@ -60,7 +68,7 @@ public:
 	virtual void getAnim(AnimInfo &info);
 	virtual void setAnimFps(float fps);
     void SetResourcePath(std::string &path);
-
+	
 	EffectPlayControl m_play;
 	bool m_bEnableReder = true;
 	bool m_bEnableWrite = true;
@@ -78,11 +86,13 @@ public:
 
 	long long m_anim_id;
 	int m_index;
-
+	std::shared_ptr<VideoAnimation> vdoAnimation;
+	std::vector<AnchorType> m_AnchorType;
+	bool m_EnableMaskJson = false;
+	int m_MaskVideoWidth = 0;
+	int m_MaskVideoHeight = 0;
+	bool m_EnableMp4Alpha = false;
 protected:
-	ID3D11BlendState *m_pBlendStateNormal;
-	ID3D11SamplerState* m_pSamplerLinear;
-	DX11Shader *m_pShader = nullptr; //ֻ����ָ�룬�����������������ڹ���
 	std::string m_resourcePath;
 
 

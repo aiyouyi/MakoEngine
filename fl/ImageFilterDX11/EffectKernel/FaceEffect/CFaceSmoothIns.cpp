@@ -1,10 +1,13 @@
-#include "CFaceSmoothIns.h"
+﻿#include "CFaceSmoothIns.h"
 #include "BaseDefine/Define.h"
 #include "Toolbox/DXUtils/DXUtils.h"
 #include <algorithm>
 #include "EffectKernel/ShaderProgramManager.h"
 #include "EffectKernel/ResourceManager.h"
 #include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
+
 CFaceSmoothIns::CFaceSmoothIns()
 {
     m_pShaderguide = NULL;
@@ -99,7 +102,7 @@ bool CFaceSmoothIns::ReadConfig(XMLNode & childNode, HZIP hZip , char *pFilePath
 			}
 
 			const char *szAlpha3 = nodeDrawable.getAttribute("alpha");
-			if (szAlpha != NULL)
+			if (szAlpha3 != NULL)
 			{
 				sscanf(szAlpha3, "%f", &m_alpha);
 			}
@@ -211,8 +214,6 @@ void CFaceSmoothIns::Render(BaseRenderParam &RenderParam)
 		return;
 	}
 
-
-
 	float radius = 0.0036*m_TestAlpha[0];
 	float radiusguide = 0.002*m_TestAlpha[2];
 
@@ -247,7 +248,7 @@ void CFaceSmoothIns::Render(BaseRenderParam &RenderParam)
     auto pDoubleBuffer = RenderParam.GetDoubleBuffer();
 
 
-    FilterToSkinFBO(pDoubleBuffer->GetFBOTextureA(),RenderParam.GetWidth(), RenderParam.GetHeight());
+    FilterToSkinFBO(RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA(),RenderParam.GetWidth(), RenderParam.GetHeight());
     FilterToFaceFBO(RenderParam,RenderParam.GetWidth(), RenderParam.GetHeight());
 
 	float pParam[4];
@@ -269,9 +270,10 @@ void CFaceSmoothIns::Render(BaseRenderParam &RenderParam)
     m_DoubleBuffer->BindFBOB();
     m_pShaderguide->useShader();
 
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
-	pSrcShaderView = m_pFBOFace->getTexture()->getTexShaderView();
+	//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA());
+	auto pSrcShaderView = m_pFBOFace->getTexture()->getTexShaderView();
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
 
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
@@ -301,8 +303,9 @@ void CFaceSmoothIns::Render(BaseRenderParam &RenderParam)
 		pParam[1] = maxRadius * RenderParam.GetHeight() / RenderParam.GetWidth();
 		pParam[2] = 0;
 		m_pShaderMean->useShader();
-		pSrcShaderView = m_DoubleBuffer->GetFBOTextureB()->getTexShaderView();
-		DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		//pSrcShaderView = m_DoubleBuffer->GetFBOTextureB()->getTexShaderView();
+		//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		GetDynamicRHI()->SetPSShaderResource(0, m_DoubleBuffer->GetFBOTextureB());
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 		DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 		DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -315,8 +318,9 @@ void CFaceSmoothIns::Render(BaseRenderParam &RenderParam)
 		pParam[1] = 0;
 		pParam[2] = maxRadius;
 		m_pShaderMean->useShader();
-		pSrcShaderView = m_DoubleBuffer->GetFBOTextureA()->getTexShaderView();
-		DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		//pSrcShaderView = m_DoubleBuffer->GetFBOTextureA()->getTexShaderView();
+		//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		GetDynamicRHI()->SetPSShaderResource(0, m_DoubleBuffer->GetFBOTextureA());
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 		DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 		DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -333,8 +337,9 @@ void CFaceSmoothIns::Render(BaseRenderParam &RenderParam)
 
     m_DoubleBuffer->BindFBOA();
     m_pShader->useShader();
-	pSrcShaderView = m_DoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//pSrcShaderView = m_DoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, m_DoubleBuffer->GetFBOTextureB());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -348,8 +353,9 @@ void CFaceSmoothIns::Render(BaseRenderParam &RenderParam)
 	pParam[2] = 0.f;;
 	m_DoubleBuffer->BindFBOB();
     m_pShader->useShader();
-	pSrcShaderView = m_DoubleBuffer->GetFBOTextureA()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//pSrcShaderView = m_DoubleBuffer->GetFBOTextureA()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, m_DoubleBuffer->GetFBOTextureA());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -365,12 +371,14 @@ void CFaceSmoothIns::Render(BaseRenderParam &RenderParam)
     pDoubleBuffer->BindFBOB();
     m_pShaderSmooth->useShader();
 
-	pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 	
-	pSrcShaderView = m_DoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
+	//pSrcShaderView = m_DoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(1, m_DoubleBuffer->GetFBOTextureB());
 
 	pSrcShaderView = m_pFBO->getTexture()->getTexShaderView();
 	DeviceContextPtr->PSSetShaderResources(2, 1, &pSrcShaderView);
@@ -416,7 +424,7 @@ bool CFaceSmoothIns::WriteConfig(std::string &tempPath, XMLNode &root, HZIP dst,
 	return true;
 }
 
-void CFaceSmoothIns::FilterToSkinFBO(DX11Texture *tex,int nWidth, int nHeight)
+void CFaceSmoothIns::FilterToSkinFBO(std::shared_ptr<CC3DTextureRHI> tex,int nWidth, int nHeight)
 {
     if(m_nWidth!=nWidth||m_nHeight != nHeight|| m_DoubleBuffer->GetWidth() != m_nWidth * m_ScaleHW)
     {
@@ -438,8 +446,9 @@ void CFaceSmoothIns::FilterToSkinFBO(DX11Texture *tex,int nWidth, int nHeight)
 	unsigned int nOffset = 0;
     m_pFBO->bind();
     m_pShaderSkin->useShader();
-	auto pSrcShaderView = tex->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//auto pSrcShaderView = tex->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, tex);
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer, &nStride, &nOffset);
 	DeviceContextPtr->IASetIndexBuffer(m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
@@ -460,7 +469,7 @@ void CFaceSmoothIns::FilterToFaceFBO(BaseRenderParam &RenderParam,int nWidth, in
 
     m_pShaderFace->useShader();
 	Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, 0);
-	auto pMaterialView = img->tex->getTexShaderView();
+	auto pMaterialView = RHIResourceCast(img->tex.get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 

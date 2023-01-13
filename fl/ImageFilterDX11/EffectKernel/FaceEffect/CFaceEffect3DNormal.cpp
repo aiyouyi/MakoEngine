@@ -6,7 +6,7 @@
 #include "Toolbox/Render/DynamicRHI.h"
 #include "Toolbox/Render/VertexBuffer.h"
 #include "Toolbox/RenderState/PiplelineState.h"
-
+#include "Toolbox/DXUtils/DX11Resource.h"
 
 CFaceEffect3DNormal::CFaceEffect3DNormal()
 {
@@ -88,7 +88,8 @@ void CFaceEffect3DNormal::Render(BaseRenderParam &RenderParam)
 
 	GetDynamicRHI()->SetRasterizerState(CC3DPiplelineState::RasterizerStateCullBack);
 
-	pDoubleBuffer->GetFBOA()->clearDepth();
+	//pDoubleBuffer->GetFBOA()->clearDepth();
+	RHIResourceCast(pDoubleBuffer.get())->GetFBOA()->clearDepth();
 	GetDynamicRHI()->SetDepthStencilState(CC3DPiplelineState::DepthStateEnable, 0);
 
 
@@ -129,9 +130,10 @@ void CFaceEffect3DNormal::Render(BaseRenderParam &RenderParam)
 	glm::mat4 rot_mtx_z = glm::rotate(glm::mat4(1.0f), cam_params[2] *3.1416f / 180.0f, glm::vec3{ 0.0f, 0.0f, 1.0f });
 
 	glm::mat4 NormalMat = rot_mtx_z * rot_mtx_x*rot_mtx_y;
-
-	SetParameter("matWVP", &mWVP, 0, sizeof(glm::mat4));
-	SetParameter("matNormal", &NormalMat, 0, sizeof(glm::mat4));
+	//SetParameter("matWVP", &mWVP, 0, sizeof(glm::mat4));
+	//SetParameter("matNormal", &NormalMat, 0, sizeof(glm::mat4));
+	GET_SHADER_STRUCT_MEMBER(NormalConstantBuffer).SetMatrix4Parameter("matWVP", &mWVP[0][0], 0, 1);
+	GET_SHADER_STRUCT_MEMBER(NormalConstantBuffer).SetMatrix4Parameter("matNormal", &NormalMat[0][0], 0, 1);
 
 	GET_SHADER_STRUCT_MEMBER(NormalConstantBuffer).ApplyToAllBuffer();
 

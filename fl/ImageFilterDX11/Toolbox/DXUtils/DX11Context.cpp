@@ -134,7 +134,7 @@ DX11FBOCache *DX11Context::getFBOCache()
 	return m_pFBOCache;
 }
 
-DX11Texture *DX11Context::fetchTexture(const string &szFile, bool bGenMipmap)
+DX11Texture *DX11Context::fetchTexture(const std::string &szFile, bool bGenMipmap)
 {
 	DX11Texture *pTex = NULL;
 
@@ -145,7 +145,7 @@ DX11Texture *DX11Context::fetchTexture(const string &szFile, bool bGenMipmap)
 		pTex = new DX11Texture();
 		if (pTex->initTextureFromFile(szFile, bGenMipmap))
 		{
-			m_mapTextures.insert(make_pair(szFile, pTex));
+			m_mapTextures.insert(std::make_pair(szFile, pTex));
 		}
 		else
 		{
@@ -163,7 +163,7 @@ DX11Texture *DX11Context::fetchTexture(const string &szFile, bool bGenMipmap)
 	return pTex;
 }
 
-DX11Shader *DX11Context::fetchShader(const string &szShader, bool defaultCreate)
+DX11Shader *DX11Context::fetchShader(const std::string &szShader, bool defaultCreate)
 {
 	//m_mapShaders
 	DX11Shader *pShader = NULL;
@@ -177,7 +177,7 @@ DX11Shader *DX11Context::fetchShader(const string &szShader, bool defaultCreate)
 			pShader = new DX11Shader();
 			if (pShader->initShaderWithString(szShader.c_str()))
 			{
-				m_mapShaders.insert(make_pair(szShader, pShader));
+				m_mapShaders.insert(std::make_pair(szShader, pShader));
 			}
 			else
 			{
@@ -200,7 +200,7 @@ DX11Shader *DX11Context::fetchShader(const string &szShader, bool defaultCreate)
 	return pShader;
 }
 
-void DX11Context::recordTexture(const string &szTexture, DX11Texture *pTex)
+void DX11Context::recordTexture(const std::string &szTexture, DX11Texture *pTex)
 {
 	if (pTex != NULL)
 	{
@@ -214,7 +214,7 @@ void DX11Context::recordTexture(const string &szTexture, DX11Texture *pTex)
 	}
 }
 
-void DX11Context::recordShader(const string &szShader, DX11Shader *pShader)
+void DX11Context::recordShader(const std::string &szShader, DX11Shader *pShader)
 {
 	if (pShader != NULL)
 	{
@@ -305,7 +305,7 @@ ID3D11DepthStencilState *DX11Context::fetchDepthStencilState(bool enableDepthTes
 		if (pDepthState != NULL)
 		{
 			pDepthState->AddRef();
-			m_mapDepthStencialState.insert(make_pair(id, pDepthState));
+			m_mapDepthStencialState.insert(std::make_pair(id, pDepthState));
 		}
 		
 		return pDepthState;
@@ -317,7 +317,7 @@ ID3D11DepthStencilState *DX11Context::fetchDepthStencilState(bool enableDepthTes
 	}
 }
 
-ID3D11BlendState *DX11Context::fetchBlendState(bool bBlend, bool bBlendAlpha, bool writeBuffer)
+ID3D11BlendState *DX11Context::fetchBlendState(bool bBlend, bool bBlendAlpha, bool writeBuffer, bool maskRGB)
 {
 	if (m_pDevice == NULL) { return NULL; }
 	unsigned int id = 0;
@@ -332,6 +332,10 @@ ID3D11BlendState *DX11Context::fetchBlendState(bool bBlend, bool bBlendAlpha, bo
 	if (writeBuffer)
 	{
 		id += 4;
+	}
+	if (maskRGB)
+	{
+		id += 8;
 	}
 
 	//BlendStateMap_ m_mapBlendState
@@ -364,6 +368,10 @@ ID3D11BlendState *DX11Context::fetchBlendState(bool bBlend, bool bBlendAlpha, bo
 		if (writeBuffer)
 		{
 			blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+			if (maskRGB)
+			{
+				blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN | D3D11_COLOR_WRITE_ENABLE_BLUE;
+			}
 		}
 		else
 		{
@@ -375,7 +383,7 @@ ID3D11BlendState *DX11Context::fetchBlendState(bool bBlend, bool bBlendAlpha, bo
 		if (pBlendState != NULL)
 		{
 			pBlendState->AddRef();
-			m_mapBlendState.insert(make_pair(id, pBlendState));
+			m_mapBlendState.insert(std::make_pair(id, pBlendState));
 		}
 
 		return pBlendState;
@@ -409,7 +417,7 @@ ID3D11RasterizerState *DX11Context::fetchRasterizerState(D3D11_CULL_MODE cullMod
 		if (pRasterizerState != NULL)
 		{
 			pRasterizerState->AddRef();
-			m_mapRasterizerState.insert(make_pair(id, pRasterizerState));
+			m_mapRasterizerState.insert(std::make_pair(id, pRasterizerState));
 		}
 
 		return pRasterizerState;

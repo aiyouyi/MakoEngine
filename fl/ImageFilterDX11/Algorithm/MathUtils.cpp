@@ -428,7 +428,7 @@ void CMathUtils::CalcConvexHull(vector<Vector2> &vecSrc)
 }
 
 
-bool CMathUtils::FillRect5(byte* pMask,int nWidth,int nHeight,vector<Vector2>& points,byte fillColor)
+bool CMathUtils::FillRect5(byte_t* pMask,int nWidth,int nHeight,vector<Vector2>& points, byte_t fillColor)
 {
 	if(pMask == NULL || points.size() == 0)
 	{
@@ -462,7 +462,7 @@ bool CMathUtils::FillRect5(byte* pMask,int nWidth,int nHeight,vector<Vector2>& p
 	int minYi = max(0,(int)minY);
 	int maxYi = min((int)maxY + 1,nHeight - 1);
 	//LOGD("min max %d,%d,%d,%d",minXi,maxXi,minYi,maxYi);
-	byte* pTmp = pMask;
+	byte_t* pTmp = pMask;
 	for(int i = minYi; i <= maxYi;i++)
 	{
 		Vector2 p;
@@ -509,7 +509,7 @@ bool CMathUtils::FillRect5(byte* pMask,int nWidth,int nHeight,vector<Vector2>& p
 	return true;
 }
 
-bool CMathUtils::FillRect6(byte* pMask,int nWidth,int nHeight,vector<Vector2>& points,byte fillColor)
+bool CMathUtils::FillRect6(byte_t* pMask,int nWidth,int nHeight,vector<Vector2>& points, byte_t fillColor)
 {
 	if(pMask == NULL || points.size() == 0)
 	{
@@ -517,7 +517,7 @@ bool CMathUtils::FillRect6(byte* pMask,int nWidth,int nHeight,vector<Vector2>& p
 	}
 	int pointCount = points.size();
 
-	byte* pTmpMask = new byte[nWidth*nHeight];
+	byte_t* pTmpMask = new byte_t[nWidth*nHeight];
 	memcpy(pTmpMask,pMask,nWidth*nHeight);
 	memset(pMask,fillColor,nWidth*nHeight);
 
@@ -546,7 +546,7 @@ bool CMathUtils::FillRect6(byte* pMask,int nWidth,int nHeight,vector<Vector2>& p
 	int maxXi = min((int)maxX + 1, nWidth - 1);
 	int minYi = max(0,(int)minY);
 	int maxYi = min((int)maxY + 1,nHeight - 1);
-	byte* pTmp = pMask;
+	byte_t* pTmp = pMask;
 	for(int i = minYi; i <= maxYi;i++)
 	{
 		Vector2 p;
@@ -582,7 +582,7 @@ bool CMathUtils::FillRect6(byte* pMask,int nWidth,int nHeight,vector<Vector2>& p
 			}
 			right = key;
 			pTmp = pMask + i*nWidth + left;
-			byte* pSrc = pTmpMask + i*nWidth + left;
+			byte_t* pSrc = pTmpMask + i*nWidth + left;
 			for(int j = left ; j <= right ; j ++)
 			{
 				*pTmp++ = *pSrc++;
@@ -625,7 +625,7 @@ bool CMathUtils::InsidePolygon(Vector2 *polygon,int N,Vector2 p)
 BYTE* CMathUtils::DrawLine( int nWidth,int nHeight,int pointCount,Vector2* points )
 {
 	int nPixelCount = nWidth*nHeight;
-	byte* pTmpMask = new byte[nPixelCount];
+	byte_t* pTmpMask = new byte_t[nPixelCount];
 	memset(pTmpMask, 0, nPixelCount);
 	// 连直线
 	float step, sumPos;

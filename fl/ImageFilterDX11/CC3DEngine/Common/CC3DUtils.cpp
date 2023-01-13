@@ -87,6 +87,53 @@ void CC3DUtils::QuaternionInterpolate(Vector4 & vec4Out, const Vector4 & vec4Sta
 	return;
 }
 
+void CC3DUtils::Slerp(Vector4 & vec4Out, const Vector4 &a, const Vector4 & b, float fFactor)
+{
+	Vector4 q = Vector4(0,0,0,1);
+
+	// Calculate angle between them
+	double cosHalfTheta = (a.w * b.w) + (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
+
+	if (abs(cosHalfTheta) >= 1.0)
+	{
+		q.w = a.w;
+		q.x = a.x;
+		q.y = a.y;
+		q.z = a.z;
+
+		vec4Out = q;
+		return;
+	}
+
+	// Calculate temporary values
+	double halfTheta = acos(cosHalfTheta);
+	double sinHalfTheta = sqrt(1.0f - cosHalfTheta * cosHalfTheta);
+
+	// if theta = 180 degrees then result is not fully defined
+	// we could rotate around any axis normal to a or b
+	if (fabs(sinHalfTheta) < 0.001)
+	{
+		q.w = (a.w * 0.5 + b.w * 0.5);
+		q.x = (a.x * 0.5 + b.x * 0.5);
+		q.y = (a.y * 0.5 + b.y * 0.5);
+		q.z = (a.z * 0.5 + b.z * 0.5);
+
+		vec4Out = q;
+		return;
+	}
+
+	double ratioA = sin((1 - fFactor) * halfTheta) / sinHalfTheta;
+	double ratioB = sin(fFactor * halfTheta) / sinHalfTheta;
+
+	// Calculate Quaternion
+	q.w = (a.w * ratioA + b.w * ratioB);
+	q.x = (a.x * ratioA + b.x * ratioB);
+	q.y = (a.y * ratioA + b.y * ratioB);
+	q.z = (a.z * ratioA + b.z * ratioB);
+
+	vec4Out = q;
+}
+
 void CC3DUtils::QuaternionNormalize(Vector4 & vec4Out)
 {
 	if (&vec4Out == NULL)
@@ -102,6 +149,33 @@ void CC3DUtils::QuaternionNormalize(Vector4 & vec4Out)
 		vec4Out.w *= invMag;
 	}
 	return;
+}
+
+std::string CC3DUtils::GetFileName(const std::string& FilePath)
+{
+	if (FilePath.find_last_of("\\") != std::string::npos)
+	{
+		return FilePath.substr(FilePath.find_last_of("\\") + 1);
+	}
+	else if (FilePath.find_last_not_of("/") != std::string::npos)
+	{
+		return FilePath.substr(FilePath.find_last_of("/") + 1);
+	}
+
+	return FilePath;
+}
+
+std::string CC3DUtils::GetFileNameWithoutExtension(const std::string& FilePath)
+{
+	std::string FileName = GetFileName(FilePath);
+	if (!FileName.empty())
+	{
+		if (FileName.find_last_of(".") != std::string::npos)
+			return FileName.substr(0, FileName.find_last_of("."));
+		else
+			return "";
+	}
+	return FileName;
 }
 
 CCglTFModel::~CCglTFModel()

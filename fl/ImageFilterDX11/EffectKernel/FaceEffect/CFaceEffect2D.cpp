@@ -6,8 +6,9 @@
 #include "Toolbox/Render/DynamicRHI.h"
 #include "Algorithm/Matrices.h"
 #include "Algorithm/MathUtils.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
 
 CFaceEffect2D::CFaceEffect2D()
 {
@@ -39,6 +40,8 @@ void CFaceEffect2D::Release()
 		SAFE_RELEASE_BUFFER(m_VerticeBuffer[i]);
 	}
 	SAFE_DELETE_ARRAY(m_pMergeVertex);
+
+	ResourceManager::Instance().freeAnim(m_MaskId);
 }
 
 void * CFaceEffect2D::Clone()
@@ -315,11 +318,19 @@ void CFaceEffect2D::Render(BaseRenderParam &RenderParam)
 	}
 
 	Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, float(runTime));
-	auto pMaterialView = img->tex->getTexShaderView();
+	if (img == NULL)
+	{
+		return;
+	}
+	auto pMaterialView = RHIResourceCast(img->tex.get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
 
 	img = ResourceManager::Instance().getAnimFrame(m_MaskId,0);
-	auto pMaskView = img->tex->getTexShaderView();
+	if (img == NULL)
+	{
+		return;
+	}
+	auto pMaskView = RHIResourceCast(img->tex.get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pMaskView);
 
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
@@ -340,8 +351,9 @@ void CFaceEffect2D::Render(BaseRenderParam &RenderParam)
 
 		pDoubleBuffer->SyncAToBRegion((float*)FaceMesh->pVertexs, FaceMesh->nVertex, 3, 1);
 
-		auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-		DeviceContextPtr->PSSetShaderResources(2, 1, &pSrcShaderView);
+		//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+		//DeviceContextPtr->PSSetShaderResources(2, 1, &pSrcShaderView);
+		GetDynamicRHI()->SetPSShaderResource(2, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 
 		if (m_IndexBuffer == NULL)
 		{
@@ -408,7 +420,7 @@ bool CFaceEffect2D::WriteConfig(std::string &tempPath, XMLNode &root, HZIP dst, 
 	sprintf(point, "%.4f,%.4f", m_SrcRect[0].x, m_SrcRect[0].y);
 	nodePoint.addAttribute("leftup", point);
 
-	sprintf(point, "%.4f,%.4f", m_SrcRect[0].x, m_SrcRect[0].y);
+	sprintf(point, "%.4f,%.4f", m_SrcRect[1].x, m_SrcRect[1].y);
 	nodePoint.addAttribute("rightup", point);
 
 	sprintf(point, "%.4f,%.4f", m_SrcRect[2].x, m_SrcRect[2].y);

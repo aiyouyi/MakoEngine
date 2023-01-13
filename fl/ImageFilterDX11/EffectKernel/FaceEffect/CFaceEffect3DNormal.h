@@ -5,18 +5,18 @@
 #include "Toolbox/Drawable.hpp"
 #include "Toolbox/Render/DynamicRHI.h"
 #include "Toolbox/Render/CC3DShaderDef.h"
+#include "EffectKernel/DXBasicSample.h"
 
-
-BEING_SHADER_STRUCT(NormalConstantBuffer,0)
-	DELCARE_PARAM(glm::mat4, matWVP)
-	DELCARE_PARAM(glm::mat4, matNormal)
-	BEING_STRUCT_CONSTRUCT(NormalConstantBuffer)
+BEGIN_SHADER_STRUCT(NormalConstantBuffer,0)
+	DECLARE_PARAM(glm::mat4, matWVP)
+	DECLARE_PARAM(glm::mat4, matNormal)
+	BEGIN_STRUCT_CONSTRUCT(NormalConstantBuffer)
 		IMPLEMENT_PARAM("matWVP", UniformType::MAT4)
 		IMPLEMENT_PARAM("matNormal", UniformType::MAT4)
 	END_STRUCT_CONSTRUCT
 END_SHADER_STRUCT
 
-class CFaceEffect3DNormal : public CEffectPart
+class CFaceEffect3DNormal : public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceEffect3DNormal();
@@ -44,7 +44,7 @@ private:
 
 	mt3dface::MultiLinearVideoReconstructor *m_Reconstruct3D;
 
-	DELCARE_SHADER_STRUCT_MEMBER(NormalConstantBuffer);
+	DECLARE_SHADER_STRUCT_MEMBER(NormalConstantBuffer);
 
 
 	bool m_isFirstInit = true;

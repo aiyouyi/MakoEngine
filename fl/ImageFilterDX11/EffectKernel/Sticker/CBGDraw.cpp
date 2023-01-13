@@ -66,17 +66,11 @@ bool CBGDraw::ReadConfig(XMLNode & childNode, HZIP hZip, char * pFilePath)
 			//解析动画信息
 			int j = -1;
 			XMLNode nodeItem = nodeDrawable.getChildNode("item", ++j);
-			while (!nodeItem.isEmpty()) {
-				char szFullFile[256];
+			while (!nodeItem.isEmpty()) 
+			{
 				const char* szImagePath = nodeItem.getAttribute("image");
-				sprintf(szFullFile, "%s/%s", pFilePath, szImagePath);
 
-				std::shared_ptr<CC3DTextureRHI> TexRHI = GetDynamicRHI()->FetchTexture(szFullFile,false);
-				if (!TexRHI)
-				{
-					TexRHI = GetDynamicRHI()->CreateTextureFromZip(hZip, szImagePath, bGenMipmap);
-					GetDynamicRHI()->RecoredTexture(szFullFile, TexRHI);
-				}
+				std::shared_ptr<MaterialTexRHI> TexRHI = GetDynamicRHI()->CreateAsynTextureZIP(hZip, szImagePath, bGenMipmap);
 
 				const char* szDuring = nodeItem.getAttribute("duration");
 				long during = atol(szDuring);
@@ -151,7 +145,8 @@ void CBGDraw::Render(BaseRenderParam & RenderParam)
 
 	float arrClip[] = { 0,0,1,1 };
 
-	ID3D11ShaderResourceView *pBGRV = m_2DBGAnimation->GetSRV(during);
+	//ID3D11ShaderResourceView *pBGRV = m_2DBGAnimation->GetSRV(during);
+	auto pBGRV = m_2DBGAnimation->GetTex(during);
 	int dw, dh;
 	m_2DBGAnimation->getSize(dw, dh);
 
@@ -181,8 +176,9 @@ void CBGDraw::Render(BaseRenderParam & RenderParam)
 	pDoubleBuffer->BindFBOA();
 
 	m_pShader->useShader();
-	auto pMaterialView = pBGRV;
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
+
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pMaterialView);
+	pBGRV->Bind(0);
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 	float blendFactor[] = { 0.f,0.f,0.f,0.f };
 	DeviceContextPtr->OMSetBlendState(m_pBlendStateNormal, blendFactor, 0xffffffff);

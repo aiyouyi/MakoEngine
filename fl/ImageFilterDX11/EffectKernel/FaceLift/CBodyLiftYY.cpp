@@ -1,7 +1,7 @@
 #include "CBodyLiftYY.h"
 #include "common.h"
-#include <xnamath.h>
-#include<BaseDefine/Vectors.h>
+#include <BaseDefine/Vectors.h>
+#include "Toolbox/DXUtils/DX11Resource.h"
 
 CBodyLiftYY::CBodyLiftYY()
 {
@@ -45,15 +45,17 @@ void CBodyLiftYY::Render(BaseRenderParam & RenderParam)
 
 	pDoubleBuffer->BindFBOB();
 
-	pDoubleBuffer->m_rectDraw->setShaderTextureView(pDoubleBuffer->GetFBOTextureA()->getTexShaderView());;
+	auto dx11DoubleBuffer = RHIResourceCast(pDoubleBuffer.get());
+	dx11DoubleBuffer->m_rectDraw->setShaderTextureView(dx11DoubleBuffer->GetFBOTextureA());
+
 	if (m_alpha<0)
 	{
-		pDoubleBuffer->m_rectDraw->render(vec2(0,0), vec2(1.0, 1.0-0.2*m_alpha), 0, pDoubleBuffer->GetWidth(), pDoubleBuffer->GetHeight());
+		dx11DoubleBuffer->m_rectDraw->render(Vector2(0,0), Vector2(1.0, 1.0-0.2*m_alpha), 0, pDoubleBuffer->GetWidth(), pDoubleBuffer->GetHeight());
 	}
 	else
 	{
-		pDoubleBuffer->GetFBOB()->clear(0, 1.0, 0, 0.0);
-		pDoubleBuffer->m_rectDraw->render(vec2(0, 0), vec2(1.0 + 0.2*m_alpha,1.0), 0, pDoubleBuffer->GetWidth(), pDoubleBuffer->GetHeight());
+		dx11DoubleBuffer->GetFBOB()->clear(0, 1.0, 0, 0.0);
+		dx11DoubleBuffer->m_rectDraw->render(Vector2(0, 0), Vector2(1.0 + 0.2*m_alpha,1.0), 0, pDoubleBuffer->GetWidth(), pDoubleBuffer->GetHeight());
 	}
 	pDoubleBuffer->SwapFBO();
 

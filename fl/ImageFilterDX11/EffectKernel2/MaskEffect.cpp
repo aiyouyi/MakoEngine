@@ -1,5 +1,7 @@
 #include "MaskEffect.h"
 #include "Toolbox/Helper.h"
+#include "Toolbox/Render/DynamicRHI.h"
+#include "Toolbox/Render/TextureRHI.h"
 #include <fstream>  
 #include <string>
 using namespace std;
@@ -33,6 +35,8 @@ bool MaskEffect::renderEffectToTexture(ID3D11ShaderResourceView *pInputTexture, 
 	}
 	if (m_rectDraw == NULL)
 	{
+		m_InputSRV = GetDynamicRHI()->CreateTexture();
+		m_VideoSRV = GetDynamicRHI()->CreateTexture();
 		m_rectDraw = new RectDraw();
 		m_rectDraw->init(1, 1);
 	}
@@ -48,8 +52,10 @@ bool MaskEffect::renderEffectToTexture(ID3D11ShaderResourceView *pInputTexture, 
 		int maskH;
 	};
 	SMaskInfo *info = (SMaskInfo *)pMaskInfo;
-	m_rectDraw->setShaderTextureView(pInputTexture);
-	m_rectDraw->render(pVideoTexture, arrClip, info->pMask, info->maskW, info->maskH);
+	m_InputSRV->AttatchSRV(pInputTexture);
+	m_rectDraw->setShaderTextureView(m_InputSRV);
+	m_VideoSRV->AttatchSRV(pVideoTexture);
+	m_rectDraw->render(m_VideoSRV, arrClip, info->pMask, info->maskW, info->maskH);
 	return true;
 }
 
@@ -69,6 +75,7 @@ bool MaskEffect::renderRGBATexture(ID3D11ShaderResourceView *pVideoTexture, ID3D
 	}
 	if (m_rectDraw == NULL)
 	{
+		m_VideoSRV = GetDynamicRHI()->CreateTexture();
 		m_rectDraw = new RectDraw();
 		m_rectDraw->init(1, 1);
 	}
@@ -85,7 +92,8 @@ bool MaskEffect::renderRGBATexture(ID3D11ShaderResourceView *pVideoTexture, ID3D
 		int maskH;
 	};
 	SMaskInfo *info = (SMaskInfo *)pMaskInfo;
-	m_rectDraw->setShaderTextureView(pVideoTexture);
+	m_VideoSRV->AttatchSRV(pVideoTexture);
+	m_rectDraw->setShaderTextureView(m_VideoSRV);
 	m_rectDraw->renderAlpha(arrClip, info->pMask, info->maskW, info->maskH, width, height);
 	return true;
 }

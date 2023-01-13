@@ -2,7 +2,9 @@
 #define CGiltch_H____
 
 #include "EffectKernel/CEffectPart.h"
-class MAGICSTUDIO_EXPORTS_CLASS CGlitch: public CEffectPart
+#include "EffectKernel/DXBasicSample.h"
+
+class MAGICSTUDIO_EXPORTS_CLASS CGlitch: public CEffectPart, protected DXBaicSample
 {
 public:
 	CGlitch();

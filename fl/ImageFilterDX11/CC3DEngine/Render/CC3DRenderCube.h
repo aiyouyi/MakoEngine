@@ -27,9 +27,9 @@ public:
 	
 	virtual void Render();
 	void renderCube();
-	void setHDR(std::string  filePath);
-	void SetShaderResource(std::string path);
-	void setHDRData(float *pData, int &nWidth, int &nHeight);
+	void setHDR(const std::string&  filePath);
+	void SetShaderResource(const std::string& path);
+	void setHDRData(float *pData, int nWidth, int nHeight);
 
 	std::shared_ptr<CC3DCubeMapRHI> m_envCube;
 	std::shared_ptr<CC3DCubeMapRHI> m_PreCube;
@@ -38,7 +38,7 @@ public:
 	std::shared_ptr<CC3DTextureRHI> m_hdrCube;
 	std::shared_ptr<CC3DRenderTargetRHI> m_Blut;
 	std::shared_ptr<CC3DTextureRHI> m_BlutTexture;
-	std::shared_ptr<CC3DVertexBuffer> m_quadVAO;
+
 private:
 	virtual void Initialize();
 
@@ -56,6 +56,8 @@ private:
 
 	IBLConstantBuffer m_IBLConstantBuffer;
 	std::shared_ptr<CC3DConstantBuffer> m_IBLCB;
+	std::shared_ptr<CC3DVertexBuffer> m_QuadVertexBuffer;
+	std::shared_ptr<CC3DIndexBuffer> m_QuadIndexBuffer;
 };
 
 #endif //_H_CC3D_RENDERER__CUBE_H_

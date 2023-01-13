@@ -2,7 +2,10 @@
 #define common_h
 
 #include "DX11ImageFilterDef.h"
+
+#if defined(_WIN32) || defined(_WIN32_) || defined(WIN32) || defined(_WIN64_) || defined(WIN64) || defined(_WIN64)
 #include <d3d11.h>
+#endif
 
 //==========Version Contral===================
 //==========2021.04.01========================
@@ -16,8 +19,10 @@ enum EffectEvent
 {
 	EE_START,
 	EE_FINISHED,
-	EE_LOOP
+	EE_LOOP,
+	EE_READY
 };
+
 typedef void(*EffectCallback)(int event, const void *lpParam);
 
 enum kActionEvent
@@ -27,6 +32,14 @@ enum kActionEvent
 	AE_END = 2,
 };
 
+enum AnchorType
+{
+	ANCHOR_IMAGE = 0,
+	ANCHOR_ID,
+
+
+	ANCHOR_UNKNOW = 100
+};
 
 enum CCEffectType
 {
@@ -82,6 +95,7 @@ enum CCEffectType
 	FORE_EFFECT_STICKER,            //前景贴纸特效
 	SEG_EFFECT_BACKGROUND,          //背景分割特效
 	FACE_EFFECT_OFFSETSHAPE,       //人脸形变
+	BODY_TRACK2D_EFFECT,          //背景分割跟随身体2D特效
 
 	//镜头特效
 	SOUL_BODY_EFFECT =350,              //灵魂出窍镜头特效
@@ -89,6 +103,8 @@ enum CCEffectType
 	LIGHTWAVE_EFFECT,              //光波特效
 	RHYTHM_EFFECT,                  //律动特效
 	FlipSplit,                  //律动特效
+	BACK_GROUND_FILTER,         //背景模糊特效
+	FORE_GROUND_TRACK,          //前景跟踪人体特效
 
 
 	PBR_3D_MODEL = 400,
@@ -97,12 +113,13 @@ enum CCEffectType
 	FACE_3D_SWITCH_PALATA,          //3D特效替换板
 	UNKNOW_EFFECT  =1000,
 };
-
+#define LUT_ADJUST_EFFECT 300 
 
 typedef void(*ActionCallback)(int event, const void *lpParam);
 
 typedef void(*ActionUserCallback)(int event, const char *szID, const void *lpParam);
 
+#if defined(_WIN32) || defined(_WIN32_) || defined(WIN32) || defined(_WIN64_) || defined(WIN64) || defined(_WIN64)
 DX11IMAGEFILTER_EXPORTS_API unsigned long ccCurrentTime();
 
 DX11IMAGEFILTER_EXPORTS_API void ccBeginFilter();
@@ -111,4 +128,6 @@ DX11IMAGEFILTER_EXPORTS_API void ccEndFilter();
 
 DX11IMAGEFILTER_EXPORTS_API void ccInitFilter(ID3D11Device *pd3dDevice, ID3D11DeviceContext *pContext);
 DX11IMAGEFILTER_EXPORTS_API void ccUnInitFilter();
+#endif
+
 #endif

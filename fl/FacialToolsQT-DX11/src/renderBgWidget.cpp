@@ -11,7 +11,7 @@ RenderBgWidget::RenderBgWidget(QWidget* parent)
 	: QWidget(parent) {
 	setStyleSheet("background-color:#000000;");
 	m_render = new D3d11RenderWidget(this);
-
+	m_render->Init();
 	m_layout = new QVBoxLayout;
 	m_layout->setContentsMargins(0, 0, 0, 0);
 	m_layout->addWidget(m_render);

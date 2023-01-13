@@ -2,9 +2,9 @@
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "EffectKernel/CEffectPart.h"
 #include "Algorithm/Face2DMesh/MTFace2DInterFace.h"
+#include "EffectKernel/DXBasicSample.h"
 
-
-class CFaceEffect2DWithBG : public CEffectPart
+class CFaceEffect2DWithBG : public CEffectPart, protected DXBaicSample
 {
 public:
 	CFaceEffect2DWithBG();

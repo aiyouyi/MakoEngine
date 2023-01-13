@@ -4,8 +4,10 @@
 #include <algorithm>
 #include "EffectKernel/ShaderProgramManager.h"
 
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CFaceRemovePouchFalin::CFaceRemovePouchFalin()
 {
@@ -225,8 +227,9 @@ void CFaceRemovePouchFalin::Render(BaseRenderParam &RenderParam)
 		pParam[1] =  1.0 / nHeight;
 
 		m_pShaderMean->useShader();
-		auto pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
-		DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
+		//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA());
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 		DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 		DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -240,7 +243,7 @@ void CFaceRemovePouchFalin::Render(BaseRenderParam &RenderParam)
 		pParam[1] = m_FilterRadis / pDoubleBuffer->GetHeight();
 		m_DoubleBuffer->BindFBOA();
 		m_pShaderSmooth->useShader();
-	    pSrcShaderView = m_pFBO->getTexture()->getTexShaderView();
+	    auto pSrcShaderView = m_pFBO->getTexture()->getTexShaderView();
 		DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 		DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
@@ -255,8 +258,9 @@ void CFaceRemovePouchFalin::Render(BaseRenderParam &RenderParam)
 		pParam[1] = 0.f;
 		m_DoubleBuffer->BindFBOB();
 		m_pShaderSmooth->useShader();
-		pSrcShaderView = m_DoubleBuffer->GetFBOTextureA()->getTexShaderView();
-		DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		//pSrcShaderView = RHIResourceCast(m_DoubleBuffer->GetFBOTextureA().get())->GetSRV();
+		//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+		GetDynamicRHI()->SetPSShaderResource(0, m_DoubleBuffer->GetFBOTextureA());
 		DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 		DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 		DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -274,17 +278,20 @@ void CFaceRemovePouchFalin::Render(BaseRenderParam &RenderParam)
 	pDoubleBuffer->SyncAToB();
 	pDoubleBuffer->BindFBOA();
 	m_pShader->useShader();
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, m_DoubleBuffer->GetFBOTextureB());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
-	pSrcShaderView = m_pFBO->getTexture()->getTexShaderView();
+	auto pSrcShaderView = m_pFBO->getTexture()->getTexShaderView();
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
-	pSrcShaderView = m_DoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(2, 1, &pSrcShaderView);
+	//pSrcShaderView = m_DoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(2, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(2, m_DoubleBuffer->GetFBOTextureB());
 
 	Image* img = ResourceManager::Instance().getAnimFrame(m_anim_id, 0);
-	pSrcShaderView = img->tex->getTexShaderView();
+	//pSrcShaderView = img->tex->getTexShaderView();
+	pSrcShaderView = RHIResourceCast(img->tex.get())->GetSRV();
 	DeviceContextPtr->PSSetShaderResources(3, 1, &pSrcShaderView);
 
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);

@@ -1,8 +1,10 @@
 #include "CGlitch.h"
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CGlitch::CGlitch()
 {
@@ -130,8 +132,9 @@ void CGlitch::Render(BaseRenderParam &RenderParam)
 	pDoubleBuffer->SwapFBO();
 	pDoubleBuffer->BindFBOA();
 	m_pShader->useShader();
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 	DeviceContextPtr->PSSetConstantBuffers(0, 1, &m_pConstantBuffer);

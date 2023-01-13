@@ -18,10 +18,16 @@ public:
 	
 	static std::shared_ptr<CC3DBlendState> BlendDisable;
 	static std::shared_ptr<CC3DBlendState> BlendAlphaOff;
+	static std::shared_ptr<CC3DBlendState> BlendAlphaOn;
 	static std::shared_ptr<CC3DBlendState> BSDisableWriteDisable;
+	static std::shared_ptr<CC3DBlendState> BlendDisableAlphaWriteDisable;
 
 	static std::shared_ptr<CC3DDepthStencilState> DepthStateDisable;
 	static std::shared_ptr<CC3DDepthStencilState> DepthStateEnable;
+
+	static std::shared_ptr<CC3DDepthStencilState> DepthStateWriteEnable;
+	static std::shared_ptr<CC3DDepthStencilState> DepthStateEnableWriteDisable;
+	static std::shared_ptr<CC3DDepthStencilState> DepthStateWriteDisable;
 
 	static std::shared_ptr<CC3DRasterizerState> RasterizerStateCullNone;
 	static std::shared_ptr<CC3DRasterizerState> RasterizerStateCullBack;

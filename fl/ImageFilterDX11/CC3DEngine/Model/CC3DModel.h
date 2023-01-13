@@ -2,12 +2,16 @@
 #ifndef _H_CC3D_MODEL_H_
 #define _H_CC3D_MODEL_H_
 #include "Common/CC3DUtils.h"
-#include "Material/CC3DMaterial.h"
-#include "Model/CC3DMesh.h"
 #include "Model/CC3DNode.h"
+#include "Model/CC3DMesh.h"
 #include "Model/CC3DCameraNode.h"
 #include "Toolbox/Render/DynamicRHI.h"
 #include <vector>
+
+namespace CC3DImageFilter
+{
+	struct EffectConfig;
+}
 
 class CC3DModel : public CCglTFModel
 {
@@ -17,12 +21,12 @@ public:
 	void LoadModelInfo();
 	void ReleaseModel();
 	void UpdateNode();
-	void update();
+	void LoadResource(CC3DImageFilter::EffectConfig* EffectConfig);
 
 	void TransformBoundingBox(glm::mat4 &TransformMat);
-	std::vector<CC3DMesh*> m_ModelMesh;
+	std::vector<class CC3DMesh*> m_ModelMesh;
 	std::vector<std::shared_ptr<CC3DTextureRHI>> m_ModelTexture;
-	std::vector<CC3DMaterial*> m_ModelMaterial;
+	std::vector<class CC3DMaterial*> m_ModelMaterial;
 
 	CC3DCameraNode m_CameraNode;
 
@@ -36,9 +40,8 @@ public:
 	BoundingBox m_ModelBox;
 private:
 
-
 	void LoadTexture();
-	void LoadMaterial();
+	void LoadMaterial(CC3DImageFilter::EffectConfig* EffectConfig);
 	void LoadMesh();
 	void LoadNode();
 

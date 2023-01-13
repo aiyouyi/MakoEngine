@@ -1,8 +1,10 @@
 ﻿#include "CFoodieSharp.h"
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "EffectKernel/ShaderProgramManager.h"
-#include "../ResourceManager.h"
-#include "../FileManager.h"
+#include "EffectKernel/ResourceManager.h"
+#include "EffectKernel/FileManager.h"
+#include "Toolbox/DXUtils/DX11Resource.h"
+#include "Toolbox/Render/DynamicRHI.h"
 
 CFoodieSharp::CFoodieSharp()
 {
@@ -147,8 +149,9 @@ void CFoodieSharp::Render(BaseRenderParam &RenderParam)
 	pDoubleBuffer->SwapFBO();
 	pDoubleBuffer->BindFBOA();
 	m_pShader->useShader();
-	auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//auto pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -161,8 +164,9 @@ void CFoodieSharp::Render(BaseRenderParam &RenderParam)
 	pParam[1] = m_Radius * RenderParam.GetHeight() / RenderParam.GetWidth();
 	m_pFBO->bind();
 	m_pShader->useShader();
-	pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//pSrcShaderView = pDoubleBuffer->GetFBOTextureA()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureA());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -176,10 +180,11 @@ void CFoodieSharp::Render(BaseRenderParam &RenderParam)
 	pDoubleBuffer->BindFBOA();
 	m_pShaderSharp->useShader();
 
-	pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
-	DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	//pSrcShaderView = pDoubleBuffer->GetFBOTextureB()->getTexShaderView();
+	//DeviceContextPtr->PSSetShaderResources(0, 1, &pSrcShaderView);
+	GetDynamicRHI()->SetPSShaderResource(0, RHIResourceCast(pDoubleBuffer.get())->GetFBOTextureB());
 	DeviceContextPtr->PSSetSamplers(0, 1, &m_pSamplerLinear);
-	pSrcShaderView = m_pFBO->getTexture()->getTexShaderView();
+	auto pSrcShaderView = m_pFBO->getTexture()->getTexShaderView();
 	DeviceContextPtr->PSSetShaderResources(1, 1, &pSrcShaderView);
 	DeviceContextPtr->UpdateSubresource(m_pConstantBuffer, 0, NULL, pParam, 0, 0);
 	DeviceContextPtr->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
@@ -187,9 +192,6 @@ void CFoodieSharp::Render(BaseRenderParam &RenderParam)
 	DeviceContextPtr->IASetVertexBuffers(0, 1, &m_rectVerticeBuffer, &nStride, &nOffset);
 	DeviceContextPtr->IASetIndexBuffer(m_rectIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 	DeviceContextPtr->DrawIndexed(2 * 3, 0, 0);
-
-
-
 }
 
 

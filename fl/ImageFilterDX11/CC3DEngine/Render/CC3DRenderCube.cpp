@@ -2,6 +2,7 @@
 #include "Toolbox/DXUtils/DXUtils.h"
 #include "Toolbox/DXUtils/DX11Resource.h"
 #include "Toolbox/RenderState/PiplelineState.h"
+#include "Toolbox/Render/MaterialTexRHI.h"
 
 CC3DRenderCube::CC3DRenderCube()
 {
@@ -27,9 +28,19 @@ void CC3DRenderCube::Initialize()
 	m_IrrCube = GetDynamicRHI()->CreateCubeMap(32, 32,5, false, false);
 	m_PreCube = GetDynamicRHI()->CreateCubeMap(128, 128,8,false,true);
 
-	m_BlutTexture = GetDynamicRHI()->CreateTexture(CC3DDynamicRHI::SFT_A16B16G16R16, CC3DTextureRHI::OT_RENDER_TARGET, 512, 512,nullptr);
+	m_BlutTexture = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_A16B16G16R16, CC3DTextureRHI::OT_RENDER_TARGET, 512, 512,nullptr);
 	m_Blut = GetDynamicRHI()->CreateRenderTarget(512, 512, false, m_BlutTexture);
 	m_IBLCB = GetDynamicRHI()->CreateConstantBuffer(sizeof(IBLConstantBuffer));
+
+	Vector3 arrCoords[4] = { Vector3(-1, -1, 1), Vector3(1, -1, 1), Vector3(-1, 1, 1), Vector3(1, 1, 1) };
+
+	unsigned short index[] =
+	{
+		0, 1, 2,
+		1, 2, 3
+	};
+	m_QuadVertexBuffer = GetDynamicRHI()->CreateVertexBuffer((float*)arrCoords, _countof(arrCoords), 3);
+	m_QuadIndexBuffer = GetDynamicRHI()->CreateIndexBuffer(index, 2);
 }
 
 
@@ -125,25 +136,15 @@ void CC3DRenderCube::Render()
 
 	}
 
-	float quadVertices[] = {
-		// positions        // texture Coords
-		-1.0f, 1.0f, 0.0f,
-		-1.0f, -1.0f, 0.0f,
-		1.0f, 1.0f, 0.0f,
-		1.0f, -1.0f, 0.0f,
-		-1.0f, -1.0f, 0.0f,
-		1.0f, 1.0f, 0.0f,
-	};
-	if (!m_quadVAO)
-	{
-		m_quadVAO = GetDynamicRHI()->CreateVertexBuffer(quadVertices, 6, 3);
-	}
-
+	GetDynamicRHI()->SetDepthStencilState(CC3DPiplelineState::DepthStateDisable);
+	GetDynamicRHI()->SetRasterizerState(CC3DPiplelineState::RasterizerStateCullNone);
+	float blendFactor[] = { 0.f,0.f,0.f,0.f };
+	GetDynamicRHI()->SetBlendState(CC3DPiplelineState::BlendDisable, blendFactor, 0xffffffff);
 
 	m_programBlut->useShader();
 	m_Blut->Bind();
 	
-	GetDynamicRHI()->DrawPrimitive(m_quadVAO);
+	GetDynamicRHI()->DrawPrimitive(m_QuadVertexBuffer, m_QuadIndexBuffer);
 
 }
 
@@ -198,14 +199,14 @@ void CC3DRenderCube::renderCube()
 	GetDynamicRHI()->DrawPrimitive(m_cubeVAO);
 }
 
-void CC3DRenderCube::setHDR(std::string filePath)
+void CC3DRenderCube::setHDR(const std::string& filePath)
 {
 	HDRFilePath = filePath;
 	int width, height, nrComponents;
 	float *data = ccLoadImagef(HDRFilePath.c_str(), &width, &height, &nrComponents,0);
 	if (data)
 	{
-		m_hdrCube = GetDynamicRHI()->CreateTexture(CC3DDynamicRHI::SFT_R32G32B32F, 0, width, height, data, width * 3 * sizeof(float));
+		m_hdrCube = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_R32G32B32F, 0, width, height, data, width * 3 * sizeof(float));
 
 		SAFE_DELETE_ARRAY(data);
 	}
@@ -216,11 +217,11 @@ void CC3DRenderCube::setHDR(std::string filePath)
 }
 
 
-void CC3DRenderCube::setHDRData(float *pData, int &nWidth, int &nHeight)
+void CC3DRenderCube::setHDRData(float *pData, int nWidth, int nHeight)
 {
 	if (pData)
 	{
-		m_hdrCube = GetDynamicRHI()->CreateTexture(CC3DDynamicRHI::SFT_R32G32B32F, 0, nWidth, nHeight, pData, nWidth * 3 * sizeof(float));
+		m_hdrCube = GetDynamicRHI()->CreateTexture(CC3DTextureRHI::SFT_R32G32B32F, 0, nWidth, nHeight, pData, nWidth * 3 * sizeof(float));
 	}
 	else
 	{
@@ -229,7 +230,7 @@ void CC3DRenderCube::setHDRData(float *pData, int &nWidth, int &nHeight)
 }
 
 
-void CC3DRenderCube::SetShaderResource(std::string path)
+void CC3DRenderCube::SetShaderResource(const std::string& path)
 {
 	m_resourcePath = path;
 	if (m_program != NULL)

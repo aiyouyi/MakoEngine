@@ -1,9 +1,12 @@
 #ifndef __IMAGE_INFO_H__
 #define __IMAGE_INFO_H__
 
-#include "../Toolbox/DXUtils/DX11Texture.h"
+//#include "../Toolbox/DXUtils/DX11Texture.h"
+#include "Toolbox/Render/TextureRHI.h"
 #include <vector>
+#include <memory>
 
+class DX11Texture;
 class ImageInfo
 {
 public:
@@ -19,7 +22,8 @@ class Image
 public:
 	long long id;
 	ImageInfo info;
-	DX11Texture* tex;
+	//DX11Texture* tex;
+	std::shared_ptr<CC3DTextureRHI> tex;
 };
 
 #endif
