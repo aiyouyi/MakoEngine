@@ -26,8 +26,15 @@ public:
 
 
 	static void InitPoseDetect();
+	static bool bInited;
+	static bool bProcessing;
 
 	static void DoPOSEProcess(unsigned char* ptr, int height, int width, int format, float* mesh_ptr);
+
+	UFUNCTION(BlueprintCallable, Category = "Utilities", meta = (Keywords = "unproject"))
+	static void SetPoseDetectHand(bool bDetectHand);
+
+	static void DoPOSEClose();
 
 	static TArray<FString> BoneNames;
 };

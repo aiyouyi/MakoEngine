@@ -61,6 +61,8 @@ TArray<FString> UHumanPoseDetectBPLibrary::BoneNames = {
 	"m_avg_rthumb2"
 };
 
+bool UHumanPoseDetectBPLibrary::bInited = false;
+bool UHumanPoseDetectBPLibrary::bProcessing = false;
 
 UHumanPoseDetectBPLibrary::UHumanPoseDetectBPLibrary(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
@@ -112,10 +114,33 @@ bool UHumanPoseDetectBPLibrary::GetInvViewProjectionMatrix(APlayerController con
 void UHumanPoseDetectBPLibrary::InitPoseDetect()
 {
 	POSEInit();
+	UHumanPoseDetectBPLibrary::bInited = true;
 }
 
 void UHumanPoseDetectBPLibrary::DoPOSEProcess(unsigned char* ptr, int height, int width, int format, float* mesh_ptr)
+{	
+	if (UHumanPoseDetectBPLibrary::bInited)
+	{		
+		UHumanPoseDetectBPLibrary::bProcessing = true;
+		POSEProcess(ptr, height, width, SDKFormat(format), mesh_ptr);		
+	}
+	UHumanPoseDetectBPLibrary::bProcessing = false;
+}
+
+void UHumanPoseDetectBPLibrary::SetPoseDetectHand(bool bDetectHand)
 {
-	POSEProcess(ptr,  height,  width, SDKFormat(format), mesh_ptr);
+	POSESetHandStatus(bDetectHand);
+}
+
+void UHumanPoseDetectBPLibrary::DoPOSEClose()
+{
+	UHumanPoseDetectBPLibrary::bInited = false;
+	int32 WaitTimer = 30;
+	while (UHumanPoseDetectBPLibrary::bProcessing&& WaitTimer>=0)
+	{
+		WaitTimer--;
+		FPlatformProcess::Sleep(0.1f);
+	}
+	POSEClose();
 }
 

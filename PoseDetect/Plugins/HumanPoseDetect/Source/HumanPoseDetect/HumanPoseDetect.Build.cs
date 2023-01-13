@@ -63,5 +63,6 @@ public class HumanPoseDetect : ModuleRules
 		RuntimeDependencies.Add("$(TargetOutputDir)/opencv_world410.dll", Path.Combine(ThirdPartyPath, "bin/opencv_world410.dll"));
 		RuntimeDependencies.Add("$(TargetOutputDir)/pose_service.dll", Path.Combine(ThirdPartyPath, "bin/pose_service.dll"));
 		RuntimeDependencies.Add("$(TargetOutputDir)/qsdeft.pt", Path.Combine(ThirdPartyPath, "bin/qsdeft.pt"));
+		RuntimeDependencies.Add("$(TargetOutputDir)/hv6d9s.pt", Path.Combine(ThirdPartyPath, "bin/hv6d9s.pt"));
 	}
 }

@@ -83,6 +83,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<FBoneRelation> BoneRelations;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+		bool bDetectHand=false;
+
 	void UpdateBoneRotation();
 	float GetSlerpAlpha(FQuat Quat1, FQuat Quat2);
 

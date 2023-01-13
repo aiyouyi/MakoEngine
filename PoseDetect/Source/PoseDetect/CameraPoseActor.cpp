@@ -11,6 +11,7 @@ ACameraPoseActor::ACameraPoseActor()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	VideoSourceComponent = CreateDefaultSubobject<UCCVideoSourceComponent>("VideoSourceComponent");
+	bDetectHand = false;
 }
 
 // Called when the game starts or when spawned
@@ -19,12 +20,17 @@ void ACameraPoseActor::BeginPlay()
 	Super::BeginPlay();
 	CCPoseDetectRunnable = new UCCPoseDetectRunnable();
 	UHumanPoseDetectBPLibrary::InitPoseDetect();
+	if (bDetectHand)
+	{
+		UHumanPoseDetectBPLibrary::SetPoseDetectHand(bDetectHand);
+	}
 	CCPoseDetectRunnable->CameraPoseActor = this;
 	RunnableThread = FRunnableThread::Create(CCPoseDetectRunnable, TEXT("CCPoseDetectRunnable"), 0);
 }
 
 void ACameraPoseActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	UHumanPoseDetectBPLibrary::DoPOSEClose();
 	CCPoseDetectRunnable->bEnd = true;
 	RunnableThread->WaitForCompletion();
 	delete CCPoseDetectRunnable;
