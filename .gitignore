@@ -20,3 +20,5 @@
 *.recipe
 *.exe
 *temporary*
+*Saved*
+*DerivedDataCache*
